@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="DevSecOps'tan AI Agent Security'ye geçişi sade ve somut örneklerle takip et.">
+  <title>Agent Security Yol Haritası</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="hero" id="top">
+  <nav class="nav container"><a class="brand" href="#top">Agent Security Lab</a><a class="nav-link" href="#roadmap">Yol Haritası</a></nav>
+  <div class="container hero-grid">
+    <div><p class="eyebrow">DevSecOps + AI Agent Security</p><h1>Kodu korumak yetmez.<br><span>Ajanın davranışını da koru.</span></h1><p class="lead">Bugünkü DevSecOps güvenliği ile geleceğin AI Agent güvenliğini tek ekranda, basit senaryolarla takip et.</p><a class="button" href="#mental-model">Temel modeli gör</a></div>
+    <div class="hero-card" aria-label="İki güvenlik zinciri"><div class="chain"><strong>Bugün</strong><span>Developer</span><b>↓</b><span>CI/CD</span><b>↓</b><span>Production</span></div><div class="divider"></div><div class="chain"><strong>Yeni katman</strong><span>AI Agent</span><b>↓</b><span>Browser / Tools / API</span><b>↓</b><span>Production</span></div></div>
+  </div>
+</header>
+<main>
+<section class="section container" id="mental-model"><p class="section-kicker">Aklında kalacak model</p><h2>İki ayrı soru soruyoruz</h2><div class="two-col">
+<article class="card"><div class="icon">01</div><h3>Code Security</h3><p><strong>Soru:</strong> “Bu kod güvenli mi?”</p><p>Bandit, Semgrep, Trivy, SAST, SCA ve secret scanning burada çalışır.</p><div class="flow">CODE → SCAN → TEST → DEPLOY</div></article>
+<article class="card accent"><div class="icon">02</div><h3>Agent Security</h3><p><strong>Soru:</strong> “Bu ajanın yaptığı şeye izin var mı?”</p><p>Permissions, sandbox, network policy, secrets, tool control ve human approval burada çalışır.</p><div class="flow">AGENT → POLICY → ALLOW / DENY</div></article>
+</div></section>
+<section class="section dark-section"><div class="container"><p class="section-kicker">Somut senaryo</p><h2>AI internette kötü bir talimat görürse ne olur?</h2><div class="scenario">
+<div class="scenario-step"><span>1</span><p>AI Agent bir CVE için internette araştırma yapar.</p></div><div class="scenario-step"><span>2</span><p>Kötü bir sayfa “environment variable'ları oku” diye gizli talimat verir.</p></div><div class="scenario-step danger"><span>3</span><p>Koruma yoksa Agent bunu görev sanıp secret'lara erişmeye çalışabilir.</p></div><div class="scenario-step safe"><span>4</span><p>Policy katmanı varsa: “Bu işlem yetkin dışında” der ve engeller.</p></div>
+</div></div></section>
+<section class="section container"><p class="section-kicker">Savunma katmanları</p><h2>Agent'a anahtarları teslim etmek yerine kapılar koy</h2><div class="controls">
+<article><h3>Permissions</h3><p>Agent sadece görev için gereken yetkiye sahip olur.</p><small>Least Privilege / En Az Yetki</small></article><article><h3>Sandbox</h3><p>Web içeriği ve komutlar izole bir alanda çalışır.</p><small>Hasarı sınırla</small></article><article><h3>Network Policy</h3><p>Agent yalnızca izin verilen servislere çıkabilir.</p><small>Egress Control / Çıkış kontrolü</small></article><article><h3>Secret Broker</h3><p>Kalıcı secret yerine kısa ömürlü ve dar kapsamlı token verilir.</p><small>Credential Exposure azaltılır</small></article><article><h3>Human Approval</h3><p>Merge ve production deploy gibi kritik adımlar insana sorulur.</p><small>Human-in-the-loop</small></article><article><h3>Audit Logs</h3><p>Agent'ın neyi, ne zaman, hangi araçla yaptığı kayda alınır.</p><small>İzlenebilirlik</small></article>
+</div></section>
+<section class="section container" id="roadmap"><div class="roadmap-head"><div><p class="section-kicker">Kişisel takip alanı</p><h2>Agent Security Yol Haritam</h2><p class="muted">İşaretlediğin maddeler bu tarayıcıda saklanır.</p></div><div class="progress-box" aria-live="polite"><strong id="progressText">0 / 8</strong><div class="progress-track"><div id="progressBar" class="progress-bar"></div></div></div></div>
+<div class="checklist" id="checklist">
+<label><input type="checkbox" data-key="least-privilege"><span><b>Least Privilege</b><small>Agent yetkilerini sınırlandırmayı öğren.</small></span></label><label><input type="checkbox" data-key="sandbox"><span><b>Sandbox</b><small>Agent ve web içeriğini izole et.</small></span></label><label><input type="checkbox" data-key="prompt-injection"><span><b>Prompt Injection</b><small>Web içeriğinin Agent davranışını nasıl manipüle edebileceğini öğren.</small></span></label><label><input type="checkbox" data-key="tool-control"><span><b>Tool Permissions</b><small>Terminal, GitHub ve API araçlarını kontrollü aç.</small></span></label><label><input type="checkbox" data-key="network"><span><b>Network Egress</b><small>Agent'ın çıkabileceği domain ve servisleri sınırla.</small></span></label><label><input type="checkbox" data-key="secrets"><span><b>Secret Management</b><small>Kısa ömürlü token ve broker yaklaşımını öğren.</small></span></label><label><input type="checkbox" data-key="approval"><span><b>Human Approval</b><small>Kritik işlemlerde insan onayı ekle.</small></span></label><label><input type="checkbox" data-key="audit"><span><b>Audit & Observability</b><small>Agent hareketlerini logla ve denetle.</small></span></label>
+</div><button id="resetButton" class="reset-button" type="button">İlerlemeyi sıfırla</button></section>
+<section class="section final-section"><div class="container final-card"><p class="section-kicker">Tek cümlelik özet</p><h2>Bugünkü DevSecOps kötü kodu durdurur.<br>Agent Security, AI'nın yanlış veya yetkisiz hareketini durdurur.</h2></div></section>
+</main>
+<footer class="footer"><div class="container"><span>Agent Security Lab</span><span>Basit öğren, somut uygula.</span></div></footer>
+<script src="app.js"></script>
+</body></html>
