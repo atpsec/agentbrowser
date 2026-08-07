@@ -1,5 +1,6 @@
 name: Apply product playbook package
 
+# All verified archive parts are present; this revision triggers the final apply run.
 on:
   push:
     branches:
