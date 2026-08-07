@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AI Pusula: Yapay zekâyı öğren, araçları ve modelleri karşılaştır, ürün fikrini güvenli biçimde geliştir.">
+  <meta name="theme-color" content="#f6f1e8">
+  <title>AI Pusula — Öğren, seç, üret</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">İçeriğe geç</a>
+
+<header class="site-header">
+  <div class="shell header-inner">
+    <a class="wordmark" href="#top" aria-label="AI Pusula ana sayfa">
+      <span class="wordmark-mark" aria-hidden="true">↗</span>
+      <span>AI PUSULA</span>
+    </a>
+    <nav class="desktop-nav" aria-label="Ana menü">
+      <a href="#basics">Öğren</a>
+      <a href="#apps">Araçlar</a>
+      <a href="#models">Modeller</a>
+      <a href="#ideas">Ürün fikirleri</a>
+      <a href="#security">Güvenlik</a>
+    </nav>
+    <div class="header-actions">
+      <button class="progress-chip" id="headerProgress" type="button" aria-label="Öğrenme ilerlemesini göster">0 / 6</button>
+      <button class="menu-button" id="menuButton" type="button" aria-expanded="false" aria-controls="mobileNav">Menü</button>
+    </div>
+  </div>
+  <nav class="mobile-nav" id="mobileNav" aria-label="Mobil menü" hidden>
+    <a href="#basics">Öğren</a>
+    <a href="#apps">Araçlar</a>
+    <a href="#models">Modeller</a>
+    <a href="#ideas">Ürün fikirleri</a>
+    <a href="#method">PUSULA yöntemi</a>
+    <a href="#security">Güvenlik</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="hero shell" id="top">
+    <div class="hero-copy">
+      <div class="eyebrow-row">
+        <span class="eyebrow">Başlangıçtan ürüne</span>
+        <span class="verified">Bilgiler: 08.08.2026</span>
+      </div>
+      <h1>Yapay zekâya nereden gireceğini <em>birlikte bulalım.</em></h1>
+      <p class="hero-lead">Önce basitçe anla. Sonra doğru aracı seç. En sonunda küçük, güvenli ve işe yarayan bir ürün çıkar.</p>
+
+      <div class="path-grid" aria-label="Başlangıç yolları">
+        <button class="path-card" type="button" data-path="learn">
+          <span class="path-index">01</span>
+          <strong>Yapay zekâyı öğrenmek istiyorum</strong>
+          <small>Sıfırdan, çocuk diliyle başla.</small>
+          <span class="path-arrow" aria-hidden="true">→</span>
+        </button>
+        <button class="path-card" type="button" data-path="choose">
+          <span class="path-index">02</span>
+          <strong>Doğru aracı seçmek istiyorum</strong>
+          <small>İşine ve bütçene göre filtrele.</small>
+          <span class="path-arrow" aria-hidden="true">→</span>
+        </button>
+        <button class="path-card" type="button" data-path="build">
+          <span class="path-index">03</span>
+          <strong>Bir ürün yapmak istiyorum</strong>
+          <small>Fikirden ilk kullanıcıya ilerle.</small>
+          <span class="path-arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+
+      <div class="route-result" id="routeResult" hidden aria-live="polite"></div>
+      <button class="primary-button" id="startWizard" type="button">3 soruda bana rota çıkar</button>
+    </div>
+
+    <div class="hero-map" aria-label="Yapay zekâ ürün yolu">
+      <div class="map-caption">BİR AI ÜRÜNÜNÜN YOLU</div>
+      <div class="map-node node-human"><span>İNSAN</span><small>Bir sorun söyler</small></div>
+      <div class="map-line line-one" aria-hidden="true"></div>
+      <div class="map-node node-model"><span>MODEL</span><small>Düşünür ve üretir</small></div>
+      <div class="map-line line-two" aria-hidden="true"></div>
+      <div class="map-node node-tool"><span>ARAÇ</span><small>Arama, kod, dosya</small></div>
+      <div class="map-line line-three" aria-hidden="true"></div>
+      <div class="map-node node-product"><span>ÜRÜN</span><small>Gerçek işi çözer</small></div>
+      <div class="map-guard"><span>GÜVENLİK KAPISI</span><small>İzin · veri · maliyet · insan onayı</small></div>
+    </div>
+  </section>
+
+  <section class="section band-yellow" id="basics" data-module="basics">
+    <div class="shell">
+      <div class="section-heading split-heading">
+        <div>
+          <span class="section-number">01</span>
+          <p class="kicker">ÖNCE ŞU DÖRT KELİME</p>
+          <h2>Yapay zekâyı dört taşla anla.</h2>
+        </div>
+        <p>Bir bisikleti öğrenir gibi: bütün parçaları ezberlemek yerine önce pedalın, gidonun ve frenin ne yaptığını bil.</p>
+      </div>
+
+      <div class="concept-layout">
+        <div class="concept-tabs" role="tablist" aria-label="Yapay zekâ kavramları">
+          <button role="tab" aria-selected="true" data-concept="model" type="button"><b>MODEL</b><span>Beyin</span></button>
+          <button role="tab" aria-selected="false" data-concept="app" type="button"><b>UYGULAMA</b><span>Kullandığın ekran</span></button>
+          <button role="tab" aria-selected="false" data-concept="tool" type="button"><b>ARAÇ</b><span>Yaptığı iş</span></button>
+          <button role="tab" aria-selected="false" data-concept="agent" type="button"><b>AGENT</b><span>Görevi takip eden yardımcı</span></button>
+        </div>
+        <article class="concept-stage" id="conceptStage" aria-live="polite"></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="apps" data-module="apps">
+    <div class="shell">
+      <div class="section-heading">
+        <span class="section-number">02</span>
+        <p class="kicker">ANA YAPAY ZEKÂ UYGULAMALARI</p>
+        <h2>Önce ne yapmak istediğini seç.</h2>
+        <p class="section-intro">“En iyi uygulama hangisi?” yerine “Benim işim için hangisi uygun?” diye sor.</p>
+      </div>
+
+      <div class="explorer-toolbar" aria-label="Uygulama filtreleri">
+        <label class="search-box">
+          <span class="sr-only">Uygulama ara</span>
+          <input id="appSearch" type="search" placeholder="Ara: kod, video, araştırma…" autocomplete="off">
+        </label>
+        <div class="filter-chips" id="appFilters" role="group" aria-label="Kategori seç">
+          <button class="chip is-active" type="button" data-category="all">Tümü</button>
+          <button class="chip" type="button" data-category="general">Genel</button>
+          <button class="chip" type="button" data-category="research">Araştırma</button>
+          <button class="chip" type="button" data-category="code">Kod</button>
+          <button class="chip" type="button" data-category="image">Görsel</button>
+          <button class="chip" type="button" data-category="video">Video</button>
+          <button class="chip" type="button" data-category="audio">Ses</button>
+        </div>
+        <label class="toggle-control"><input id="appFreeOnly" type="checkbox"><span>Ücretsiz seçeneği olanlar</span></label>
+      </div>
+
+      <div class="result-line"><strong id="appResultCount">0 araç</strong><span>Kotalar değişebilir; kartlardaki tarih ve resmî kaynağı kontrol et.</span></div>
+      <div class="card-grid app-grid" id="appGrid" aria-live="polite"></div>
+      <button class="text-button" id="showMoreApps" type="button">Daha fazla araç göster</button>
+    </div>
+  </section>
+
+  <section class="section band-blue" id="models" data-module="models">
+    <div class="shell">
+      <div class="section-heading split-heading">
+        <div>
+          <span class="section-number">03</span>
+          <p class="kicker">GÜNCEL MODEL REHBERİ</p>
+          <h2>Model, motor gibidir. Uygulama ise kullandığın araç.</h2>
+        </div>
+        <p>Buradaki puanlar benchmark sıralaması değildir. Yeni başlayan birinin doğru başlangıcı seçmesi için kullanım yönlendirmesidir.</p>
+      </div>
+
+      <div class="model-switcher" role="group" aria-label="Model görünümü">
+        <button class="switch-button is-active" type="button" data-model-view="all">Hepsi</button>
+        <button class="switch-button" type="button" data-model-view="cloud">Hemen kullan</button>
+        <button class="switch-button" type="button" data-model-view="local">Kendi bilgisayarında</button>
+        <button class="switch-button" type="button" data-model-view="free">Ücretsiz başlangıç</button>
+      </div>
+
+      <div class="free-map" aria-label="Ücretsiz yapay zekâ türleri">
+        <details open><summary>Ücretsiz uygulama</summary><p>Tarayıcıdan kullanırsın; günlük veya aylık sınır olabilir.</p></details>
+        <details><summary>Ücretsiz API kotası</summary><p>Kendi uygulamanı geliştirirsin; belirli kullanım sınırına kadar ücret ödemezsin.</p></details>
+        <details><summary>İndirilebilir model</summary><p>Model dosyası ücretsiz olabilir; bilgisayar, GPU ve elektrik yine maliyetlidir.</p></details>
+        <details><summary>Açık ağırlık ≠ sınırsız kullanım</summary><p>Lisansı, ticari kullanım şartlarını ve veri politikasını ayrıca kontrol et.</p></details>
+      </div>
+
+      <div class="model-grid" id="modelGrid"></div>
+      <div class="compare-tray" id="compareTray" hidden>
+        <div><strong id="compareCount">0 model seçildi</strong><span>En fazla 3 model</span></div>
+        <div class="compare-tray-actions"><button id="clearCompare" class="text-button" type="button">Temizle</button><button id="openCompare" class="dark-button" type="button">Karşılaştır</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="ideas" data-module="ideas">
+    <div class="shell">
+      <div class="section-heading">
+        <span class="section-number">04</span>
+        <p class="kicker">ÜRÜN VE HİZMET FİKİRLERİ</p>
+        <h2>AI fikri değil, insan problemi seç.</h2>
+        <p class="section-intro">İyi ürün “çok akıllı” olduğu için değil, belirli bir kişinin sıkıcı bir işini kolaylaştırdığı için kullanılır.</p>
+      </div>
+
+      <div class="idea-toolbar">
+        <div class="filter-chips" id="ideaFilters" role="group" aria-label="Fikir kategorisi">
+          <button class="chip is-active" type="button" data-idea-category="all">Tümü</button>
+          <button class="chip" type="button" data-idea-category="security">Siber güvenlik</button>
+          <button class="chip" type="button" data-idea-category="software">Yazılım</button>
+          <button class="chip" type="button" data-idea-category="education">Eğitim</button>
+          <button class="chip" type="button" data-idea-category="business">Küçük işletme</button>
+          <button class="chip" type="button" data-idea-category="content">İçerik</button>
+        </div>
+        <label class="select-control">Zorluk
+          <select id="ideaDifficulty"><option value="all">Tümü</option><option value="easy">Kolay</option><option value="medium">Orta</option><option value="advanced">İleri</option></select>
+        </label>
+        <button class="shuffle-button" id="randomIdea" type="button">Bana rastgele fikir ver ↻</button>
+      </div>
+
+      <div class="idea-grid" id="ideaGrid"></div>
+      <button class="text-button" id="showMoreIdeas" type="button">Daha fazla fikir göster</button>
+    </div>
+  </section>
+
+  <section class="section band-green" id="method" data-module="method">
+    <div class="shell">
+      <div class="section-heading split-heading">
+        <div>
+          <span class="section-number">05</span>
+          <p class="kicker">PUSULA METODOLOJİSİ</p>
+          <h2>Fikirden ilk kullanıcıya altı küçük adım.</h2>
+        </div>
+        <p id="methodContext">Bir fikir kartında “PUSULA ile geliştir” dersen bu bölüm o fikre göre örnek verir.</p>
+      </div>
+
+      <div class="method-layout">
+        <ol class="method-steps" id="methodSteps"></ol>
+        <article class="method-panel" id="methodPanel" aria-live="polite"></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="security" data-module="security">
+    <div class="shell">
+      <div class="section-heading split-heading">
+        <div>
+          <span class="section-number">06</span>
+          <p class="kicker">AGENT SECURITY</p>
+          <h2>AI’ya evin bütün anahtarlarını verme. Kapılar koy.</h2>
+        </div>
+        <p>AI bir araç kullanabiliyorsa yalnızca cevabı değil, yaptığı hareketi de kontrol etmelisin.</p>
+      </div>
+
+      <div class="security-lab">
+        <div class="security-actions" role="group" aria-label="Ajan işlemleri">
+          <button type="button" data-policy-action="repo-read">Repoyu oku</button>
+          <button type="button" data-policy-action="branch-create">Branch oluştur</button>
+          <button type="button" data-policy-action="pr-merge">PR birleştir</button>
+          <button type="button" data-policy-action="prod-deploy">Production deploy</button>
+          <button type="button" data-policy-action="secrets-read">Bütün secret’ları oku</button>
+          <button type="button" data-policy-action="unknown-domain">Bilinmeyen siteye veri gönder</button>
+        </div>
+        <article class="policy-screen" id="policyScreen" aria-live="polite">
+          <span class="policy-status neutral">BİR İŞLEM SEÇ</span>
+          <h3>Policy Engine hazır.</h3>
+          <p>Soldaki işlemlerden birine bas. Sistem izin, insan onayı veya engelleme kararı versin.</p>
+        </article>
+      </div>
+
+      <div class="security-rail-grid">
+        <div><b>01</b><span>Identity</span><small>Ajan kim?</small></div>
+        <div><b>02</b><span>Permissions</span><small>Neye izinli?</small></div>
+        <div><b>03</b><span>Sandbox</span><small>Nerede çalışıyor?</small></div>
+        <div><b>04</b><span>Network</span><small>Nereye çıkıyor?</small></div>
+        <div><b>05</b><span>Secrets</span><small>Hangi anahtarı görüyor?</small></div>
+        <div><b>06</b><span>Audit</span><small>Ne yaptı?</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band-coral" id="updates">
+    <div class="shell">
+      <div class="section-heading split-heading">
+        <div>
+          <span class="section-number">07</span>
+          <p class="kicker">GÜNCEL GELİŞMELER</p>
+          <h2>Yapay zekâ artık yalnızca sohbet değil.</h2>
+        </div>
+        <p>Bu bölüm yaşayan bir zaman çizgisidir. Her kayıt resmî kaynağa bağlanır ve doğrulama tarihi taşır.</p>
+      </div>
+      <div class="update-timeline" id="updateTimeline"></div>
+    </div>
+  </section>
+
+  <section class="section progress-section" id="progress">
+    <div class="shell progress-layout">
+      <div>
+        <p class="kicker">KALDIĞIN YERİ UNUTMA</p>
+        <h2>Altı bölümü kendi hızında tamamla.</h2>
+        <p>İşaretlerin yalnızca bu tarayıcıda saklanır. Hesap veya sunucu yok.</p>
+      </div>
+      <div class="module-checklist" id="moduleChecklist">
+        <label><input type="checkbox" data-progress="basics"><span>Yapay zekânın dört temel parçası</span></label>
+        <label><input type="checkbox" data-progress="apps"><span>Ana uygulamalar ve kullanım alanları</span></label>
+        <label><input type="checkbox" data-progress="models"><span>Model türleri ve karşılaştırma</span></label>
+        <label><input type="checkbox" data-progress="ideas"><span>Ürün ve hizmet fikirleri</span></label>
+        <label><input type="checkbox" data-progress="method"><span>PUSULA ürün geliştirme yöntemi</span></label>
+        <label><input type="checkbox" data-progress="security"><span>Agent Security kontrol kapıları</span></label>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="shell footer-grid">
+    <div><strong>AI PUSULA</strong><p>Yapay zekâyı anla, doğru aracı seç, güvenli ürün geliştir.</p></div>
+    <div><span>Son içerik doğrulama</span><b>08 Ağustos 2026</b></div>
+    <div><span>Kaynak yaklaşımı</span><b>Resmî ürün ve model sayfaları</b></div>
+  </div>
+</footer>
+
+<dialog class="dialog" id="wizardDialog" aria-labelledby="wizardTitle">
+  <form method="dialog" class="dialog-shell" id="wizardForm">
+    <div class="dialog-head"><div><span class="kicker">3 SORULUK MİNİ ROTA</span><h2 id="wizardTitle">Sana uygun başlangıcı bulalım.</h2></div><button class="icon-button" value="cancel" aria-label="Kapat">×</button></div>
+    <div class="wizard-progress" aria-hidden="true"><span class="is-active"></span><span></span><span></span></div>
+    <div class="wizard-step" data-wizard-step="0"><p>En çok ne yapmak istiyorsun?</p><label><input type="radio" name="goal" value="learn" required> Yapay zekâyı anlamak</label><label><input type="radio" name="goal" value="work"> Günlük işimi hızlandırmak</label><label><input type="radio" name="goal" value="build"> Ürün veya hizmet geliştirmek</label></div>
+    <div class="wizard-step" data-wizard-step="1" hidden><p>Bütçe yaklaşımın ne?</p><label><input type="radio" name="budget" value="free" required> Önce ücretsiz denemek</label><label><input type="radio" name="budget" value="small"> Küçük bir bütçe ayırabilirim</label><label><input type="radio" name="budget" value="quality"> Kalite önemli, ücret olabilir</label></div>
+    <div class="wizard-step" data-wizard-step="2" hidden><p>Verilerin ne kadar hassas?</p><label><input type="radio" name="privacy" value="normal" required> Genel ve kişisel olmayan içerik</label><label><input type="radio" name="privacy" value="business"> Şirket içi içerik</label><label><input type="radio" name="privacy" value="sensitive"> Çok hassas veya regüle veri</label></div>
+    <div class="wizard-result" id="wizardResult" hidden></div>
+    <div class="dialog-actions"><button class="text-button" id="wizardBack" type="button" hidden>Geri</button><button class="dark-button" id="wizardNext" type="button">Devam</button></div>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="detailDialog" aria-labelledby="detailTitle">
+  <div class="dialog-shell detail-shell">
+    <div class="dialog-head"><div><span class="kicker" id="detailKicker">DETAY</span><h2 id="detailTitle">Başlık</h2></div><button class="icon-button" data-close-dialog="detailDialog" aria-label="Kapat">×</button></div>
+    <div id="detailContent"></div>
+  </div>
+</dialog>
+
+<dialog class="dialog compare-dialog" id="compareDialog" aria-labelledby="compareTitle">
+  <div class="dialog-shell">
+    <div class="dialog-head"><div><span class="kicker">MODEL KARŞILAŞTIRMA</span><h2 id="compareTitle">İşine göre yan yana bak.</h2></div><button class="icon-button" data-close-dialog="compareDialog" aria-label="Kapat">×</button></div>
+    <div class="comparison-table-wrap" id="comparisonTable"></div>
+  </div>
+</dialog>
+
+<dialog class="dialog" id="ideaDialog" aria-labelledby="ideaTitle">
+  <div class="dialog-shell detail-shell">
+    <div class="dialog-head"><div><span class="kicker">ÜRÜN FİKRİ</span><h2 id="ideaTitle">Fikir</h2></div><button class="icon-button" data-close-dialog="ideaDialog" aria-label="Kapat">×</button></div>
+    <div id="ideaContent"></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
