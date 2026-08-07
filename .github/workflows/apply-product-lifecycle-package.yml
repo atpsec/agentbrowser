@@ -25,6 +25,16 @@ jobs:
       - name: Decode and apply package
         run: |
           set -euo pipefail
+          cat > /tmp/expected-package-hashes <<'HASHES'
+          6442b3ad5835e86e30044b9e7304fb4061170cd146d804f3ae48e72aefe9ed3c  .ai-pusula-package/part00
+          02199721ef0c3a1f1a2faee36c649995967dd6e6a05fd5fd00977a65a54e04c0  .ai-pusula-package/part01
+          15154208b8ae146b7b4106d9bc8426f2a40e3196f7c3cbe0a3c44ce927e6f920  .ai-pusula-package/part02
+          1d41e4cc7f47fb12ad870e6fc39a1b87280e14b0640c4efda9a40dd5e00e9896  .ai-pusula-package/part03
+          ed15fc0952cb7dfd1f7b44f839c81760536a01051cc048ab34391427917e98de  .ai-pusula-package/part04
+          6e7c3e6be00ff5aebc2d40cee70aca0341f44dff57ff5faccc863c46e8f10c8b  .ai-pusula-package/part05
+          c422c837b43d846a95663810d580601b6f3b3c5c5297de34108842fc394cf66a  .ai-pusula-package/part06
+          HASHES
+          sha256sum -c /tmp/expected-package-hashes
           cat .ai-pusula-package/part* > /tmp/product-lifecycle-package.b64
           base64 --decode /tmp/product-lifecycle-package.b64 > /tmp/product-lifecycle-package.tgz
           tar -tzf /tmp/product-lifecycle-package.tgz >/tmp/product-package-files.txt
