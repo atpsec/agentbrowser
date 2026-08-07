@@ -1,0 +1,42 @@
+name: One-time index patch
+
+on:
+  push:
+    branches:
+      - 'agent/ai-pusula-guide'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[index patched]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ai-pusula-guide
+      - name: Add model score stylesheet link
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('public/index.html')
+          text = path.read_text(encoding='utf-8')
+          needle = '  <link rel="stylesheet" href="styles.css">\n'
+          addition = needle + '  <link rel="stylesheet" href="fit-scores.css">\n'
+          if 'href="fit-scores.css"' not in text:
+              if needle not in text:
+                  raise SystemExit('styles.css link not found')
+              path.write_text(text.replace(needle, addition, 1), encoding='utf-8')
+          PY
+      - name: Commit patch when needed
+        run: |
+          if git diff --quiet; then
+            echo "Index already patched."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html
+          git commit -m "load model score stylesheet [index patched]"
+          git push origin HEAD:agent/ai-pusula-guide
