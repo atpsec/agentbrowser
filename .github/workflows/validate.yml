@@ -1,0 +1,129 @@
+name: Validate AI Pusula
+
+on:
+  push:
+    branches:
+      - main
+      - 'agent/**'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check JavaScript syntax
+        run: node --check public/app.js
+
+      - name: Parse JSON data
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const files = [
+            'public/data/apps.json',
+            'public/data/models.json',
+            'public/data/ideas.json',
+            'public/data/updates.json',
+            'public/manifest.webmanifest'
+          ];
+          for (const file of files) {
+            JSON.parse(fs.readFileSync(file, 'utf8'));
+            console.log(`OK ${file}`);
+          }
+          NODE
+
+      - name: Validate local asset references and data shape
+        run: |
+          python3 - <<'PY'
+          import json
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          root = Path('public')
+          html = (root / 'index.html').read_text(encoding='utf-8')
+
+          class Parser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.links = []
+                  self.ids = []
+              def handle_starttag(self, tag, attrs):
+                  values = dict(attrs)
+                  if 'id' in values:
+                      self.ids.append(values['id'])
+                  for key in ('src', 'href'):
+                      value = values.get(key)
+                      if value:
+                          self.links.append(value)
+
+          parser = Parser()
+          parser.feed(html)
+          duplicates = sorted({item for item in parser.ids if parser.ids.count(item) > 1})
+          if duplicates:
+              raise SystemExit(f'Duplicate ids: {duplicates}')
+
+          missing = []
+          for link in parser.links:
+              if link.startswith(('#', 'http://', 'https://', 'mailto:', 'data:')):
+                  continue
+              target = root / link.split('#', 1)[0].split('?', 1)[0]
+              if not target.exists():
+                  missing.append(str(target))
+          if missing:
+              raise SystemExit(f'Missing local assets: {missing}')
+
+          required = {
+              'apps.json': {'id', 'name', 'source', 'verified'},
+              'models.json': {'id', 'name', 'source', 'verified', 'scores'},
+              'ideas.json': {'id', 'title', 'risk', 'metric'},
+              'updates.json': {'date', 'title', 'source'}
+          }
+          for filename, fields in required.items():
+              payload = json.loads((root / 'data' / filename).read_text(encoding='utf-8'))
+              ids = []
+              for index, item in enumerate(payload['items']):
+                  absent = fields - set(item)
+                  if absent:
+                      raise SystemExit(f'{filename}[{index}] missing {sorted(absent)}')
+                  if 'id' in item:
+                      ids.append(item['id'])
+                  for key in ('source', 'official'):
+                      if key in item and urlparse(item[key]).scheme != 'https':
+                          raise SystemExit(f'{filename}[{index}] has non-HTTPS {key}')
+              if len(ids) != len(set(ids)):
+                  raise SystemExit(f'{filename} contains duplicate ids')
+
+          wrangler = json.loads(Path('wrangler.jsonc').read_text(encoding='utf-8'))
+          if wrangler.get('assets', {}).get('directory') != './public':
+              raise SystemExit('Wrangler assets directory must be ./public')
+          print('Static structure, data shape and deployment scope are valid.')
+          PY
+
+      - name: HTTP smoke test
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/ai-pusula-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid' EXIT
+          sleep 2
+          curl --fail --silent --show-error http://127.0.0.1:8080/ | grep --quiet 'AI PUSULA'
+          curl --fail --silent --show-error http://127.0.0.1:8080/data/models.json >/tmp/models.json
+          python3 -m json.tool /tmp/models.json >/dev/null
+
+      - name: Upload site preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-pusula-preview
+          path: public
+          if-no-files-found: error
+          retention-days: 7

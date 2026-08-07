@@ -1,0 +1,17 @@
+{
+  "name": "AI Pusula",
+  "short_name": "AI Pusula",
+  "description": "Yapay zekâyı öğren, doğru aracı seç, güvenli ürün geliştir.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f1e8",
+  "theme_color": "#f6f1e8",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

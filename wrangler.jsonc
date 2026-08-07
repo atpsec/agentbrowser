@@ -1,0 +1,11 @@
+{
+  "name": "agentbrowser",
+  "compatibility_date": "2026-08-07",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
