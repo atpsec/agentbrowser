@@ -4,16 +4,19 @@ on:
   push:
     branches:
       - 'agent/product-lifecycle-playbooks'
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: ${{ !contains(github.event.head_commit.message, '[product package applied]') }}
+    if: ${{ github.event_name == 'push' || github.head_ref == 'agent/product-lifecycle-playbooks' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout product branch
         uses: actions/checkout@v4
         with:
           ref: agent/product-lifecycle-playbooks
@@ -24,9 +27,68 @@ jobs:
           set -euo pipefail
           cat .ai-pusula-package/part* > /tmp/product-lifecycle-package.b64
           base64 --decode /tmp/product-lifecycle-package.b64 > /tmp/product-lifecycle-package.tgz
+          tar -tzf /tmp/product-lifecycle-package.tgz >/tmp/product-package-files.txt
           tar -xzf /tmp/product-lifecycle-package.tgz
           mkdir -p .github/workflows
           mv validate.yml .github/workflows/validate.yml
+
+      - name: Validate applied files
+        run: |
+          set -euo pipefail
+          node --check public/app.js
+          node --check public/product-planner.js
+          node - <<'NODE'
+          const fs = require('fs');
+          for (const file of [
+            'public/data/apps.json',
+            'public/data/models.json',
+            'public/data/ideas.json',
+            'public/data/product-journeys.json',
+            'public/data/updates.json',
+            'public/manifest.webmanifest'
+          ]) JSON.parse(fs.readFileSync(file, 'utf8'));
+          NODE
+          cp public/product-planner.js /tmp/product-planner.mjs
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          import { pathToFileURL } from 'node:url';
+          const planner = await import(pathToFileURL('/tmp/product-planner.mjs'));
+          const ideas = JSON.parse(fs.readFileSync('public/data/ideas.json', 'utf8')).items;
+          const journeys = JSON.parse(fs.readFileSync('public/data/product-journeys.json', 'utf8'));
+          const byId = new Map(journeys.items.map(item => [item.id, item]));
+          if (ideas.length !== byId.size) throw new Error('Idea and journey counts differ');
+          for (const idea of ideas) {
+            const journey = byId.get(idea.id);
+            if (!journey) throw new Error(`Missing journey for ${idea.id}`);
+            for (const route of Object.keys(journeys.routes)) {
+              for (const duration of Object.keys(journeys.durations)) {
+                for (const budget of Object.keys(journeys.budgets)) {
+                  const steps = planner.buildJourneySteps({
+                    idea,
+                    journey,
+                    category: journeys.categories[idea.category],
+                    route,
+                    duration,
+                    budget,
+                    config: journeys
+                  });
+                  if (steps.length !== 9) throw new Error(`${idea.id}: invalid step count`);
+                }
+              }
+            }
+          }
+          console.log(`Validated ${ideas.length * 4 * 3 * 3} product-plan variants.`);
+          NODE
+          python3 -m http.server 8080 -d public >/tmp/ai-pusula-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid' EXIT
+          sleep 2
+          curl --fail --silent --show-error http://127.0.0.1:8080/ | grep --quiet 'AI PUSULA'
+          curl --fail --silent --show-error http://127.0.0.1:8080/data/product-journeys.json >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:8080/product-planner.js | grep --quiet 'buildJourneySteps'
+
+      - name: Remove staging files
+        run: |
           rm -rf .ai-pusula-package
           rm -f .github/workflows/apply-product-lifecycle-package.yml
 
