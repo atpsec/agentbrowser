@@ -57,8 +57,7 @@ jobs:
           base64 --decode /tmp/product-lifecycle-package.b64 > /tmp/product-lifecycle-package.tgz
           tar -tzf /tmp/product-lifecycle-package.tgz >/tmp/product-package-files.txt
           tar -xzf /tmp/product-lifecycle-package.tgz
-          mkdir -p .github/workflows
-          mv validate.yml .github/workflows/validate.yml
+          rm -f validate.yml
 
       - name: Validate applied files
         run: |
@@ -116,9 +115,7 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:8080/product-planner.js | grep --quiet 'buildJourneySteps'
 
       - name: Remove staging files
-        run: |
-          rm -rf .ai-pusula-package
-          rm -f .github/workflows/apply-product-lifecycle-package.yml
+        run: rm -rf .ai-pusula-package
 
       - name: Commit package
         run: |
