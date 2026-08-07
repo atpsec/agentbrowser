@@ -23,7 +23,9 @@ jobs:
           node-version: '22'
 
       - name: Check JavaScript syntax
-        run: node --check public/app.js
+        run: |
+          node --check public/app.js
+          node --check public/product-planner.js
 
       - name: Parse JSON data
         run: |
@@ -33,6 +35,7 @@ jobs:
             'public/data/apps.json',
             'public/data/models.json',
             'public/data/ideas.json',
+            'public/data/product-journeys.json',
             'public/data/updates.json',
             'public/manifest.webmanifest'
           ];
@@ -42,7 +45,7 @@ jobs:
           }
           NODE
 
-      - name: Validate local asset references and data shape
+      - name: Validate local assets and data shape
         run: |
           python3 - <<'PY'
           import json
@@ -86,7 +89,7 @@ jobs:
           required = {
               'apps.json': {'id', 'name', 'source', 'verified'},
               'models.json': {'id', 'name', 'source', 'verified', 'scores'},
-              'ideas.json': {'id', 'title', 'risk', 'metric'},
+              'ideas.json': {'id', 'title', 'category', 'risk', 'metric'},
               'updates.json': {'date', 'title', 'source'}
           }
           for filename, fields in required.items():
@@ -104,11 +107,101 @@ jobs:
               if len(ids) != len(set(ids)):
                   raise SystemExit(f'{filename} contains duplicate ids')
 
+          ideas = json.loads((root / 'data' / 'ideas.json').read_text(encoding='utf-8'))['items']
+          journeys = json.loads((root / 'data' / 'product-journeys.json').read_text(encoding='utf-8'))
+          journey_items = journeys['items']
+
+          idea_ids = {item['id'] for item in ideas}
+          journey_ids = {item['id'] for item in journey_items}
+          if idea_ids != journey_ids:
+              raise SystemExit(
+                  f'Journey mismatch; missing={sorted(idea_ids - journey_ids)}, '
+                  f'extra={sorted(journey_ids - idea_ids)}'
+              )
+          if len(journey_items) != len(journey_ids):
+              raise SystemExit('product-journeys.json contains duplicate ids')
+
+          expected_options = {
+              'routes': {'service', 'saas', 'open', 'custom'},
+              'durations': {'weekend', '14days', '30days'},
+              'budgets': {'free', 'low', 'pro'},
+              'categories': {'security', 'software', 'education', 'business', 'content'}
+          }
+          for key, expected in expected_options.items():
+              actual = set(journeys.get(key, {}))
+              if actual != expected:
+                  raise SystemExit(f'{key} mismatch: {sorted(actual)}')
+
+          required_journey = {
+              'id', 'customerType', 'mvpTime', 'salesDifficulty', 'dataSensitivity',
+              'businessModels', 'firstChannel', 'activationEvent', 'promise', 'pilotOffer',
+              'serviceFirst', 'firstPrice', 'mustHave', 'later', 'notNow', 'stack',
+              'interviewTargets', 'stopSignals', 'tests', 'channels', 'leadMagnet',
+              'demoIdea', 'marketingMessage', 'salesOpener', 'discoveryQuestions',
+              'objections', 'metrics'
+          }
+          for index, item in enumerate(journey_items):
+              absent = required_journey - set(item)
+              if absent:
+                  raise SystemExit(f'product-journeys[{index}] missing {sorted(absent)}')
+              if set(item['tests']) != {'normal', 'edge', 'attack'}:
+                  raise SystemExit(f"{item['id']} has invalid test groups")
+
           wrangler = json.loads(Path('wrangler.jsonc').read_text(encoding='utf-8'))
           if wrangler.get('assets', {}).get('directory') != './public':
               raise SystemExit('Wrangler assets directory must be ./public')
           print('Static structure, data shape and deployment scope are valid.')
           PY
+
+      - name: Validate product plan generation
+        run: |
+          cp public/product-planner.js /tmp/product-planner.mjs
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          import { pathToFileURL } from 'node:url';
+          const planner = await import(pathToFileURL('/tmp/product-planner.mjs'));
+          const ideas = JSON.parse(fs.readFileSync('public/data/ideas.json', 'utf8')).items;
+          const journeys = JSON.parse(fs.readFileSync('public/data/product-journeys.json', 'utf8'));
+          const byId = new Map(journeys.items.map(item => [item.id, item]));
+          const choices = {
+            route: 'service', duration: '14days', budget: 'low', completed: {}
+          };
+          for (const idea of ideas) {
+            const journey = byId.get(idea.id);
+            const category = journeys.categories[idea.category];
+            const steps = planner.buildJourneySteps({
+              idea,
+              journey,
+              category,
+              route: choices.route,
+              duration: choices.duration,
+              budget: choices.budget,
+              config: journeys
+            });
+            if (steps.length !== 9) {
+              throw new Error(`${idea.id}: expected 9 steps, got ${steps.length}`);
+            }
+            for (const [index, step] of steps.entries()) {
+              if (!step.title || !Array.isArray(step.tasks) || step.tasks.length === 0) {
+                throw new Error(`${idea.id}: invalid step ${index}`);
+              }
+            }
+            const markdown = planner.buildPlanMarkdown({
+              idea,
+              journey,
+              category,
+              route: choices.route,
+              duration: choices.duration,
+              budget: choices.budget,
+              config: journeys,
+              completed: choices.completed
+            });
+            if (!markdown.includes(idea.title) || markdown.length < 1000) {
+              throw new Error(`${idea.id}: invalid Markdown export`);
+            }
+          }
+          console.log(`Generated and validated ${ideas.length} product plans.`);
+          NODE
 
       - name: HTTP smoke test
         run: |
@@ -117,8 +210,9 @@ jobs:
           trap 'kill $server_pid' EXIT
           sleep 2
           curl --fail --silent --show-error http://127.0.0.1:8080/ | grep --quiet 'AI PUSULA'
-          curl --fail --silent --show-error http://127.0.0.1:8080/data/models.json >/tmp/models.json
-          python3 -m json.tool /tmp/models.json >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:8080/data/product-journeys.json >/tmp/product-journeys.json
+          python3 -m json.tool /tmp/product-journeys.json >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:8080/product-planner.js | grep --quiet 'buildJourneySteps'
 
       - name: Upload site preview
         uses: actions/upload-artifact@v4
