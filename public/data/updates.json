@@ -1,0 +1,54 @@
+{
+  "verified": "2026-08-08",
+  "items": [
+    {
+      "date": "2026-07-21",
+      "title": "Gemini 3.6 Flash ve 3.5 Flash-Lite genel kullanıma açıldı",
+      "summary": "Google, hızlı ve ekonomik Gemini modellerini kararlı API sürümüne taşıdı; ücretsiz geliştirici katmanı prototip için giriş noktası sunuyor.",
+      "impact": "Daha düşük maliyetli multimodal uygulama ve agent prototipleri",
+      "source": "https://ai.google.dev/gemini-api/docs/changelog"
+    },
+    {
+      "date": "2026-07-09",
+      "title": "OpenAI GPT-5.6 Sol'u duyurdu",
+      "summary": "Karmaşık kod, araştırma, bilim, siber güvenlik, bilgisayar kullanımı ve tasarım görevlerine odaklanan ileri seviye model ücretli planlara dağıtılmaya başladı.",
+      "impact": "Tek bir agent içinde daha uzun ve çok araçlı görevler",
+      "source": "https://help.openai.com/en/articles/9624314-model-release-notes"
+    },
+    {
+      "date": "2026-07-09",
+      "title": "Meta, Muse Spark 1.1'i yayımladı",
+      "summary": "Meta AI uygulaması ve meta.ai üzerinden sunulan güncel tüketici modeli, geliştiriciler için de önizleme API erişimi aldı.",
+      "impact": "Sohbet, görsel ve sosyal uygulama deneyimlerinin yakınlaşması",
+      "source": "https://ai.meta.com/blog/muse-spark-1-1/"
+    },
+    {
+      "date": "2026-07-01",
+      "title": "Claude Fable 5 yeniden küresel erişime açıldı",
+      "summary": "Anthropic, ileri seviye modelini ücretli bireysel ve ekip planlarında yeniden kullanıma sundu.",
+      "impact": "Uzun doküman, kod ve agent görevlerinde yeni üst seviye seçenek",
+      "source": "https://www.anthropic.com/news/claude-fable-5"
+    },
+    {
+      "date": "2026-05-28",
+      "title": "Mistral Vibe 2.0 agentic coding akışlarını genişletti",
+      "summary": "Mistral, kod tabanını inceleyen, terminal araçları kullanan ve uzun geliştirme görevleri yürüten Vibe deneyimini güncelledi.",
+      "impact": "Kod yardımcısından görev yürüten yazılım agentına geçiş",
+      "source": "https://mistral.ai/news/vibe-2-0"
+    },
+    {
+      "date": "2026-04-22",
+      "title": "Qwen3.6-27B açık ağırlık olarak yayımlandı",
+      "summary": "Qwen, agentic coding ve repository düzeyi akıl yürütmeye odaklanan 27B modelini Apache 2.0 lisansıyla sundu.",
+      "impact": "Kendi altyapısında açık kod agentı geliştirmek için yeni seçenek",
+      "source": "https://github.com/QwenLM/Qwen3.6"
+    },
+    {
+      "date": "2026-04-02",
+      "title": "Google Gemma 4 açık model ailesini yayımladı",
+      "summary": "Farklı boyutlarda multimodal Gemma 4 modelleri yerel cihazlardan sunuculara kadar kullanım için Apache 2.0 lisansıyla sunuldu.",
+      "impact": "Gizlilik ve yerel çalışma isteyen projeler için daha geniş model seçimi",
+      "source": "https://ai.google.dev/gemma/docs/core/model_card_4"
+    }
+  ]
+}
