@@ -59,7 +59,7 @@ async function loadBlueprints() {
 
 function toolLogo(tool) {
   const initials = tool.name.split(/\s+/).map(item => item[0]).join('').slice(0, 2).toUpperCase();
-  return `<span class="builder-tool-logo"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v16/icons/${esc(tool.slug)}.svg" alt="" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>${esc(initials)}</span></span>`;
+  return `<span class="builder-tool-logo"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v16/icons/${esc(tool.slug)}.svg" alt="" loading="lazy"><span hidden>${esc(initials)}</span></span>`;
 }
 
 function injectBuilderShell() {
