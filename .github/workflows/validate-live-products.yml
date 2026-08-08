@@ -86,8 +86,10 @@ jobs:
           page.on('pageerror', e => failures.push(`pageerror: ${e.message}`));
           page.on('console', m => { if (m.type()==='error') failures.push(`console: ${m.text()}`); });
           await page.goto('http://127.0.0.1:8080/', { waitUntil: 'networkidle' });
+          const more=page.locator('#showMoreIdeas');
+          while(await more.count() && await more.isVisible()) await more.click();
           const liveLinks = page.locator('[data-live-product]');
-          if (await liveLinks.count() !== 18) throw new Error(`Expected 18 live product links, got ${await liveLinks.count()}`);
+          if (await liveLinks.count() !== 18) throw new Error(`Expected 18 live product links after expansion, got ${await liveLinks.count()}`);
           await page.goto('http://127.0.0.1:8080/apps/?app=phishing-explainer', { waitUntil: 'networkidle' });
           for (const product of productDefinitions) {
             await page.selectOption('#productSelect', product.id);
