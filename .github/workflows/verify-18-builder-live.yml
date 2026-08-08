@@ -42,11 +42,12 @@ jobs:
           blue=json.loads(Path('/tmp/build-blueprints.json').read_text(encoding='utf-8'))
           ideas=json.loads(Path('/tmp/ideas.json').read_text(encoding='utf-8'))
           idea_ids={x['id'] for x in ideas['items']}
-          builder_ids={x['id'] for x in blue['blueprints']}
+          builder_ids={x['id'] for x in blue['products']}
+          assert blue['version'] == 2
           assert len(idea_ids) == 18, len(idea_ids)
           assert idea_ids == builder_ids, (idea_ids-builder_ids, builder_ids-idea_ids)
-          assert {'minimum','balanced','pro'} <= set(blue['toolProfiles'])
-          for bp in blue['blueprints']:
+          assert {'minimum','balanced','pro'} <= set(blue['profiles'])
+          for bp in blue['products']:
               assert len(bp['pages']) >= 6, bp['id']
               assert len(bp['entities']) >= 6, bp['id']
               assert bp['aiFeatures'], bp['id']
