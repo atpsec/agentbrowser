@@ -1,0 +1,108 @@
+name: Validate demo auth and seed data
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/demo/**'
+      - 'public/demo-session.*'
+      - 'public/easy/**'
+      - 'public/_headers'
+      - 'public/sw.js'
+      - 'public/journey-easy-links.js'
+      - '.github/workflows/validate-demo-auth.yml'
+  push:
+    branches: [main, 'feature/demo-auth-seed-data']
+    paths:
+      - 'public/demo/**'
+      - 'public/demo-session.*'
+      - 'public/easy/**'
+      - 'public/_headers'
+      - 'public/sw.js'
+      - 'public/journey-easy-links.js'
+      - '.github/workflows/validate-demo-auth.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate demo code and boundaries
+        run: |
+          set -euo pipefail
+          node --check public/demo-session.js
+          node --check public/demo/demo.js
+          node --check public/demo/auth-config.js
+          grep -q "googleClientId:''" public/demo/auth-config.js
+          grep -q "googleVerifyEndpoint:'/api/auth/google'" public/demo/auth-config.js
+          grep -q "https://accounts.google.com/gsi/client" public/_headers
+          grep -q "https://accounts.google.com/gsi/" public/_headers
+          grep -q "ai-pusula-v11" public/sw.js
+          grep -q "'/demo/'" public/sw.js
+          grep -q "import '/demo-session.js'" public/easy/utility.js
+          grep -q "import '/demo-session.js'" public/easy/qr/qr.js
+          grep -q "import '/demo-session.js'" public/easy/pdf/pdf-tools.js
+          grep -q "import '/demo-session.js'" public/easy/photo-studio/photo-studio.js
+          ! grep -R -n -E 'sk-(proj-)?[A-Za-z0-9_-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' public/demo public/demo-session.js
+
+  browser-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test dependency
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+      - name: Start local server
+        run: |
+          python3 -m http.server 4173 --directory public >/tmp/demo-server.log 2>&1 &
+          echo $! > /tmp/demo-server.pid
+      - name: Run demo flows
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844}});
+          const errors=[]; const external=[];
+          page.on('pageerror',e=>errors.push(String(e)));
+          page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+          page.on('request',r=>{const u=new URL(r.url());if(u.origin!=='http://127.0.0.1:4173'&&/^https?:/.test(u.protocol))external.push(r.url())});
+          await page.goto('http://127.0.0.1:4173/demo/');
+          await page.click('#demoLogin');
+          if(await page.locator('#profile').isHidden()) throw new Error('Demo profile did not open');
+          if(!(await page.locator('#authStatus').textContent()).includes('aktif')) throw new Error('Demo session inactive');
+          if(!(await page.locator('#googleLogin').isDisabled())) throw new Error('Google must stay disabled without client id');
+          await page.goto('http://127.0.0.1:4173/easy/');
+          await page.getByRole('button',{name:'Demo verisini yükle'}).click();
+          await page.waitForFunction(()=>document.querySelector('#fileInput')?.files?.length===1);
+          if(!(await page.locator('#jsonOutput').inputValue()).includes('AI Pusula Tools')) throw new Error('Easy JSON demo missing');
+          if(!(await page.locator('#textOutput').inputValue()).includes('AI Pusula')) throw new Error('Easy text demo missing');
+          await page.goto('http://127.0.0.1:4173/easy/qr/');
+          await page.getByRole('button',{name:'Demo verisini yükle'}).click();
+          await page.waitForFunction(()=>document.querySelector('#downloadQr')?.disabled===false);
+          if(!(await page.locator('#qrText').inputValue()).includes('/demo/')) throw new Error('QR demo missing');
+          await page.goto('http://127.0.0.1:4173/easy/pdf/');
+          await page.getByRole('button',{name:'Demo verisini yükle'}).click();
+          await page.waitForFunction(()=>document.querySelector('#mergeInput')?.files?.length===2);
+          if(await page.locator('#splitInput').evaluate(e=>e.files.length)!==1) throw new Error('PDF split demo missing');
+          await page.goto('http://127.0.0.1:4173/easy/photo-studio/');
+          await page.getByRole('button',{name:'Demo verisini yükle'}).click();
+          await page.waitForFunction(()=>document.querySelector('#photoInput')?.files?.length===1&&document.querySelector('#collageInput')?.files?.length===2);
+          await page.waitForFunction(()=>document.querySelector('#addText')?.disabled===false);
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+          if(overflow>2) throw new Error(`Mobile overflow ${overflow}px`);
+          if(external.length) throw new Error(`Unexpected external request: ${external.join(', ')}`);
+          if(errors.length) throw new Error(`Browser errors: ${errors.join(' | ')}`);
+          await browser.close();
+          console.log('Demo login + 4 seeded app flows PASS');
+          NODE
