@@ -43,7 +43,7 @@ jobs:
           grep -q "googleVerifyEndpoint:'/api/auth/google'" public/demo/auth-config.js
           grep -q "https://accounts.google.com/gsi/client" public/_headers
           grep -q "https://accounts.google.com/gsi/" public/_headers
-          grep -q "ai-pusula-v12" public/sw.js
+          grep -q "ai-pusula-v13" public/sw.js
           grep -q "'/demo/'" public/sw.js
           grep -q "import '/demo-session.js'" public/easy/utility.js
           grep -q "import '/demo-session.js'" public/easy/qr/qr.js
