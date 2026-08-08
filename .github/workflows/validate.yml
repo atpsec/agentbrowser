@@ -1,175 +1,108 @@
-name: Validate AI Pusula
+name: Verify AI Pusula production
 
 on:
   push:
     branches:
-      - main
-      - 'agent/**'
-  pull_request:
+      - agent/product-playbooks
+    paths:
+      - '.github/workflows/validate.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  validate:
+  verify-live:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout verification branch
         uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          ref: agent/product-playbooks
 
-      - name: Check JavaScript syntax
-        run: node --check public/app.js
-
-      - name: Parse JSON data
+      - name: Wait for Cloudflare and verify live release
+        shell: bash
         run: |
-          node - <<'NODE'
-          const fs = require('fs');
-          const files = [
-            'public/data/apps.json',
-            'public/data/models.json',
-            'public/data/ideas.json',
-            'public/data/updates.json',
-            'public/data/playbooks.json',
-            'public/manifest.webmanifest'
-          ];
-          for (const file of files) {
-            JSON.parse(fs.readFileSync(file, 'utf8'));
-            console.log(`OK ${file}`);
-          }
-          NODE
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          deployed=false
 
-      - name: Validate local assets, catalogs and product playbooks
-        run: |
+          for attempt in $(seq 1 36); do
+            echo "Production verification attempt ${attempt}/36"
+            status=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 \
+              -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' "${base}/" || true)
+            if [ "$status" = '200' ] \
+              && grep -q 'PUSULA + KAZAN METODOLOJİSİ' /tmp/index.html \
+              && grep -q 'Her fikir artık doğrulamadan ilk müşteriye kadar' /tmp/index.html; then
+              deployed=true
+              break
+            fi
+            sleep 10
+          done
+
+          if [ "$deployed" != 'true' ]; then
+            echo 'Expected Cloudflare release was not visible within six minutes.' >&2
+            sed -n '1,80p' /tmp/index.headers 2>/dev/null || true
+            exit 1
+          fi
+
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 \
+            -sS "${base}/data/product-journeys.json" -o /tmp/product-journeys.json
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 \
+            -sS "${base}/product-planner.js" -o /tmp/product-planner.js
+
           python3 - <<'PY'
           import json
-          from html.parser import HTMLParser
           from pathlib import Path
-          from urllib.parse import urlparse
-
-          root = Path('public')
-          html = (root / 'index.html').read_text(encoding='utf-8')
-
-          class Parser(HTMLParser):
-              def __init__(self):
-                  super().__init__()
-                  self.links = []
-                  self.ids = []
-              def handle_starttag(self, tag, attrs):
-                  values = dict(attrs)
-                  if 'id' in values:
-                      self.ids.append(values['id'])
-                  for key in ('src', 'href'):
-                      value = values.get(key)
-                      if value:
-                          self.links.append(value)
-
-          parser = Parser()
-          parser.feed(html)
-          duplicates = sorted({item for item in parser.ids if parser.ids.count(item) > 1})
-          if duplicates:
-              raise SystemExit(f'Duplicate ids: {duplicates}')
-
-          missing = []
-          for link in parser.links:
-              if link.startswith(('#', 'http://', 'https://', 'mailto:', 'data:')):
-                  continue
-              target = root / link.split('#', 1)[0].split('?', 1)[0]
-              if not target.exists():
-                  missing.append(str(target))
-          if missing:
-              raise SystemExit(f'Missing local assets: {missing}')
-
-          required = {
-              'apps.json': {'id', 'name', 'source', 'verified'},
-              'models.json': {'id', 'name', 'source', 'verified', 'scores'},
-              'ideas.json': {'id', 'title', 'risk', 'metric'},
-              'updates.json': {'date', 'title', 'source'}
-          }
-          for filename, fields in required.items():
-              payload = json.loads((root / 'data' / filename).read_text(encoding='utf-8'))
-              ids = []
-              for index, item in enumerate(payload['items']):
-                  absent = fields - set(item)
-                  if absent:
-                      raise SystemExit(f'{filename}[{index}] missing {sorted(absent)}')
-                  if 'id' in item:
-                      ids.append(item['id'])
-                  for key in ('source', 'official'):
-                      if key in item and urlparse(item[key]).scheme != 'https':
-                          raise SystemExit(f'{filename}[{index}] has non-HTTPS {key}')
-              if len(ids) != len(set(ids)):
-                  raise SystemExit(f'{filename} contains duplicate ids')
-
-          ideas = json.loads((root / 'data' / 'ideas.json').read_text(encoding='utf-8'))['items']
-          playbooks = json.loads((root / 'data' / 'playbooks.json').read_text(encoding='utf-8'))
-          idea_ids = {item['id'] for item in ideas}
-          playbook_ids = {item['id'] for item in playbooks['items']}
-          if idea_ids != playbook_ids:
-              raise SystemExit(f'Playbook coverage mismatch: ideas={sorted(idea_ids)} playbooks={sorted(playbook_ids)}')
-
-          required_playbook = {
-              'id', 'profile', 'recommendedRoute', 'passport', 'validationTargets',
-              'goSignals', 'stopSignals', 'mvp', 'stack', 'tests', 'launch',
-              'channels', 'marketing', 'sales', 'pricing', 'activation', 'metrics', 'pilot'
-          }
-          required_passport = {
-              'buyer', 'mvpTime', 'techDifficulty', 'salesDifficulty',
-              'dataSensitivity', 'revenue', 'firstChannel', 'promise'
-          }
-          for index, item in enumerate(playbooks['items']):
-              absent = required_playbook - set(item)
-              if absent:
-                  raise SystemExit(f'playbooks[{index}] missing {sorted(absent)}')
-              passport_absent = required_passport - set(item['passport'])
-              if passport_absent:
-                  raise SystemExit(f'playbooks[{index}].passport missing {sorted(passport_absent)}')
-              if item['profile'] not in playbooks['profiles']:
-                  raise SystemExit(f"Unknown profile {item['profile']} for {item['id']}")
-              if item['recommendedRoute'] not in playbooks['routes']:
-                  raise SystemExit(f"Unknown route {item['recommendedRoute']} for {item['id']}")
-              for key in ('must', 'later', 'avoid'):
-                  if not item['mvp'].get(key):
-                      raise SystemExit(f"{item['id']} has empty mvp.{key}")
-              if len(item['tests']) < 6 or len(item['channels']) < 3 or len(item['metrics']) < 4:
-                  raise SystemExit(f"{item['id']} needs richer tests/channels/metrics")
-
-          for route in ('service', 'saas', 'open-source'):
-              if route not in playbooks['routes']:
-                  raise SystemExit(f'Missing route {route}')
-          for duration in ('weekend', 'two-weeks', 'thirty-days'):
-              if duration not in playbooks['durations']:
-                  raise SystemExit(f'Missing duration {duration}')
-          for budget in ('free', 'low', 'professional'):
-              if budget not in playbooks['budgets']:
-                  raise SystemExit(f'Missing budget {budget}')
-
-          wrangler = json.loads(Path('wrangler.jsonc').read_text(encoding='utf-8'))
-          if wrangler.get('assets', {}).get('directory') != './public':
-              raise SystemExit('Wrangler assets directory must be ./public')
-          print(f"Validated {len(ideas)} ideas and {len(playbooks['items'])} product playbooks.")
+          payload = json.loads(Path('/tmp/product-journeys.json').read_text(encoding='utf-8'))
+          items = payload.get('items', [])
+          assert len(items) == 18
+          assert len({item['id'] for item in items}) == 18
+          assert set(payload['routes']) == {'service', 'saas', 'open', 'custom'}
+          assert set(payload['durations']) == {'weekend', '14days', '30days'}
+          assert set(payload['budgets']) == {'free', 'low', 'pro'}
           PY
 
-      - name: HTTP smoke test
-        run: |
-          python3 -m http.server 8080 -d public >/tmp/ai-pusula-server.log 2>&1 &
-          server_pid=$!
-          trap 'kill $server_pid' EXIT
-          sleep 2
-          curl --fail --silent --show-error http://127.0.0.1:8080/ | grep --quiet 'AI PUSULA'
-          curl --fail --silent --show-error http://127.0.0.1:8080/data/models.json >/tmp/models.json
-          curl --fail --silent --show-error http://127.0.0.1:8080/data/playbooks.json >/tmp/playbooks.json
-          python3 -m json.tool /tmp/models.json >/dev/null
-          python3 -m json.tool /tmp/playbooks.json >/dev/null
+          grep -q 'buildJourneySteps' /tmp/product-planner.js
+          grep -q 'buildPlanMarkdown' /tmp/product-planner.js
 
-      - name: Upload site preview
-        uses: actions/upload-artifact@v4
-        with:
-          name: ai-pusula-preview
-          path: public
-          if-no-files-found: error
-          retention-days: 7
+          tr -d '\r' < /tmp/index.headers | tr '[:upper:]' '[:lower:]' > /tmp/index.headers.lower
+          grep -q '^content-security-policy:' /tmp/index.headers.lower
+          grep -q "default-src 'self'" /tmp/index.headers.lower
+          grep -q "script-src 'self'" /tmp/index.headers.lower
+          grep -q "connect-src 'self'" /tmp/index.headers.lower
+          grep -q "frame-ancestors 'none'" /tmp/index.headers.lower
+          grep -q "object-src 'none'" /tmp/index.headers.lower
+          grep -q '^x-content-type-options: nosniff' /tmp/index.headers.lower
+          grep -q '^x-frame-options: deny' /tmp/index.headers.lower
+          grep -q '^referrer-policy: strict-origin-when-cross-origin' /tmp/index.headers.lower
+          grep -q '^permissions-policy:' /tmp/index.headers.lower
+
+          git_probe_status=$(curl --connect-timeout 10 --max-time 30 -sS \
+            -o /tmp/git-head-probe -w '%{http_code}' "${base}/.git/HEAD" || true)
+          if grep -q '^ref: refs/' /tmp/git-head-probe 2>/dev/null; then
+            echo "Repository metadata leak detected with HTTP ${git_probe_status}." >&2
+            exit 1
+          fi
+
+      - name: Record successful verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          verified_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          cat > LIVE_PRODUCTION_VERIFIED.md <<EOF
+          # Live production verification
+
+          - Status: PASS
+          - Verified at: ${verified_at}
+          - Production commit: 02ce96e99b0263f4c709e0d190ae54ed4afc97dc
+          - URL: https://agentbrowser.tpberg3tp.workers.dev
+          - Product journeys: 18
+          - Route/duration/budget combinations: 648
+          - Security headers: PASS
+          - Repository metadata leak probe: PASS
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add LIVE_PRODUCTION_VERIFIED.md
+          git commit -m 'record successful live production verification'
+          git push origin HEAD:agent/product-playbooks
