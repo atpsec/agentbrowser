@@ -21,7 +21,9 @@ jobs:
           node-version: '22'
       - name: JavaScript and JSON syntax
         run: |
-          node --check public/product-builder.js
+          node --input-type=module --check < public/product-builder.js
+          node --check public/product-builder-core.js
+          node --check public/ai-build-assistant.js
           node -e "JSON.parse(require('fs').readFileSync('public/data/build-blueprints.json','utf8')); console.log('blueprints json ok')"
       - name: Validate 18-product blueprint coverage
         run: |
@@ -58,13 +60,18 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          js = Path('public/product-builder.js').read_text(encoding='utf-8')
+          loader = Path('public/product-builder.js').read_text(encoding='utf-8')
+          core = Path('public/product-builder-core.js').read_text(encoding='utf-8')
+          assistant = Path('public/ai-build-assistant.js').read_text(encoding='utf-8')
+          js = loader + '\n' + core + '\n' + assistant
           html = Path('public/index.html').read_text(encoding='utf-8')
           headers = Path('public/_headers').read_text(encoding='utf-8')
           wrangler = Path('wrangler.jsonc').read_text(encoding='utf-8')
           forbidden = ['eval(', 'new Function(', 'document.write(', ' onerror=', 'innerHTML = location', 'localStorage.setItem("token"', 'localStorage.setItem(\'token\'']
           for value in forbidden:
               assert value not in js, value
+          assert "./product-builder-core.js" in loader
+          assert "./ai-build-assistant.js" in loader
           assert 'product-builder.css' in html
           assert 'product-builder.js' in html
           assert "script-src 'self'" in headers
@@ -72,9 +79,11 @@ jobs:
           assert "frame-ancestors 'none'" in headers
           assert "object-src 'none'" in headers
           assert '"directory": "./public"' in wrangler
-          assert "fetch('./data/build-blueprints.json'" in js
-          assert "fetch('./data/ideas.json'" in js
-          print('CSP, local fetch boundaries and deployment scope verified.')
+          assert "fetch('./data/build-blueprints.json'" in core
+          assert "fetch('./data/ideas.json'" in core
+          assert "fetch('./data/build-blueprints.json'" in assistant
+          assert "fetch('http" not in assistant and 'fetch("http' not in assistant
+          print('CSP, local fetch boundaries, module loader and deployment scope verified.')
           PY
           if grep -RInE '(sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' public --exclude='*.svg'; then
             echo 'Potential secret found.' >&2
@@ -84,7 +93,7 @@ jobs:
         run: |
           node - <<'NODE'
           const fs = require('fs');
-          const src = fs.readFileSync('public/product-builder.js','utf8');
+          const src = fs.readFileSync('public/product-builder-core.js','utf8');
           const requiredStages = ['scope','ux','foundation','auth','database','frontend','backend','ai','billing','email','observability','security','deploy','growth'];
           for (const id of requiredStages) {
             if (!src.includes(`id:'${id}'`)) throw new Error(`Missing generated stage ${id}`);
@@ -101,4 +110,6 @@ jobs:
           curl --fail --silent http://127.0.0.1:8080/ | grep --quiet 'product-builder.js'
           curl --fail --silent http://127.0.0.1:8080/data/build-blueprints.json | grep --quiet 'phishing-explainer'
           curl --fail --silent http://127.0.0.1:8080/data/build-blueprints.json | grep --quiet 'social-calendar'
-          curl --fail --silent http://127.0.0.1:8080/product-builder.js | grep --quiet 'initBuilder'
+          curl --fail --silent http://127.0.0.1:8080/product-builder.js | grep --quiet 'product-builder-core.js'
+          curl --fail --silent http://127.0.0.1:8080/product-builder-core.js | grep --quiet 'initBuilder'
+          curl --fail --silent http://127.0.0.1:8080/ai-build-assistant.js | grep --quiet 'AI Pusula'
