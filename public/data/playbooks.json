@@ -1,0 +1,2820 @@
+{
+  "version": 1,
+  "verified": "2026-08-08",
+  "routes": {
+    "service": {
+      "label": "Hizmet olarak başla",
+      "summary": "İşi ilk müşteriler için elle veya yarı otomatik yap; gerçek ihtiyacı öğrendikten sonra ürüne dönüştür.",
+      "offer": "Sınırlı kapsamlı, sonuç odaklı pilot hizmet",
+      "salesMotion": "Doğrudan görüşme → pilot → hizmet paketi → ürünleşme",
+      "buildTasks": [
+        "İlk teslimatı elle yapabileceğin basit bir operasyon akışı yaz.",
+        "Müşterinin gördüğü ekran ile senin kullandığın iç araçları ayır.",
+        "Tekrarlanan manuel adımları ürünleştirilecek listeye ekle."
+      ],
+      "launchTasks": [
+        "Genel kayıt açmak yerine üç müşteri için kapalı pilot başlat.",
+        "Teslim süresi, kapsam ve insan kontrolünü pilot sözünde açıkça yaz."
+      ],
+      "salesTasks": [
+        "İlk teklifi sabit pilot ücreti veya sonuç odaklı hizmet olarak hazırla.",
+        "Ürün özelliği değil, teslim edilen sonucu göster."
+      ]
+    },
+    "saas": {
+      "label": "SaaS olarak başla",
+      "summary": "Kullanıcının kendi kaydolup ana işi tamamlayabildiği küçük ve tekrarlanabilir bir ürün kur.",
+      "offer": "Kısa ücretsiz deneme veya sınırlı kullanım paketi",
+      "salesMotion": "Kayıt → ilk değer → tekrar kullanım → abonelik",
+      "buildTasks": [
+        "Kullanıcının yardım almadan tamamlayacağı tek ana akışı kur.",
+        "Basit kullanıcı durumu, hata mesajı ve kullanım limiti ekle.",
+        "Ödeme entegrasyonunu ilk pilot doğrulanmadan zorunlu yapma."
+      ],
+      "launchTasks": [
+        "Davet bağlantılı kapalı beta veya bekleme listesiyle başla.",
+        "İlk değer anına giden adım sayısını ölç."
+      ],
+      "salesTasks": [
+        "Fiyatı özellik sayısına değil, kullanım veya sağlanan değere bağla.",
+        "Ücretsizden ücretliye geçiş tetikleyicisini açıkça tanımla."
+      ]
+    },
+    "open-source": {
+      "label": "Açık kaynak olarak başla",
+      "summary": "Çekirdek aracı GitHub üzerinden yayınla; güven, katkı ve kullanım oluştur; gelir için hosted sürüm veya destek ekle.",
+      "offer": "Ücretsiz çekirdek + ücretli hosted sürüm, destek veya kurumsal özellik",
+      "salesMotion": "GitHub kullanımı → topluluk güveni → takım ihtiyacı → ücretli destek/hosted",
+      "buildTasks": [
+        "Tek komutla çalışan çekirdek kullanım örneği hazırla.",
+        "README, lisans, güvenlik politikası ve katkı rehberi ekle.",
+        "Kurumsal gelir katmanını çekirdek değeri kilitlemeden ayır."
+      ],
+      "launchTasks": [
+        "Sürüm etiketi, changelog ve örnek repository ile ilk release'i yayınla.",
+        "Issue şablonları ve güvenlik bildirimi kanalı aç."
+      ],
+      "salesTasks": [
+        "Aktif kullanan takımların destek, hosted veya yönetim ihtiyacını doğrula.",
+        "Yıldız sayısını değil aktif kurulum ve tekrar kullanımı takip et."
+      ]
+    }
+  },
+  "durations": {
+    "weekend": {
+      "label": "Hafta sonu prototipi",
+      "priorities": [
+        "essential"
+      ],
+      "scope": "Tek kullanıcı, tek iş akışı, örnek veya sentetik veri."
+    },
+    "two-weeks": {
+      "label": "2 haftalık MVP",
+      "priorities": [
+        "essential",
+        "standard"
+      ],
+      "scope": "Üç pilot kullanıcı, gerçek görevler ve temel güvenlik kontrolleri."
+    },
+    "thirty-days": {
+      "label": "30 günlük ürün",
+      "priorities": [
+        "essential",
+        "standard",
+        "extended"
+      ],
+      "scope": "Kapalı beta, ilk müşteri görüşmeleri, takip ve ölçüm."
+    }
+  },
+  "budgets": {
+    "free": {
+      "label": "Ücretsiz araçlarla",
+      "stackKey": "free",
+      "note": "Ücretsiz kotalar, yerel araçlar ve manuel süreçlerle doğrula."
+    },
+    "low": {
+      "label": "Düşük bütçeyle",
+      "stackKey": "low",
+      "note": "Yönetilen servisleri dikkatli kullan; maliyet ve rate limit koy."
+    },
+    "professional": {
+      "label": "Profesyonel altyapıyla",
+      "stackKey": "professional",
+      "note": "SSO, audit, izleme ve kurumsal veri sınırlarını planla."
+    }
+  },
+  "profiles": {
+    "security-b2b": {
+      "label": "B2B siber güvenlik",
+      "validationQuestions": [
+        "Bu problem haftada kaç kez yaşanıyor?",
+        "Bugün bu işi kim ve hangi araçlarla yapıyor?",
+        "Yanlış kararın zaman, para veya risk maliyeti nedir?",
+        "Hangi veri kesinlikle dış servise gönderilemez?",
+        "Pilot başarıya ulaşırsa satın alma kararını kim verir?"
+      ],
+      "discoveryQuestions": [
+        "En çok hangi olaylarda zaman kaybediyorsunuz?",
+        "Bugünkü süreçte hangi adım manuel?",
+        "Yanlış pozitif ve yanlış negatiflerden hangisi daha pahalı?",
+        "Hangi entegrasyon ilk günden zorunlu?",
+        "Güvenlik ve uyum onayını kim verir?"
+      ],
+      "launchBase": [
+        "Salt-okunur veya öneri moduyla başla; otomatik engelleme açma.",
+        "Veri sınıflandırması, saklama süresi ve silme yolunu yazılı hale getir.",
+        "Rate limit, maliyet limiti ve audit loglarını aç.",
+        "Yanlış sonuç için açık bir insan onayı ve eskalasyon yolu ekle."
+      ],
+      "firstTenBase": [
+        "50 hedef şirket veya ekipten oluşan dar bir liste hazırla.",
+        "İlk 10 kişiyle satış değil problem görüşmesi yap.",
+        "Beş kişiye örnek veriyle 10 dakikalık demo göster.",
+        "Üç ekibe sınırlı kapsamlı ve insan onaylı pilot teklif et.",
+        "Pilotta süre kazancı, doğruluk ve risk geri bildirimini ölç.",
+        "İlk başarılı pilotu anonim vaka çalışmasına dönüştür.",
+        "Vaka çalışmasıyla aynı profile sahip 10 yeni ekibe ulaş.",
+        "Ücretli paketi veri kapsamı ve destek seviyesiyle teklif et.",
+        "Satın almayanlardan ana itirazı tek cümleyle kaydet.",
+        "Memnun müşteriden referans veya tanıştırma iste."
+      ],
+      "followUp": {
+        "day1": "İlk güvenli kullanım tamamlandı mı ve sonuç anlaşılır mı?",
+        "day3": "Yanlış alarm, eksik kanıt veya veri sorunu var mı?",
+        "day7": "Ekip ürünü ikinci kez kullandı mı ve zaman kazandı mı?",
+        "day30": "Kullanım, doğruluk, risk ve satın alma kararını birlikte değerlendir."
+      }
+    },
+    "developer-tool": {
+      "label": "Geliştirici aracı",
+      "validationQuestions": [
+        "Bu iş bir geliştiricinin haftada kaç dakikasını alıyor?",
+        "Bugün hangi CLI, GitHub Action veya editör eklentisi kullanılıyor?",
+        "Çıktının güvenilir sayılması için hangi kanıt gösterilmeli?",
+        "Kodun dış modele gitmesi kabul edilebilir mi?",
+        "Geliştirici aracı kurmak için kaç adım tolere edilir?"
+      ],
+      "discoveryQuestions": [
+        "Bu görevi hangi noktada yapmak en doğal: CLI, CI veya IDE?",
+        "Çıktı hangi formatta olursa doğrudan iş akışına girer?",
+        "Hangi yanlış öneri en çok zarar verir?",
+        "Private repository verisi nasıl korunuyor?",
+        "Takım satın alma kararını hangi metrikle verir?"
+      ],
+      "launchBase": [
+        "Tek komutla veya tek GitHub Action adımıyla çalışan kurulum hazırla.",
+        "Örnek repository, örnek çıktı ve geri alma yolunu dokümante et.",
+        "Secret maskeleme ve izin kapsamını varsayılan olarak dar tut.",
+        "Hatalı önerinin build veya merge'i otomatik geçmesine izin verme."
+      ],
+      "firstTenBase": [
+        "Kendi repository'nde 10 gerçek görevle dogfood yap.",
+        "Beş geliştiriciye kurulum yaptır ve takıldıkları adımı izle.",
+        "Üç takıma ücretsiz repository pilotu aç.",
+        "GitHub README'de 60 saniyelik kullanım örneği yayınla.",
+        "Bir teknik blog yazısıyla çözdüğün problemi göster.",
+        "İki toplulukta geri bildirim iste; doğrudan satış yapma.",
+        "Kullanım telemetrisi yerine gönüllü geribildirim seçeneği sun.",
+        "Takım paketi için güvenlik ve yönetim özelliklerini doğrula.",
+        "İlk ücretli teklifi destek, özel entegrasyon veya hosted sürüm olarak yap.",
+        "İlk kullanıcıdan örnek kullanım veya yıldız istemeden önce değer sağla."
+      ],
+      "followUp": {
+        "day1": "Kurulum tamamlandı mı ve ilk çıktı üretildi mi?",
+        "day3": "Çıktı geliştiricinin iş akışına girdi mi?",
+        "day7": "Araç tekrar kullanıldı mı; hangi öneriler reddedildi?",
+        "day30": "Aktif repository, tekrar kullanım ve takım dönüşümünü ölç."
+      }
+    },
+    "education-b2c": {
+      "label": "Eğitim / bireysel kullanım",
+      "validationQuestions": [
+        "Öğrenci veya öğretmen bugün bu ihtiyacı nasıl çözüyor?",
+        "Hangi yaş ve seviyeye odaklanılacak?",
+        "Bir oturumda görülecek en küçük fayda nedir?",
+        "Yanlış bilgi nasıl fark edilip düzeltilecek?",
+        "Ödeme kararını öğrenci, ebeveyn, öğretmen veya kurum mu verir?"
+      ],
+      "discoveryQuestions": [
+        "Kullanıcı hangi konu veya görevde en çok takılıyor?",
+        "Bir oturum için kabul edilebilir süre ne kadar?",
+        "Başarı notla mı, tekrar kullanımla mı, öğretmen değerlendirmesiyle mi ölçülür?",
+        "Yaş uygunluğu ve ebeveyn onayı gerekiyor mu?",
+        "Kullanıcı ücretsiz alternatifi neden bırakır?"
+      ],
+      "launchBase": [
+        "Önce tek yaş grubu, tek konu ve tek öğrenme hedefiyle başla.",
+        "Kaynak gösterme ve yanlış cevap bildirme yolu ekle.",
+        "Çocuk verisi veya hassas eğitim verisi toplamamayı varsayılan yap.",
+        "İlk oturumda kullanıcıyı ana faydaya iki dakikadan kısa sürede ulaştır."
+      ],
+      "firstTenBase": [
+        "Üç öğretmen veya eğitmenle problem görüşmesi yap.",
+        "Beş öğrenciyle gözetimli kullanılabilirlik testi yap.",
+        "İlk 10 kullanıcıya tek konu için ücretsiz deneme aç.",
+        "Kullanıcının ilk değer anına kaç dakikada ulaştığını ölç.",
+        "Bir ücretsiz çalışma sayfası veya mini araç yayınla.",
+        "Öğretmen topluluklarında sonuç ve örnek paylaş.",
+        "Ebeveyn veya öğretmen geri bildirimini ayrı topla.",
+        "Ücretli paketi içerik sayısı değil, öğrenme sonucu üzerinden test et.",
+        "İlk kullanıcıların ikinci haftada geri dönüp dönmediğini ölç.",
+        "Memnun kullanıcıdan referans değil, anonim başarı hikâyesi iste."
+      ],
+      "followUp": {
+        "day1": "Kullanıcı ilk öğrenme görevini tamamladı mı?",
+        "day3": "Aynı konuya veya yeni bir göreve geri döndü mü?",
+        "day7": "Öğrenme sonucu ve yanlış içerik geri bildirimi nedir?",
+        "day30": "Tekrar kullanım, tamamlanma ve ödeme niyetini değerlendir."
+      }
+    },
+    "business-ops": {
+      "label": "Küçük işletme / operasyon",
+      "validationQuestions": [
+        "Bu iş ayda kaç kez tekrarlanıyor?",
+        "Bugün Excel, e-posta veya manuel şablonla mı yapılıyor?",
+        "Gecikmenin veya hatanın parasal etkisi nedir?",
+        "Son çıktıyı kim onaylıyor?",
+        "Kullanıcı yeni bir araca geçmek için ne kadar eğitim kabul eder?"
+      ],
+      "discoveryQuestions": [
+        "Süreç nerede başlıyor ve hangi çıktı ile bitiyor?",
+        "En çok kopyala-yapıştır yapılan bölüm hangisi?",
+        "Yanlış bilgi müşteriye gitmeden önce kim kontrol ediyor?",
+        "Hangi mevcut araçla entegrasyon zorunlu?",
+        "Aylık hangi sonuç ücret ödemeyi haklı çıkarır?"
+      ],
+      "launchBase": [
+        "İlk sürümde tek iş akışını baştan sona tamamla.",
+        "Gönderim veya kayıt öncesinde insan onayı ekranı göster.",
+        "Müşteri ve sözleşme verisini minimum düzeyde sakla.",
+        "Basit destek e-postası, hata mesajı ve veri silme yolu hazırla."
+      ],
+      "firstTenBase": [
+        "Yakın çevre ve yerel ağdan 20 küçük işletme listesi hazırla.",
+        "İlk 10 kişiyle günlük iş akışını ekran paylaşımıyla izle.",
+        "Üç işletme için işi önce elle/hizmet olarak yap.",
+        "Tekrarlanan adımları küçük ürüne dönüştür.",
+        "14 günlük pilotta zaman ve hata azalmasını ölç.",
+        "Bir önce/sonra örneğiyle basit vaka çalışması hazırla.",
+        "Aynı sektördeki beş yeni işletmeye vaka çalışmasıyla git.",
+        "Aylık paket veya hizmet + yazılım paketini teklif et.",
+        "Kurulum ve eğitim ihtiyacını ayrıca fiyatlandırmayı test et.",
+        "İlk müşteriden aynı sektörde bir tanıştırma iste."
+      ],
+      "followUp": {
+        "day1": "İlk gerçek iş başarıyla tamamlandı mı?",
+        "day3": "Kullanıcı eski yönteme geri dönmek zorunda kaldı mı?",
+        "day7": "Zaman, hata ve destek ihtiyacı nasıl değişti?",
+        "day30": "Tekrar kullanım, tasarruf ve paket yükseltme ihtimalini ölç."
+      }
+    },
+    "content-creator": {
+      "label": "İçerik üreticisi aracı",
+      "validationQuestions": [
+        "İçerik üretiminde en çok hangi adım zaman alıyor?",
+        "Kullanıcı hangi platform ve format için üretiyor?",
+        "AI çıktısında marka sesi nasıl korunuyor?",
+        "Telif ve kaynak kontrolünü kim yapıyor?",
+        "Kullanıcı bir ayda kaç içerik üretiyor?"
+      ],
+      "discoveryQuestions": [
+        "Boş sayfa, araştırma, kurgu, düzenleme veya yayınlama: en büyük sıkıntı hangisi?",
+        "İyi çıktıyı hangi örnek tanımlar?",
+        "Kullanıcının onaylamadan otomatik yayın yapılması kabul edilir mi?",
+        "Hangi içerik ölçütü para kazandırıyor?",
+        "Mevcut araçların en sinir bozucu yanı nedir?"
+      ],
+      "launchBase": [
+        "Tek içerik formatı ve tek platformla başla.",
+        "AI çıktısını taslak olarak işaretle; otomatik yayınlama açma.",
+        "Telif, kaynak ve marka iddiası kontrolü ekle.",
+        "Örnek çıktı galerisi ve kopyalama/dışa aktarma yolu hazırla."
+      ],
+      "firstTenBase": [
+        "10 içerik üreticisiyle hangi adımda tıkandıklarını konuş.",
+        "Üç üretici için ilk çıktıları elle birlikte hazırla.",
+        "Beş kişiye tek formatta ücretsiz pilot aç.",
+        "Taslak üretimden yayına geçiş oranını ölç.",
+        "Kendi aracınla hazırlanmış örnek içerikleri yayınla.",
+        "Bir ücretsiz şablon veya brief aracı paylaş.",
+        "İçerik üretici topluluklarında süreç videosu göster.",
+        "Ücretli paketi zaman tasarrufu ve marka şablonlarıyla test et.",
+        "Tekrar kullanım ve düzenleme süresini haftalık izle.",
+        "Memnun kullanıcıdan örnek çıktı kullanma izni iste."
+      ],
+      "followUp": {
+        "day1": "İlk taslak üretildi ve dışa aktarıldı mı?",
+        "day3": "Taslak gerçekten yayına dönüştü mü?",
+        "day7": "Kullanıcı ikinci içerik için geri geldi mi?",
+        "day30": "Yayın oranı, zaman tasarrufu ve abonelik niyetini ölç."
+      }
+    }
+  },
+  "items": [
+    {
+      "id": "phishing-explainer",
+      "profile": "security-b2b",
+      "recommendedRoute": "service",
+      "passport": {
+        "buyer": "KOBİ yöneticisi, MSP veya güvenlik farkındalık ekibi",
+        "mvpTime": "2 hafta",
+        "techDifficulty": "Orta",
+        "salesDifficulty": "Orta",
+        "dataSensitivity": "Yüksek",
+        "revenue": [
+          "Şirket başına abonelik",
+          "MSP lisansı",
+          "Farkındalık hizmet paketi"
+        ],
+        "firstChannel": "LinkedIn + yerel MSP ağı",
+        "promise": "Şüpheli bir e-postayı 30 saniyede sade gerekçeler ve güvenli sonraki adımlarla açıkla."
+      },
+      "validationTargets": [
+        "3 küçük işletme yöneticisi",
+        "2 MSP/güvenlik danışmanı",
+        "3 son kullanıcı"
+      ],
+      "goSignals": [
+        "Kullanıcılar haftada en az birkaç şüpheli e-posta görüyor.",
+        "Mevcut uyarıların nedenini anlamıyorlar.",
+        "En az bir MSP pilotu müşterilerine sunmak istiyor."
+      ],
+      "stopSignals": [
+        "Problem ayda birden az yaşanıyor.",
+        "Müşteri e-posta içeriğini hiçbir koşulda sisteme veremiyor.",
+        "Çözüm yalnızca mevcut mail gateway raporunu tekrar ediyor."
+      ],
+      "mvp": {
+        "must": [
+          "E-posta metni ve bağlantı alan adlarını güvenli biçimde al",
+          "Kırmızı bayrakları madde madde açıkla",
+          "Risk seviyesini kanıtlarıyla göster",
+          "Kullanıcıya güvenli sonraki adımı söyle",
+          "Metindeki kişisel veriyi maskele"
+        ],
+        "later": [
+          "Gmail/Outlook eklentisi",
+          "Kurumsal yönetim paneli",
+          "Çoklu dil ve marka şablonları"
+        ],
+        "avoid": [
+          "Otomatik e-posta silme",
+          "Kesin güvenli/zararlı kararı",
+          "İlk sürümde bütün mail sistemi entegrasyonları"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Statik web formu",
+          "Ücretsiz model kotası veya yerel küçük model",
+          "Basit alan adı kuralları",
+          "Tarayıcıda geçici işleme"
+        ],
+        "low": [
+          "Cloudflare Workers",
+          "Ücretli metin modeli",
+          "D1 ile anonim kullanım sayacı",
+          "Rate limiting"
+        ],
+        "professional": [
+          "Kurumsal model gateway",
+          "SSO",
+          "Audit log",
+          "DLP/PII maskeleme",
+          "MSP tenant yapısı"
+        ]
+      },
+      "tests": [
+        "Gerçek phishing örneği",
+        "Normal kurumsal e-posta",
+        "Banka kampanya e-postası",
+        "Türkçe ve İngilizce örnek",
+        "Görünmez metin veya HTML içeriği",
+        "Prompt injection içeren e-posta",
+        "Çok uzun e-posta",
+        "Kişisel veri ve secret maskeleme"
+      ],
+      "launch": {
+        "mode": "Kapalı pilot",
+        "extras": [
+          "Örnek/sentetik e-postalarla demo alanı hazırla.",
+          "Gizlilik metninde e-posta içeriğinin saklanmadığını açıkla.",
+          "Her analizde insanın doğrulaması gerektiğini göster."
+        ]
+      },
+      "channels": [
+        "MSP ve güvenlik danışmanları",
+        "LinkedIn'de KOBİ güvenlik içerikleri",
+        "Phishing farkındalık webinarı"
+      ],
+      "marketing": {
+        "message": "Şüpheli e-postayı yalnızca etiketleme; kullanıcıya nedenini öğret.",
+        "leadMagnet": "10 kırmızı bayraklı ücretsiz phishing kontrol listesi",
+        "contentIdeas": [
+          "Gerçek bir phishing e-postasını 60 saniyede çözümle",
+          "Yanlış pozitif neden olur?",
+          "KOBİ'lerin yaptığı üç e-posta hatası",
+          "Mail gateway uyarısını çalışana nasıl anlatırsın?"
+        ]
+      },
+      "sales": {
+        "opening": "Şirketinizde çalışanlar şüpheli e-postaları kime ve nasıl soruyor? Ürünü satmadan önce bu akışı 15 dakikada anlamak istiyorum.",
+        "demo": [
+          "Sentetik e-postayı yapıştır",
+          "Sistemin bulduğu kanıtları göster",
+          "Kullanıcının göreceği güvenli sonraki adımı göster",
+          "Verinin saklanmadığını ve sınırları açıkla"
+        ],
+        "objections": [
+          {
+            "question": "Mail gateway zaten bunu yapmıyor mu?",
+            "answer": "Gateway tespit eder; ürün son kullanıcıya gerekçeyi ve doğru davranışı öğretmeye odaklanır."
+          },
+          {
+            "question": "E-posta verisini dışarı veremeyiz.",
+            "answer": "Maskeleme, yerel/özel model ve saklamama seçenekleriyle pilot kapsamını daralt."
+          }
+        ]
+      },
+      "pricing": [
+        "14 günlük sabit ücretli pilot",
+        "Şirket başına aylık paket",
+        "MSP için müşteri sayısına göre lisans"
+      ],
+      "activation": "Kullanıcının ilk e-postayı analiz edip en az iki doğru kırmızı bayrağı anlaması",
+      "metrics": [
+        "İlk analiz süresi",
+        "Doğru gerekçe oranı",
+        "Yanlış alarm oranı",
+        "Haftalık tekrar kullanım",
+        "Pilot → ücretli dönüşüm"
+      ],
+      "pilot": "3 şirket, 20 sentetik/anonim e-posta, yalnızca öneri modu"
+    },
+    {
+      "id": "cve-prioritizer",
+      "profile": "security-b2b",
+      "recommendedRoute": "service",
+      "passport": {
+        "buyer": "AppSec, DevSecOps veya altyapı yöneticisi",
+        "mvpTime": "30 gün",
+        "techDifficulty": "İleri",
+        "salesDifficulty": "Zor",
+        "dataSensitivity": "Yüksek",
+        "revenue": [
+          "Takım aboneliği",
+          "Varlık sayısına göre lisans",
+          "Danışmanlık + yazılım"
+        ],
+        "firstChannel": "AppSec/DevSecOps toplulukları",
+        "promise": "Yüzlerce CVE arasından gerçekten etkilenme ihtimali yüksek olanları kanıtlarıyla öne çıkar."
+      },
+      "validationTargets": [
+        "3 AppSec analisti",
+        "2 platform/altyapı yöneticisi",
+        "1 güvenlik danışmanlığı şirketi"
+      ],
+      "goSignals": [
+        "Ekip haftada onlarca CVE'yi elle inceliyor.",
+        "Varlık bağlamı farklı araçlarda dağınık.",
+        "Önceliklendirme yüzünden SLA kaçıyor."
+      ],
+      "stopSignals": [
+        "Varlık ve sürüm verisi güvenilir değil.",
+        "Müşteri otomatik 'etkilenmiyor' kararı bekliyor.",
+        "Kaynak bağlantısı ve kanıt gösterimi kabul edilmiyor."
+      ],
+      "mvp": {
+        "must": [
+          "CVE ve üretici bilgisini içe al",
+          "Varlık/sürüm bağlamı ekle",
+          "Etkilenme gerekçesini kaynaklarla göster",
+          "Belirsizliği açıkça işaretle",
+          "İnsan onaylı öncelik kuyruğu üret"
+        ],
+        "later": [
+          "Tam CMDB entegrasyonu",
+          "Otomatik ticket açma",
+          "Exploit intelligence zenginleştirmesi"
+        ],
+        "avoid": [
+          "Otomatik yama dağıtma",
+          "Kaynak olmadan kesin karar",
+          "İlk sürümde bütün vendor ekosistemleri"
+        ]
+      },
+      "stack": {
+        "free": [
+          "NVD/üretici açık verisi",
+          "CSV varlık listesi",
+          "Notebook veya küçük web arayüzü",
+          "Yerel/ücretsiz model"
+        ],
+        "low": [
+          "Scheduled Worker",
+          "D1/PostgreSQL",
+          "Ücretli model",
+          "Basit varlık eşleştirme servisi"
+        ],
+        "professional": [
+          "CMDB/SBOM entegrasyonu",
+          "Özel model gateway",
+          "RBAC/SSO",
+          "Audit ve ticketing entegrasyonu"
+        ]
+      },
+      "tests": [
+        "Etkilenmeyen sürüm",
+        "Yanlış/eksik sürüm bilgisi",
+        "Vendor advisory ile NVD çelişkisi",
+        "CISA KEV kaydı",
+        "İnternete kapalı varlık",
+        "Birden fazla ürün adı eşleşmesi",
+        "Modelin kaynak uydurması",
+        "Güncellenmiş CVE kaydı"
+      ],
+      "launch": {
+        "mode": "Analist pilotu",
+        "extras": [
+          "İlk kapsamı tek teknoloji ailesiyle sınırla.",
+          "Her öncelik kararında kullanılan kaynakları göster.",
+          "Manuel override ve karar geçmişi tut."
+        ]
+      },
+      "channels": [
+        "AppSec/DevSecOps toplulukları",
+        "Güvenlik danışmanları",
+        "SBOM ve vulnerability management içerikleri"
+      ],
+      "marketing": {
+        "message": "CVSS puanını tekrar etme; varlığın bağlamını ve gerçek aksiyonu göster.",
+        "leadMagnet": "CVE önceliklendirme karar ağacı şablonu",
+        "contentIdeas": [
+          "CVSS neden tek başına yetmez?",
+          "Varlık bağlamı olmadan CVE yönetiminin maliyeti",
+          "Bir CVE'yi 5 kanıtla nasıl doğrularız?",
+          "SBOM'dan aksiyona örnek akış"
+        ]
+      },
+      "sales": {
+        "opening": "Ekibiniz bir CVE'nin gerçekten etkileyip etkilemediğini doğrulamak için kaç farklı sisteme bakıyor?",
+        "demo": [
+          "Örnek CVE'yi aç",
+          "Varlık/sürüm bağlamını ekle",
+          "Kaynaklı öncelik gerekçesini göster",
+          "Belirsizlik ve analist onayını göster"
+        ],
+        "objections": [
+          {
+            "question": "Mevcut SCA aracımız var.",
+            "answer": "SCA bulguyu üretir; ürün varlık bağlamı, kanıt ve aksiyon sıralaması katmanı olarak konumlanır."
+          },
+          {
+            "question": "Yanlış öncelik riski çok yüksek.",
+            "answer": "Otomatik karar yerine kanıtlı öneri ve analist onayıyla başla."
+          }
+        ]
+      },
+      "pricing": [
+        "Tek teknoloji ailesi için danışmanlı pilot",
+        "Analist koltuğu + varlık sayısı",
+        "Kurumsal entegrasyon ve destek"
+      ],
+      "activation": "Analistin ilk CVE için kaynaklı öncelik kararını onaylaması",
+      "metrics": [
+        "CVE başına inceleme süresi",
+        "Analist kabul oranı",
+        "Yanlış öncelik",
+        "SLA içinde kapatma",
+        "Pilot → entegrasyon talebi"
+      ],
+      "pilot": "2 ekip, tek teknoloji ailesi, 50 tarihsel CVE"
+    },
+    {
+      "id": "soc-triage",
+      "profile": "security-b2b",
+      "recommendedRoute": "service",
+      "passport": {
+        "buyer": "SOC yöneticisi veya MSSP",
+        "mvpTime": "30+ gün",
+        "techDifficulty": "İleri",
+        "salesDifficulty": "Zor",
+        "dataSensitivity": "Çok yüksek",
+        "revenue": [
+          "Analist koltuğu",
+          "Alarm hacmine göre",
+          "MSSP tenant lisansı"
+        ],
+        "firstChannel": "SOC yöneticileri ve MSSP ortaklıkları",
+        "promise": "Dağınık alarmları kanıtlı bir olay hikâyesinde birleştir ve analistin ilk incelemesini hızlandır."
+      },
+      "validationTargets": [
+        "4 SOC analisti",
+        "2 SOC yöneticisi",
+        "1 MSSP"
+      ],
+      "goSignals": [
+        "Analistler aynı alarmları tekrar tekrar zenginleştiriyor.",
+        "İlk inceleme süresi ölçülebiliyor.",
+        "Öneri modu ve salt-okunur entegrasyon kabul ediliyor."
+      ],
+      "stopSignals": [
+        "Müşteri ilk sürümde otomatik containment istiyor.",
+        "Log verisi güvenli test ortamına taşınamıyor.",
+        "Alarm etiketleri ve zaman senkronizasyonu çok düşük kaliteli."
+      ],
+      "mvp": {
+        "must": [
+          "Sentetik veya anonim alarm grubu al",
+          "Zaman çizgisi oluştur",
+          "Kanıt ve hipotezi ayrı göster",
+          "Eksik sorguları öner",
+          "Analist kararını kaydet"
+        ],
+        "later": [
+          "Canlı SIEM connectorleri",
+          "MITRE kapsam raporu",
+          "Case management entegrasyonu"
+        ],
+        "avoid": [
+          "Otomatik host izolasyonu",
+          "Tek model kararına güvenmek",
+          "İlk sürümde çoklu tenant MSSP mimarisi"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Sentetik log seti",
+          "Notebook/web prototipi",
+          "Yerel model",
+          "JSON olay şeması"
+        ],
+        "low": [
+          "Worker/API",
+          "D1/PostgreSQL",
+          "Ücretli model",
+          "Basit audit"
+        ],
+        "professional": [
+          "Özel VPC/model gateway",
+          "SIEM salt-okunur connector",
+          "RBAC/SSO",
+          "Tam audit ve observability"
+        ]
+      },
+      "tests": [
+        "Aynı olaya ait tekrarlı alarm",
+        "Benzer ama ilgisiz alarmlar",
+        "Eksik zaman damgası",
+        "Yanlış kullanıcı/varlık eşleşmesi",
+        "Prompt injection içeren log alanı",
+        "Çok büyük olay grubu",
+        "Yüksek riskli olayın kaçırılması",
+        "Analistin öneriyi reddetmesi"
+      ],
+      "launch": {
+        "mode": "Shadow mode",
+        "extras": [
+          "Canlı analistin yanında yalnızca öneri üret.",
+          "Her hipotezde kullanılan kanıtı göster.",
+          "Otomatik aksiyonları teknik olarak kapalı tut."
+        ]
+      },
+      "channels": [
+        "MSSP ortaklıkları",
+        "SOC liderleri",
+        "Blue team konferans ve toplulukları"
+      ],
+      "marketing": {
+        "message": "Alarmı kapatma; analistin kanıt toplama süresini kısalt.",
+        "leadMagnet": "SOC triage kalite kontrol listesi",
+        "contentIdeas": [
+          "Shadow mode ile güvenli AI pilotu",
+          "Alarm özetinden kanıtlı olay hikâyesine",
+          "SOC'ta prompt injection riski",
+          "İlk inceleme süresi nasıl ölçülür?"
+        ]
+      },
+      "sales": {
+        "opening": "Bir analist vardiyada aynı bağlamı kaç kez elle topluyor ve ilk inceleme ne kadar sürüyor?",
+        "demo": [
+          "Sentetik alarm grubunu göster",
+          "Zaman çizgisini üret",
+          "Hipotez/kanıt ayrımını göster",
+          "Analist onay ve red akışını göster"
+        ],
+        "objections": [
+          {
+            "question": "AI kritik olayı kaçırabilir.",
+            "answer": "Shadow mode, kanıt gösterimi ve insan onayı olmadan işlem yapmayan tasarım kullan."
+          },
+          {
+            "question": "Loglarımız çok hassas.",
+            "answer": "Sentetik pilot, özel ağ ve veri minimizasyonuyla entegrasyonu aşamalı yap."
+          }
+        ]
+      },
+      "pricing": [
+        "Tarihsel olaylarla değerlendirme projesi",
+        "Analist koltuğu + alarm hacmi",
+        "MSSP için tenant paketi"
+      ],
+      "activation": "Analistin ilk olay özetini kabul edip önerilen sorgulardan birini kullanması",
+      "metrics": [
+        "İlk inceleme süresi",
+        "Analist kabul oranı",
+        "Kaçırılan yüksek riskli olay",
+        "Yanlış korelasyon",
+        "Vardiya başına kullanım"
+      ],
+      "pilot": "2 SOC ekibi, 100 tarihsel/sentetik olay, sadece shadow mode"
+    },
+    {
+      "id": "policy-assistant",
+      "profile": "security-b2b",
+      "recommendedRoute": "service",
+      "passport": {
+        "buyer": "Bilgi güvenliği veya uyum yöneticisi",
+        "mvpTime": "2 hafta",
+        "techDifficulty": "Orta",
+        "salesDifficulty": "Orta",
+        "dataSensitivity": "Orta",
+        "revenue": [
+          "Kurum aboneliği",
+          "Kurulum hizmeti",
+          "Belge hacmine göre"
+        ],
+        "firstChannel": "Uyum ve bilgi güvenliği yöneticileri",
+        "promise": "Çalışanın politika sorusunu kısa cevap, doğru madde ve eskalasyon yolu ile yanıtla."
+      },
+      "validationTargets": [
+        "2 bilgi güvenliği yöneticisi",
+        "2 İK/uyum çalışanı",
+        "5 son kullanıcı"
+      ],
+      "goSignals": [
+        "Aynı politika soruları tekrar geliyor.",
+        "Güncel/onaylı belge sahibi belli.",
+        "Kaynak maddesi gösterilmesi zorunlu kabul ediliyor."
+      ],
+      "stopSignals": [
+        "Belge sürümleri kontrolsüz.",
+        "Kullanıcı kaynak göstermeyen kesin hukuki cevap bekliyor.",
+        "Belge düzeyi erişim kontrolü yapılamıyor."
+      ],
+      "mvp": {
+        "must": [
+          "Tek politika setini indeksle",
+          "Yalnızca kaynaklı cevap üret",
+          "Madde ve sürüm tarihini göster",
+          "Cevap veremediğinde eskalasyon öner",
+          "Belge sahibi onay akışı ekle"
+        ],
+        "later": [
+          "Çok departmanlı portal",
+          "SSO ve çoklu dil",
+          "Politika değişiklik bildirimleri"
+        ],
+        "avoid": [
+          "Hukuki tavsiye iddiası",
+          "Kaynak olmadan cevap",
+          "Eski ve taslak belgeleri karıştırmak"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Örnek PDF seti",
+          "Yerel embedding/model",
+          "Basit statik arayüz",
+          "Kaynak linkleri"
+        ],
+        "low": [
+          "Managed vector search",
+          "Ücretli model",
+          "D1/PostgreSQL",
+          "Belge yükleme paneli"
+        ],
+        "professional": [
+          "SSO/RBAC",
+          "Belge düzeyi ACL",
+          "Audit",
+          "DLP",
+          "Kurumsal arama entegrasyonu"
+        ]
+      },
+      "tests": [
+        "Kaynakta açık cevap",
+        "Kaynakta olmayan soru",
+        "Eski politika sürümü",
+        "Çelişen iki belge",
+        "Yetkisiz belge sorusu",
+        "Prompt injection içeren belge",
+        "Hukuki yorum isteyen soru",
+        "Kaynak bağlantısı doğrulama"
+      ],
+      "launch": {
+        "mode": "Tek politika pilotu",
+        "extras": [
+          "Belge sahibi ve güncelleme tarihini görünür yap.",
+          "Cevapların altında kaynak maddesini zorunlu göster.",
+          "Eskalasyon e-postasını test et."
+        ]
+      },
+      "channels": [
+        "ISO 27001/uyum danışmanları",
+        "Bilgi güvenliği yöneticileri",
+        "İK ve iç iletişim ekipleri"
+      ],
+      "marketing": {
+        "message": "Politika PDF'sini sohbet botuna çevirme; doğru maddeyi ve sorumlu kişiyi buldur.",
+        "leadMagnet": "Politika soru-cevap kalite kontrol şablonu",
+        "contentIdeas": [
+          "Kaynak göstermeyen politika botu neden riskli?",
+          "Belge sürüm yönetimi için 5 kontrol",
+          "Çalışanların en çok sorduğu güvenlik soruları",
+          "RAG ve erişim kontrolü"
+        ]
+      },
+      "sales": {
+        "opening": "Çalışanların tekrar tekrar sorduğu ilk beş politika sorusu nedir ve bugün kim cevaplıyor?",
+        "demo": [
+          "Tek politika belgesini yükle",
+          "Basit soru sor",
+          "Kaynak madde/sürümü göster",
+          "Cevap verememe ve eskalasyonu göster"
+        ],
+        "objections": [
+          {
+            "question": "Yanlış cevap uyum riski yaratır.",
+            "answer": "Kaynak zorunluluğu, cevap verememe davranışı ve belge sahibi onayıyla sınırla."
+          },
+          {
+            "question": "Belgeler gizli.",
+            "answer": "Belge düzeyi erişim, özel model ve kayıt politikasıyla pilot kapsamını daralt."
+          }
+        ]
+      },
+      "pricing": [
+        "Tek politika seti kurulum paketi",
+        "Çalışan sayısına göre aylık abonelik",
+        "Kurumsal SSO/ACL paketi"
+      ],
+      "activation": "Çalışanın ilk soruda doğru politika maddesine ulaşması",
+      "metrics": [
+        "Doğru kaynak oranı",
+        "Cevap bulma süresi",
+        "Eskalasyon oranı",
+        "Destek talebi azalması",
+        "Tekrar kullanım"
+      ],
+      "pilot": "1 kurum, 3 onaylı politika, 30 gerçek soru"
+    },
+    {
+      "id": "pr-test-helper",
+      "profile": "developer-tool",
+      "recommendedRoute": "open-source",
+      "passport": {
+        "buyer": "Mühendislik yöneticisi veya geliştirici ekibi",
+        "mvpTime": "Hafta sonu",
+        "techDifficulty": "Kolay",
+        "salesDifficulty": "Orta",
+        "dataSensitivity": "Yüksek",
+        "revenue": [
+          "Açık kaynak + hosted",
+          "Takım aboneliği",
+          "Kurumsal entegrasyon"
+        ],
+        "firstChannel": "GitHub ve geliştirici toplulukları",
+        "promise": "Git diff'ten anlaşılır PR özeti, risk ve unutulmuş test kontrolü üret."
+      },
+      "validationTargets": [
+        "5 geliştirici",
+        "2 teknik lider",
+        "1 açık kaynak maintainer"
+      ],
+      "goSignals": [
+        "PR açıklamaları sık sık eksik kalıyor.",
+        "Test planı inceleme sırasında yeniden yazılıyor.",
+        "Takım diff verisini güvenli biçimde işlemeye istekli."
+      ],
+      "stopSignals": [
+        "Ekip zaten zorunlu ve kaliteli PR şablonuna sahip.",
+        "Araç çıktısı okunmadan otomatik merge bekleniyor.",
+        "Private kodun işlenmesi için güvenli yol yok."
+      ],
+      "mvp": {
+        "must": [
+          "Git diff veya patch al",
+          "Davranış değişikliğini özetle",
+          "Risk ve geri alma notu üret",
+          "Test senaryoları öner",
+          "Çıktıyı Markdown olarak kopyala"
+        ],
+        "later": [
+          "GitHub App",
+          "Inline review yorumları",
+          "Takım şablonları"
+        ],
+        "avoid": [
+          "Otomatik merge",
+          "Secret içeren diff'i dışarı göndermek",
+          "İlk sürümde bütün SCM sağlayıcıları"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Node/Python CLI",
+          "Yerel veya ücretsiz kod modeli",
+          "Markdown şablonu",
+          "Secret regex kontrolü"
+        ],
+        "low": [
+          "GitHub Action",
+          "Ücretli kod modeli",
+          "Repo allowlist",
+          "Basit kullanım metriği"
+        ],
+        "professional": [
+          "GitHub App",
+          "Private model gateway",
+          "SSO/RBAC",
+          "Audit ve politika şablonları"
+        ]
+      },
+      "tests": [
+        "Küçük özellik diff'i",
+        "Yalnızca dokümantasyon değişikliği",
+        "Test dosyası değişikliği",
+        "Secret benzeri değer",
+        "Çok büyük diff",
+        "Binary dosya",
+        "Breaking change",
+        "Prompt injection içeren kod yorumu"
+      ],
+      "launch": {
+        "mode": "Public beta",
+        "extras": [
+          "Örnek repository ve beklenen çıktıyı ekle.",
+          "Private kodun nasıl işlendiğini README'de açıkla.",
+          "PR çıktısının insan kontrolü gerektirdiğini belirt."
+        ]
+      },
+      "channels": [
+        "GitHub",
+        "Dev.to/Hacker News",
+        "Geliştirici Discord ve Reddit toplulukları"
+      ],
+      "marketing": {
+        "message": "Daha uzun PR açıklaması değil; inceleyenin karar vermesini kolaylaştıran bağlam üret.",
+        "leadMagnet": "İyi PR açıklaması ve test planı şablonu",
+        "contentIdeas": [
+          "Kötü PR açıklamasını iyi olana dönüştür",
+          "Diff'ten test senaryosu çıkarma",
+          "Private kodla AI kullanırken 5 kontrol",
+          "GitHub Action demo videosu"
+        ]
+      },
+      "sales": {
+        "opening": "Takımınız bir PR'ı anlamak için açıklamadan çok diff'e mi dönüyor?",
+        "demo": [
+          "Örnek diff'i çalıştır",
+          "Özet ve risk bölümünü göster",
+          "Önerilen testleri gerçek testlerle karşılaştır",
+          "Markdown çıktısını PR'a aktar"
+        ],
+        "objections": [
+          {
+            "question": "Geliştirici bunu kendisi yazabilir.",
+            "answer": "Amaç yazmayı devralmak değil, tutarlılık ve unutulan testleri azaltmak."
+          },
+          {
+            "question": "Kodumuzu dış servise göndermeyiz.",
+            "answer": "Yerel model, self-hosted seçenek veya yalnızca public repo desteği sun."
+          }
+        ]
+      },
+      "pricing": [
+        "Ücretsiz açık kaynak CLI",
+        "Takım başına hosted plan",
+        "Kurumsal GitHub App + destek"
+      ],
+      "activation": "İlk diff'ten çıkan özetin bir PR açıklamasında kullanılması",
+      "metrics": [
+        "PR hazırlama süresi",
+        "Tekrar kullanım",
+        "Önerilen test kabul oranı",
+        "Aktif repository",
+        "Takım dönüşümü"
+      ],
+      "pilot": "3 takım, 30 PR, insan onaylı kullanım"
+    },
+    {
+      "id": "dependency-risk",
+      "profile": "developer-tool",
+      "recommendedRoute": "open-source",
+      "passport": {
+        "buyer": "AppSec veya platform yöneticisi",
+        "mvpTime": "2 hafta",
+        "techDifficulty": "Orta",
+        "salesDifficulty": "Orta",
+        "dataSensitivity": "Orta",
+        "revenue": [
+          "Hosted raporlama",
+          "Takım aboneliği",
+          "Kurumsal politika paketi"
+        ],
+        "firstChannel": "GitHub + AppSec toplulukları",
+        "promise": "SCA bulgusunu geliştiricinin anlayacağı etki, kanıt ve güvenli düzeltme adımına çevir."
+      },
+      "validationTargets": [
+        "4 geliştirici",
+        "3 AppSec analisti",
+        "1 platform ekibi"
+      ],
+      "goSignals": [
+        "Bulgular okunmadan kapatılıyor veya erteleniyor.",
+        "Geliştirici bağlam ve test etkisi istiyor.",
+        "JSON/SARIF çıktısı erişilebilir."
+      ],
+      "stopSignals": [
+        "Araç kaynaksız kesin etkilenme kararı veriyor.",
+        "Paket kullanım yolu bilinmiyor.",
+        "Geliştiricinin mevcut iş akışına çıktı verilemiyor."
+      ],
+      "mvp": {
+        "must": [
+          "Trivy/Dependabot/SARIF çıktısı al",
+          "Bulgunun etkisini sadeleştir",
+          "Kaynak ve sürüm önerisini göster",
+          "Test/geri alma notu üret",
+          "Belirsizliği işaretle"
+        ],
+        "later": [
+          "Kod yolu analizi",
+          "Otomatik PR",
+          "Çoklu SCA sağlayıcı normalizasyonu"
+        ],
+        "avoid": [
+          "Otomatik dependency upgrade merge",
+          "Kaynak olmadan etkilenme kararı",
+          "İlk sürümde tüm paket ekosistemleri"
+        ]
+      },
+      "stack": {
+        "free": [
+          "CLI",
+          "Trivy/Dependabot örnek JSON",
+          "Yerel model",
+          "Markdown/SARIF çıktı"
+        ],
+        "low": [
+          "GitHub Action",
+          "Ücretli model",
+          "Basit policy dosyası",
+          "Artifact raporu"
+        ],
+        "professional": [
+          "Kurumsal SCA connectorleri",
+          "Private model gateway",
+          "RBAC/audit",
+          "Ticketing entegrasyonu"
+        ]
+      },
+      "tests": [
+        "Doğrudan kullanılan vulnerable paket",
+        "Transitive dependency",
+        "Etkilenmeyen kullanım yolu",
+        "Fix olmayan CVE",
+        "Breaking upgrade",
+        "Yanlış paket eşleşmesi",
+        "Malicious advisory text",
+        "Birden çok önerilen sürüm"
+      ],
+      "launch": {
+        "mode": "Repository pilotu",
+        "extras": [
+          "Önce tek paket ekosistemi seç.",
+          "Her öneride upstream kaynağı göster.",
+          "Upgrade sonrası zorunlu test listesini üret."
+        ]
+      },
+      "channels": [
+        "GitHub Marketplace",
+        "AppSec toplulukları",
+        "Dependency/SBOM içerikleri"
+      ],
+      "marketing": {
+        "message": "CVE sayısını artırma; geliştiriciye hangi bulguda ne yapacağını anlat.",
+        "leadMagnet": "SCA bulgusu açıklama şablonu",
+        "contentIdeas": [
+          "CVSS'ten geliştirici aksiyonuna",
+          "Transitive dependency nasıl açıklanır?",
+          "Otomatik upgrade neden her zaman güvenli değil?",
+          "SARIF'ten anlaşılır rapor"
+        ]
+      },
+      "sales": {
+        "opening": "SCA raporunuzdaki bulguların ne kadarı geliştirici tarafından gerçekten aksiyona dönüşüyor?",
+        "demo": [
+          "Örnek SARIF yükle",
+          "Bir bulgunun açıklamasını göster",
+          "Test ve upgrade etkisini göster",
+          "Kaynaklı raporu PR artifact olarak aç"
+        ],
+        "objections": [
+          {
+            "question": "SCA aracımız zaten açıklama veriyor.",
+            "answer": "Ürün uygulama bağlamı, ekip dili ve test etkisini ekleyen son kilometre katmanı olur."
+          },
+          {
+            "question": "Yanlış upgrade önerisi riskli.",
+            "answer": "Öneri, test planı ve insan onayı birlikte sunulur; otomatik merge yapılmaz."
+          }
+        ]
+      },
+      "pricing": [
+        "Ücretsiz CLI",
+        "Repository sayısına göre takım planı",
+        "Kurumsal politika/entegrasyon"
+      ],
+      "activation": "Geliştiricinin ilk bulguyu rapordan PR veya ticket aksiyonuna çevirmesi",
+      "metrics": [
+        "Aksiyona dönüşen bulgu",
+        "Yanlış öncelik",
+        "Düzeltme süresi",
+        "Aktif repository",
+        "Upgrade sonrası hata"
+      ],
+      "pilot": "5 repository, tek paket ekosistemi, 50 bulgu"
+    },
+    {
+      "id": "docs-assistant",
+      "profile": "developer-tool",
+      "recommendedRoute": "service",
+      "passport": {
+        "buyer": "Mühendislik/platform yöneticisi",
+        "mvpTime": "30 gün",
+        "techDifficulty": "Orta",
+        "salesDifficulty": "Zor",
+        "dataSensitivity": "Yüksek",
+        "revenue": [
+          "Kullanıcı başına",
+          "Doküman kaynağına göre",
+          "Kurulum + abonelik"
+        ],
+        "firstChannel": "Platform ekipleri ve danışmanlık ağı",
+        "promise": "Kod, runbook ve mimari notlar arasında kaynaklı cevap ver; çelişki ve eksik dokümanı görünür yap."
+      },
+      "validationTargets": [
+        "3 yeni ekip üyesi",
+        "3 kıdemli mühendis",
+        "2 platform yöneticisi"
+      ],
+      "goSignals": [
+        "Aynı sorular tekrar soruluyor.",
+        "Kaynaklar erişilebilir ve sahipleri belli.",
+        "Belge düzeyi yetki uygulanabilir."
+      ],
+      "stopSignals": [
+        "Dokümanların çoğu güncel değil.",
+        "Kod ve belge erişimleri ayrıştırılamıyor.",
+        "Kaynak göstermeyen cevap kabul ediliyor."
+      ],
+      "mvp": {
+        "must": [
+          "Tek doküman kaynağını indeksle",
+          "Kaynak bağlantılı cevap üret",
+          "Cevap verememe ve çelişki göster",
+          "Belge erişimini kullanıcıya göre filtrele",
+          "Eksik doküman geri bildirimi ekle"
+        ],
+        "later": [
+          "Kod arama entegrasyonu",
+          "Çok kaynaklı kurumsal arama",
+          "Doküman güncelleme önerileri"
+        ],
+        "avoid": [
+          "Bütün şirket verisini ilk günden indekslemek",
+          "Kaynak olmadan cevap",
+          "Yetkiyi yalnızca UI seviyesinde kontrol etmek"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Public demo docs",
+          "Yerel embedding/model",
+          "Basit RAG arayüzü",
+          "Kaynak linkleri"
+        ],
+        "low": [
+          "Managed vector store",
+          "Ücretli model",
+          "OAuth",
+          "Belge senkronizasyonu"
+        ],
+        "professional": [
+          "SSO/RBAC",
+          "Belge düzeyi ACL",
+          "Private model gateway",
+          "Audit ve DLP"
+        ]
+      },
+      "tests": [
+        "Doğru kaynaktan cevap",
+        "Kaynakta olmayan soru",
+        "Çelişen iki runbook",
+        "Yetkisiz belge",
+        "Eski ADR",
+        "Prompt injection içeren doküman",
+        "Çok uzun kod bloğu",
+        "Kaynak linkinin bozuk olması"
+      ],
+      "launch": {
+        "mode": "Tek ekip pilotu",
+        "extras": [
+          "Tek bilgi alanı ve tek kullanıcı grubuyla başla.",
+          "Her cevabın kaynaklarını zorunlu göster.",
+          "Cevap verememe oranını başarı metriği olarak izle."
+        ]
+      },
+      "channels": [
+        "Platform engineering toplulukları",
+        "DevOps danışmanları",
+        "Mühendislik liderleri"
+      ],
+      "marketing": {
+        "message": "Sohbet botu değil; güvenilir kaynağa giden en kısa yol.",
+        "leadMagnet": "Mühendislik dokümantasyonu sağlık kontrol listesi",
+        "contentIdeas": [
+          "RAG'da belge erişim kontrolü",
+          "Kaynak göstermeyen asistan neden riskli?",
+          "Yeni çalışan onboarding maliyeti",
+          "Çelişen runbook'ları bulma"
+        ]
+      },
+      "sales": {
+        "opening": "Yeni bir ekip üyesi doğru runbook'u bulmak için kaç kişiye ve kaç sisteme soruyor?",
+        "demo": [
+          "Tek doküman alanını bağla",
+          "Kaynaklı soru sor",
+          "Yetkisiz belge senaryosunu göster",
+          "Eksik/çelişkili belge uyarısını göster"
+        ],
+        "objections": [
+          {
+            "question": "Zaten şirket aramamız var.",
+            "answer": "Fark; bağlama göre cevap, kaynak zorunluluğu ve erişim kontrollü iş akışıdır."
+          },
+          {
+            "question": "Dokümanlarımız güncel değil.",
+            "answer": "Pilot aynı zamanda eksik ve çelişkili dokümanları görünür kılacak şekilde konumlanır."
+          }
+        ]
+      },
+      "pricing": [
+        "Tek ekip kurulum/pilot",
+        "Kullanıcı veya kaynak başına abonelik",
+        "Kurumsal SSO/ACL paketi"
+      ],
+      "activation": "Yeni ekip üyesinin ilk sorusuna doğru kaynakla cevap bulması",
+      "metrics": [
+        "Cevap bulma süresi",
+        "Kaynak doğruluk oranı",
+        "Cevap verememe oranı",
+        "Tekrar kullanım",
+        "Onboarding süresi"
+      ],
+      "pilot": "1 ekip, 100 onaylı belge, 50 gerçek soru"
+    },
+    {
+      "id": "release-notes",
+      "profile": "developer-tool",
+      "recommendedRoute": "open-source",
+      "passport": {
+        "buyer": "Ürün veya mühendislik ekibi",
+        "mvpTime": "Hafta sonu",
+        "techDifficulty": "Kolay",
+        "salesDifficulty": "Kolay",
+        "dataSensitivity": "Orta",
+        "revenue": [
+          "Ücretsiz CLI",
+          "Hosted takım planı",
+          "Özel şablon hizmeti"
+        ],
+        "firstChannel": "GitHub ve ürün toplulukları",
+        "promise": "Commit ve PR listesini müşteri dostu, onaylanabilir sürüm notuna dönüştür."
+      },
+      "validationTargets": [
+        "4 geliştirici",
+        "2 ürün yöneticisi",
+        "2 müşteri başarı çalışanı"
+      ],
+      "goSignals": [
+        "Release note her sürümde elle hazırlanıyor.",
+        "Teknik commit dili müşteriye uygun değil.",
+        "İnsan onaylı çıktı iş akışına kolayca eklenebilir."
+      ],
+      "stopSignals": [
+        "Sürüm kapsamı etiketlenmiyor.",
+        "Gizli özellikleri ayıracak metadata yok.",
+        "Çıktı otomatik yayınlanmak isteniyor."
+      ],
+      "mvp": {
+        "must": [
+          "PR/commit listesini al",
+          "Değişiklikleri özellik/düzeltme/bilinen sorun olarak grupla",
+          "Kullanıcı etkisini sadeleştir",
+          "Gizli etiketleri dışla",
+          "Markdown çıktıyı onaya sun"
+        ],
+        "later": [
+          "Çoklu ürün şablonları",
+          "Jira/Linear entegrasyonu",
+          "Çoklu dil"
+        ],
+        "avoid": [
+          "Onaysız otomatik yayın",
+          "Security fix ayrıntısını erken açıklama",
+          "İlk sürümde bütün issue trackerlar"
+        ]
+      },
+      "stack": {
+        "free": [
+          "GitHub API",
+          "Node CLI",
+          "Ücretsiz/yerel model",
+          "Markdown şablonu"
+        ],
+        "low": [
+          "GitHub Action",
+          "Ücretli model",
+          "Hosted preview",
+          "Basit takım ayarları"
+        ],
+        "professional": [
+          "GitHub App",
+          "SSO",
+          "Onay akışı",
+          "Jira/Linear connectorleri"
+        ]
+      },
+      "tests": [
+        "Sadece bug fix release",
+        "Breaking change",
+        "Gizli feature flag",
+        "Security fix",
+        "Kötü commit mesajları",
+        "Birleştirilmemiş PR",
+        "Çok büyük release",
+        "Farklı dilde commit"
+      ],
+      "launch": {
+        "mode": "Public beta",
+        "extras": [
+          "Örnek public repo ile demo hazırla.",
+          "Gizli etiket dışlama kuralını dokümante et.",
+          "Yayın öncesi onay ekranını zorunlu tut."
+        ]
+      },
+      "channels": [
+        "GitHub Marketplace",
+        "Product management toplulukları",
+        "Release engineering içerikleri"
+      ],
+      "marketing": {
+        "message": "Commit listesini müşterinin anlayacağı değere çevir.",
+        "leadMagnet": "Müşteri dostu release note şablonu",
+        "contentIdeas": [
+          "Kötü commit mesajından iyi release note",
+          "Security fix nasıl güvenli açıklanır?",
+          "Release note otomasyonunda insan onayı",
+          "Bir dakikalık GitHub Action demo"
+        ]
+      },
+      "sales": {
+        "opening": "Takımınız release note hazırlamak için PR listesini ne kadar süre elle temizliyor?",
+        "demo": [
+          "Public repo release'ini seç",
+          "Gruplanmış değişiklikleri göster",
+          "Gizli kaydı dışla",
+          "Markdown önizleme ve onayı göster"
+        ],
+        "objections": [
+          {
+            "question": "Bu sadece prompt değil mi?",
+            "answer": "Değer; repository metadata, gizli içerik kuralları, şablon ve onay akışının birleşimindedir."
+          },
+          {
+            "question": "Yanlış bilgi yayınlanabilir.",
+            "answer": "Taslak üretir; yayın yetkisi insanda kalır."
+          }
+        ]
+      },
+      "pricing": [
+        "Ücretsiz açık kaynak action",
+        "Takım şablonları için abonelik",
+        "Kurumsal onay/entegrasyon paketi"
+      ],
+      "activation": "İlk oluşturulan taslağın gerçek bir release note içinde kullanılması",
+      "metrics": [
+        "Hazırlama süresi",
+        "Düzeltme sayısı",
+        "Aktif repository",
+        "Tekrar kullanım",
+        "Taslak → yayın oranı"
+      ],
+      "pilot": "5 repository, 10 release, insan onaylı yayın"
+    },
+    {
+      "id": "pdf-quiz",
+      "profile": "education-b2c",
+      "recommendedRoute": "saas",
+      "passport": {
+        "buyer": "Öğrenci, öğretmen veya eğitim kurumu",
+        "mvpTime": "Hafta sonu",
+        "techDifficulty": "Kolay",
+        "salesDifficulty": "Orta",
+        "dataSensitivity": "Düşük/Orta",
+        "revenue": [
+          "Freemium",
+          "Öğretmen paketi",
+          "Kurum lisansı"
+        ],
+        "firstChannel": "Öğretmen ve öğrenci toplulukları",
+        "promise": "Bir ders notunu seviyeye uygun, kaynaklı ve açıklamalı quiz'e dönüştür."
+      },
+      "validationTargets": [
+        "5 öğrenci",
+        "3 öğretmen",
+        "1 kurum içi eğitmen"
+      ],
+      "goSignals": [
+        "Kullanıcılar soru hazırlamaya zaman ayıramıyor.",
+        "Kaynak doküman net ve kısa.",
+        "Öğretmen cevap anahtarını onaylamaya istekli."
+      ],
+      "stopSignals": [
+        "Kullanıcı kaynak göstermeyen cevapları kabul ediyor.",
+        "Telifli kitaplar izinsiz yükleniyor.",
+        "Ürün öğrenme sonucu yerine yalnızca soru sayısı satıyor."
+      ],
+      "mvp": {
+        "must": [
+          "PDF/metin yükle",
+          "Seviye ve soru sayısı seç",
+          "Farklı tipte soru üret",
+          "Cevabı kaynak bölümüyle açıkla",
+          "Quiz sonucunu göster"
+        ],
+        "later": [
+          "Sınıf yönetimi",
+          "Paylaşılabilir quiz linkleri",
+          "Aralıklı tekrar"
+        ],
+        "avoid": [
+          "İlk sürümde sınav gözetimi",
+          "Kaynak olmadan cevap anahtarı",
+          "Çok büyük belge kütüphanesi"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Statik arayüz",
+          "Tarayıcı PDF metin çıkarma",
+          "Ücretsiz model kotası",
+          "localStorage"
+        ],
+        "low": [
+          "Serverless API",
+          "Ücretli model",
+          "Basit kullanıcı hesabı",
+          "D1/Supabase"
+        ],
+        "professional": [
+          "Kurum hesabı",
+          "LMS entegrasyonu",
+          "İçerik moderasyonu",
+          "Analytics ve audit"
+        ]
+      },
+      "tests": [
+        "Kısa ders notu",
+        "Tablolu PDF",
+        "Tarama görüntüsü",
+        "Kaynakta cevabı olmayan soru",
+        "Yanlış cevap seçeneği",
+        "Farklı yaş seviyesi",
+        "Telifli içerik uyarısı",
+        "Çok uzun belge"
+      ],
+      "launch": {
+        "mode": "Tek ders beta",
+        "extras": [
+          "Tek ders/yaş seviyesi seç.",
+          "Her cevap açıklamasında kaynak bölümünü göster.",
+          "Öğretmen geri bildirim butonu ekle."
+        ]
+      },
+      "channels": [
+        "Öğretmen toplulukları",
+        "Öğrenci Discord/Reddit grupları",
+        "YouTube kısa demo"
+      ],
+      "marketing": {
+        "message": "Daha çok soru değil; kaynağa dayalı ve açıklamalı tekrar.",
+        "leadMagnet": "Ücretsiz 10 soruluk quiz oluşturucu",
+        "contentIdeas": [
+          "Bir PDF'yi 30 saniyede quiz'e çevir",
+          "İyi çeldirici nasıl yazılır?",
+          "AI cevap anahtarını nasıl doğrularız?",
+          "Öğretmen için 5 dakikalık kullanım"
+        ]
+      },
+      "sales": {
+        "opening": "Öğrencileriniz için kaynakla uyumlu soru hazırlamak haftada ne kadar zaman alıyor?",
+        "demo": [
+          "Kısa not yükle",
+          "Seviye seç",
+          "Quiz ve kaynaklı cevapları göster",
+          "Öğretmen düzeltme akışını göster"
+        ],
+        "objections": [
+          {
+            "question": "Yanlış cevap üretirse?",
+            "answer": "Kaynak gösterimi, öğretmen onayı ve yanlış cevap bildirimini temel özellik yap."
+          },
+          {
+            "question": "Ücretsiz araçlarla yapılabilir.",
+            "answer": "Değer; güvenilir soru yapısı, kaynak, takip ve öğretmen iş akışıdır."
+          }
+        ]
+      },
+      "pricing": [
+        "Günlük sınırlı ücretsiz kullanım",
+        "Öğretmen aylık paketi",
+        "Kurum/LMS lisansı"
+      ],
+      "activation": "Kullanıcının ilk quiz'i tamamlayıp açıklamalı sonucu görmesi",
+      "metrics": [
+        "Quiz oluşturma süresi",
+        "Kaynakla uyum",
+        "Tamamlama oranı",
+        "7 günlük geri dönüş",
+        "Ücretsiz → ücretli dönüşüm"
+      ],
+      "pilot": "2 öğretmen, 20 öğrenci, tek ders konusu"
+    },
+    {
+      "id": "study-planner",
+      "profile": "education-b2c",
+      "recommendedRoute": "saas",
+      "passport": {
+        "buyer": "Öğrenci veya beceri öğrenen yetişkin",
+        "mvpTime": "Hafta sonu",
+        "techDifficulty": "Kolay",
+        "salesDifficulty": "Orta",
+        "dataSensitivity": "Düşük",
+        "revenue": [
+          "Freemium",
+          "Premium plan",
+          "Koçluk + araç"
+        ],
+        "firstChannel": "Öğrenme toplulukları",
+        "promise": "Büyük bir öğrenme hedefini bugün yapılabilecek küçük görevlere böl."
+      },
+      "validationTargets": [
+        "8 öğrenci/yetişkin öğrenen",
+        "2 eğitmen",
+        "1 öğrenme koçu"
+      ],
+      "goSignals": [
+        "Kullanıcı plan yapıyor ama sürdüremiyor.",
+        "Günlük görevler çok büyük veya belirsiz.",
+        "Kullanıcı ilerlemeyi işaretlemek istiyor."
+      ],
+      "stopSignals": [
+        "Ürün tıbbi/özel öğrenme tavsiyesi vermeye zorlanıyor.",
+        "Plan gerçek zaman kısıtını dikkate almıyor.",
+        "Kullanıcı ilk günde çok fazla veri girmek zorunda."
+      ],
+      "mvp": {
+        "must": [
+          "Hedef, süre ve seviye al",
+          "Haftalık plan üret",
+          "Bugünün tek görevini göster",
+          "Görevi işaretleyip ilerlemeyi sakla",
+          "Planı kolayca yeniden düzenle"
+        ],
+        "later": [
+          "Takvim senkronizasyonu",
+          "Arkadaş/koç paylaşımı",
+          "Aralıklı tekrar motoru"
+        ],
+        "avoid": [
+          "İlk sürümde sosyal ağ",
+          "Aşırı ayrıntılı profil",
+          "Tıbbi veya klinik öneri"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Statik HTML/JS",
+          "localStorage",
+          "Ücretsiz model kotası",
+          "Basit takvim görünümü"
+        ],
+        "low": [
+          "Serverless API",
+          "Ücretli model",
+          "Kullanıcı hesabı",
+          "D1/Supabase"
+        ],
+        "professional": [
+          "Mobil/PWA",
+          "Takvim entegrasyonu",
+          "Analytics",
+          "Koç/kurum paneli"
+        ]
+      },
+      "tests": [
+        "Haftada 2 saat müsait kullanıcı",
+        "Sınav tarihi yakın kullanıcı",
+        "Belirsiz hedef",
+        "Kaçırılan üç gün",
+        "Çok büyük hedef",
+        "Planı değiştirme",
+        "Erişilebilirlik/mobil kullanım",
+        "Özel öğrenme ihtiyacı uyarısı"
+      ],
+      "launch": {
+        "mode": "Bireysel beta",
+        "extras": [
+          "İlk onboarding'i üç soruyla sınırla.",
+          "Bugünün görevini ana ekranda göster.",
+          "Kaçırılan günlerde cezalandırıcı dil kullanma."
+        ]
+      },
+      "channels": [
+        "Öğrenme toplulukları",
+        "YouTube/Instagram eğitim içerikleri",
+        "Eğitmen ortaklıkları"
+      ],
+      "marketing": {
+        "message": "Mükemmel plan değil; bugün tamamlayabileceğin tek doğru adım.",
+        "leadMagnet": "Ücretsiz 7 günlük çalışma planı",
+        "contentIdeas": [
+          "Büyük hedefi 15 dakikalık göreve böl",
+          "Plan neden üçüncü günde bozulur?",
+          "Kaçırılan gün sonrası yeniden başlama",
+          "AI planını gerçekçi yapmanın 5 yolu"
+        ]
+      },
+      "sales": {
+        "opening": "Bir öğrenme planını en fazla kaç gün sürdürebiliyorsunuz ve nerede kopuyor?",
+        "demo": [
+          "Hedef ve zamanı gir",
+          "Bugünün görevini göster",
+          "Bir günü kaçırıp planı düzenle",
+          "İlerleme ve geri dönüşü göster"
+        ],
+        "objections": [
+          {
+            "question": "Takvim uygulamam zaten var.",
+            "answer": "Takvim zamanı gösterir; ürün hedefi küçük öğrenme görevlerine ve tekrar düzenine çevirir."
+          },
+          {
+            "question": "AI planı gerçekçi olmayabilir.",
+            "answer": "Kullanıcı süre sınırı, kolay düzenleme ve küçük görevlerle planı kontrol eder."
+          }
+        ]
+      },
+      "pricing": [
+        "Temel plan ücretsiz",
+        "Sınırsız plan ve takip premium",
+        "Eğitmen/koç paketi"
+      ],
+      "activation": "Kullanıcının ilk günlük görevi tamamlaması",
+      "metrics": [
+        "İlk görev tamamlama",
+        "3/7/30 günlük devam",
+        "Plan düzenleme oranı",
+        "Haftalık tamamlanma",
+        "Premium dönüşüm"
+      ],
+      "pilot": "20 kullanıcı, 14 gün, tek öğrenme hedefi"
+    },
+    {
+      "id": "child-explainer",
+      "profile": "education-b2c",
+      "recommendedRoute": "service",
+      "passport": {
+        "buyer": "Ebeveyn, öğretmen veya eğitim kurumu",
+        "mvpTime": "2 hafta",
+        "techDifficulty": "Orta",
+        "salesDifficulty": "Zor",
+        "dataSensitivity": "Yüksek",
+        "revenue": [
+          "Öğretmen aboneliği",
+          "Kurum lisansı",
+          "İçerik paketi"
+        ],
+        "firstChannel": "Öğretmen/ebeveyn toplulukları",
+        "promise": "Zor bir konuyu çocuğun yaşına uygun benzetme, soru ve güvenli kaynakla anlat."
+      },
+      "validationTargets": [
+        "4 öğretmen",
+        "4 ebeveyn",
+        "Gözetimli 6 çocuk testi"
+      ],
+      "goSignals": [
+        "Öğretmenler aynı konuyu farklı seviyelerde açıklamakta zorlanıyor.",
+        "Yaş ve konu sınırı net tanımlanabiliyor.",
+        "İnsan/öğretmen kontrolü kabul ediliyor."
+      ],
+      "stopSignals": [
+        "Açık web erişimi ve sınırsız sohbet bekleniyor.",
+        "Çocuk verisi veya ses/görüntü gereksiz toplanıyor.",
+        "Öğretmen doğrulaması olmadan bilimsel kesinlik iddiası var."
+      ],
+      "mvp": {
+        "must": [
+          "Yaş ve konu seç",
+          "Kısa benzetmeli açıklama üret",
+          "Anlama sorusu sor",
+          "Güvenli kaynak/öğretmen notu göster",
+          "Uygunsuz konu ve kişisel veri koruması ekle"
+        ],
+        "later": [
+          "Sesli anlatım",
+          "Sınıf paneli",
+          "Kişiselleştirilmiş öğrenme geçmişi"
+        ],
+        "avoid": [
+          "Sınırsız açık sohbet",
+          "Çocuk profil verisi toplamak",
+          "Tıbbi/kişisel konularda uzman yerine geçmek"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Küratörlü konu listesi",
+          "Ücretsiz model",
+          "Statik arayüz",
+          "Öğretmen kontrol formu"
+        ],
+        "low": [
+          "Serverless API",
+          "İçerik filtreleme",
+          "Ücretli model",
+          "Anonim geri bildirim"
+        ],
+        "professional": [
+          "Kurum hesabı",
+          "Moderasyon",
+          "Yaş doğrulama/ebeveyn onayı",
+          "Audit ve içerik yönetimi"
+        ]
+      },
+      "tests": [
+        "Farklı yaş seviyeleri",
+        "Yanlış/tehlikeli konu",
+        "Kişisel bilgi paylaşımı",
+        "Bilimsel yanlış bilgi",
+        "Korkutucu içerik",
+        "Prompt injection",
+        "Öğretmen düzeltmesi",
+        "Çocuğun kendi cümlesiyle açıklaması"
+      ],
+      "launch": {
+        "mode": "Gözetimli pilot",
+        "extras": [
+          "Tek konu alanı seç.",
+          "Çocuk testlerini öğretmen/ebeveyn gözetiminde yap.",
+          "Açık web ve kişisel hafızayı kapalı tut."
+        ]
+      },
+      "channels": [
+        "Öğretmen toplulukları",
+        "Ebeveyn içerikleri",
+        "Eğitim kurumları"
+      ],
+      "marketing": {
+        "message": "Çocuğa daha çok metin verme; anlayabileceği benzetme ve kontrol sorusu ver.",
+        "leadMagnet": "10 zor konuyu çocuk dilinde anlatma şablonu",
+        "contentIdeas": [
+          "Aynı konuyu 8 ve 12 yaşa anlat",
+          "Çocuklar için AI güvenlik kontrolü",
+          "İyi benzetme nasıl seçilir?",
+          "Öğretmen onaylı açıklama akışı"
+        ]
+      },
+      "sales": {
+        "opening": "Hangi konuları öğrencilerin yaşına göre tekrar tekrar farklı anlatmak zorunda kalıyorsunuz?",
+        "demo": [
+          "Yaş ve konu seç",
+          "İki farklı seviyede açıklama göster",
+          "Anlama sorusunu göster",
+          "Güvenlik ve öğretmen düzeltmesini göster"
+        ],
+        "objections": [
+          {
+            "question": "Çocuğumu AI ile yalnız bırakmam.",
+            "answer": "Ürün açık sohbet değil; küratörlü, gözetimli ve öğretmen/ebeveyn kontrollü anlatım aracıdır."
+          },
+          {
+            "question": "Yanlış bilgi riski var.",
+            "answer": "Konu sınırı, kaynak, öğretmen onayı ve yanlış bilgi bildirimi temel tasarımdır."
+          }
+        ]
+      },
+      "pricing": [
+        "Öğretmen için sınırlı ücretsiz",
+        "Sınıf/öğretmen aboneliği",
+        "Kurum içerik lisansı"
+      ],
+      "activation": "Çocuğun açıklamadan sonra konuyu kendi cümlesiyle anlatabilmesi",
+      "metrics": [
+        "Öğretmen kabul oranı",
+        "Anlama sorusu başarısı",
+        "Uygunsuz çıktı",
+        "Tekrar kullanım",
+        "Kurum pilot dönüşümü"
+      ],
+      "pilot": "3 öğretmen, 6 çocuk, tek konu alanı, gözetimli kullanım"
+    },
+    {
+      "id": "proposal-helper",
+      "profile": "business-ops",
+      "recommendedRoute": "service",
+      "passport": {
+        "buyer": "Freelancer, ajans veya küçük hizmet işletmesi",
+        "mvpTime": "Hafta sonu",
+        "techDifficulty": "Kolay",
+        "salesDifficulty": "Kolay",
+        "dataSensitivity": "Orta",
+        "revenue": [
+          "Aylık abonelik",
+          "Şablon paketi",
+          "Kurulum/danışmanlık"
+        ],
+        "firstChannel": "Freelancer ve yerel işletme ağı",
+        "promise": "Müşteri bilgilerini güvenli bir şablonla anlaşılır teklif taslağına dönüştür."
+      },
+      "validationTargets": [
+        "5 freelancer",
+        "3 küçük ajans",
+        "2 hizmet işletmesi"
+      ],
+      "goSignals": [
+        "Benzer teklifler tekrar yazılıyor.",
+        "Teklif hazırlama süresi ölçülebiliyor.",
+        "Fiyat ve taahhüt için insan onayı kabul ediliyor."
+      ],
+      "stopSignals": [
+        "Her teklif tamamen özel ve tekrar etmiyor.",
+        "Kullanıcı otomatik fiyat/hukuki taahhüt bekliyor.",
+        "Müşteri verisi için güvenli saklama yolu yok."
+      ],
+      "mvp": {
+        "must": [
+          "Müşteri ve kapsam formu",
+          "Onaylı teklif şablonu",
+          "Kapsam/teslim/fiyat taslağı",
+          "İnsan düzenleme ve onay ekranı",
+          "PDF/Markdown dışa aktarma"
+        ],
+        "later": [
+          "CRM entegrasyonu",
+          "E-imza",
+          "Çoklu para birimi/şablon"
+        ],
+        "avoid": [
+          "Otomatik gönderim",
+          "Hukuki sözleşme üretme iddiası",
+          "İlk sürümde muhasebe entegrasyonu"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Statik form",
+          "Ücretsiz model",
+          "HTML/PDF şablonu",
+          "localStorage"
+        ],
+        "low": [
+          "Serverless API",
+          "Ücretli model",
+          "Şablon veritabanı",
+          "E-posta taslağı"
+        ],
+        "professional": [
+          "CRM",
+          "RBAC",
+          "E-imza entegrasyonu",
+          "Audit ve müşteri portalı"
+        ]
+      },
+      "tests": [
+        "Basit sabit fiyat",
+        "Saatlik hizmet",
+        "Eksik müşteri bilgisi",
+        "Yanlış fiyat",
+        "Hukuki taahhüt",
+        "Çok uzun kapsam",
+        "Kişisel veri",
+        "Farklı marka dili"
+      ],
+      "launch": {
+        "mode": "Hizmet pilotu",
+        "extras": [
+          "İlk üç teklifi müşteriyle birlikte elle hazırla.",
+          "Fiyat ve taahhüt alanlarını zorunlu onaya bağla.",
+          "Teklif verisini varsayılan olarak saklama."
+        ]
+      },
+      "channels": [
+        "Freelancer toplulukları",
+        "Yerel ajans/işletme ağı",
+        "LinkedIn'de teklif hazırlama içerikleri"
+      ],
+      "marketing": {
+        "message": "Teklifi otomatik gönderme; ilk kaliteli taslağı dakikalar içinde hazırla.",
+        "leadMagnet": "Ücretsiz profesyonel teklif şablonu",
+        "contentIdeas": [
+          "Kötü teklifi iyi teklife çevir",
+          "Kapsam kaymasını önleyen 5 madde",
+          "Fiyatı AI'ya bırakmamanın nedeni",
+          "10 dakikalık teklif demosu"
+        ]
+      },
+      "sales": {
+        "opening": "Bir müşteriye teklif hazırlamak kaç dakika sürüyor ve en çok hangi bölümü tekrar yazıyorsunuz?",
+        "demo": [
+          "Müşteri/kapsam formunu doldur",
+          "Taslağı üret",
+          "Fiyat ve taahhüt onayını göster",
+          "PDF dışa aktar"
+        ],
+        "objections": [
+          {
+            "question": "ChatGPT ile zaten yapabilirim.",
+            "answer": "Değer; onaylı şablon, tekrar kullanılabilir iş akışı, güvenli alanlar ve gönderim öncesi kontrol."
+          },
+          {
+            "question": "Yanlış fiyat verebilir.",
+            "answer": "Fiyatı üretmek yerine kullanıcı girdisini yerleştirir ve zorunlu onaya sunar."
+          }
+        ]
+      },
+      "pricing": [
+        "İlk üç teklif için hizmet paketi",
+        "Aylık şablon/teklif planı",
+        "Ajans için çoklu marka paketi"
+      ],
+      "activation": "İlk teklif taslağının düzenlenip müşteriye gönderime hazır hale gelmesi",
+      "metrics": [
+        "Teklif hazırlama süresi",
+        "Düzeltme sayısı",
+        "Taslak → gönderim",
+        "Tekrar kullanım",
+        "Teklif → satış dönüşümü"
+      ],
+      "pilot": "5 işletme, kişi başına 3 gerçek teklif"
+    },
+    {
+      "id": "support-router",
+      "profile": "business-ops",
+      "recommendedRoute": "service",
+      "passport": {
+        "buyer": "Müşteri destek yöneticisi",
+        "mvpTime": "2 hafta",
+        "techDifficulty": "Orta",
+        "salesDifficulty": "Orta",
+        "dataSensitivity": "Yüksek",
+        "revenue": [
+          "Talep hacmine göre",
+          "Ajan koltuğu",
+          "Kurulum + abonelik"
+        ],
+        "firstChannel": "Destek yöneticileri ve CRM danışmanları",
+        "promise": "Destek talebini doğru kuyruk ve önceliğe yönlendir; kritik talepleri insana bırak."
+      },
+      "validationTargets": [
+        "4 destek temsilcisi",
+        "2 destek yöneticisi",
+        "1 CRM danışmanı"
+      ],
+      "goSignals": [
+        "Yanlış kuyruk nedeniyle SLA gecikiyor.",
+        "Geçmiş talepler etiketli ve anonimleştirilebilir.",
+        "İnsan düzeltmesi iş akışına eklenebilir."
+      ],
+      "stopSignals": [
+        "Kritik talepler otomatik kapatılmak isteniyor.",
+        "Etiketler tutarsız ve sahipleri yok.",
+        "Kişisel veri maskeleme yapılamıyor."
+      ],
+      "mvp": {
+        "must": [
+          "Talep metnini al",
+          "Kategori ve öncelik öner",
+          "Gerekçe ve güven puanı göster",
+          "Düşük güveni insana yönlendir",
+          "Temsilci düzeltmesini kaydet"
+        ],
+        "later": [
+          "CRM otomasyonu",
+          "Çoklu dil",
+          "Otomatik yanıt önerileri"
+        ],
+        "avoid": [
+          "Otomatik ticket kapatma",
+          "VIP/öncelik için ayrımcı sinyal",
+          "İlk sürümde tüm kanallar"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Anonim geçmiş talepler",
+          "Notebook/web formu",
+          "Ücretsiz model",
+          "CSV etiketler"
+        ],
+        "low": [
+          "Serverless API",
+          "Ücretli model",
+          "D1/PostgreSQL",
+          "Webhook"
+        ],
+        "professional": [
+          "CRM connector",
+          "SSO/RBAC",
+          "PII maskeleme",
+          "Audit ve drift izleme"
+        ]
+      },
+      "tests": [
+        "Net kategori",
+        "Birden çok kategori",
+        "Acil ama kısa talep",
+        "Kişisel veri",
+        "Öfkeli dil",
+        "Prompt injection",
+        "Yeni kategori",
+        "Yanlış geçmiş etiket"
+      ],
+      "launch": {
+        "mode": "Shadow routing",
+        "extras": [
+          "İlk hafta yalnızca öneri üret.",
+          "Düşük güven ve kritik kelimeleri insana yönlendir.",
+          "Temsilci düzeltmelerini veri kalitesi için izle."
+        ]
+      },
+      "channels": [
+        "Destek operasyon toplulukları",
+        "CRM danışmanları",
+        "SaaS müşteri başarı ağları"
+      ],
+      "marketing": {
+        "message": "Daha hızlı otomasyon değil; doğru ekibe daha az yanlış yönlendirme.",
+        "leadMagnet": "Destek kuyruk ve öncelik tasarım şablonu",
+        "contentIdeas": [
+          "Yanlış routing'in SLA maliyeti",
+          "Shadow mode ile güvenli pilot",
+          "Destek taleplerinde PII maskeleme",
+          "Düşük güvenli tahmini insana yönlendirme"
+        ]
+      },
+      "sales": {
+        "opening": "Taleplerinizin ne kadarı ilk seferde yanlış kuyruk veya önceliğe düşüyor?",
+        "demo": [
+          "Anonim talep göster",
+          "Kategori/öncelik ve gerekçeyi göster",
+          "Düşük güven eskalasyonunu göster",
+          "Temsilci düzeltmesini kaydet"
+        ],
+        "objections": [
+          {
+            "question": "CRM zaten kurallar içeriyor.",
+            "answer": "Kurallar net sinyalleri, ürün ise serbest metin bağlamını ve düşük güvenli vakaları tamamlar."
+          },
+          {
+            "question": "Yanlış yönlendirme daha kötü olabilir.",
+            "answer": "Shadow mode ve insan düzeltmesiyle doğruluk kanıtlanmadan otomasyon açılmaz."
+          }
+        ]
+      },
+      "pricing": [
+        "Tarihsel veri değerlendirme paketi",
+        "Aylık talep hacmi paketi",
+        "Kurumsal CRM entegrasyonu"
+      ],
+      "activation": "İlk gerçek talebin doğru kuyruk önerisinin temsilci tarafından onaylanması",
+      "metrics": [
+        "Doğru yönlendirme",
+        "İlk yanıt süresi",
+        "Düşük güven oranı",
+        "Temsilci düzeltmesi",
+        "SLA ihlali"
+      ],
+      "pilot": "1 destek ekibi, 500 tarihsel anonim talep, 2 hafta shadow mode"
+    },
+    {
+      "id": "meeting-decisions",
+      "profile": "business-ops",
+      "recommendedRoute": "saas",
+      "passport": {
+        "buyer": "Proje yöneticisi veya küçük ekip",
+        "mvpTime": "Hafta sonu",
+        "techDifficulty": "Kolay",
+        "salesDifficulty": "Orta",
+        "dataSensitivity": "Orta",
+        "revenue": [
+          "Freemium",
+          "Takım aboneliği",
+          "Toplantı aracı entegrasyonu"
+        ],
+        "firstChannel": "Proje yönetimi toplulukları",
+        "promise": "Toplantı notundan karar, sorumlu, tarih ve açık soruları onaylanabilir biçimde çıkar."
+      },
+      "validationTargets": [
+        "5 proje yöneticisi",
+        "5 ekip üyesi",
+        "2 küçük işletme sahibi"
+      ],
+      "goSignals": [
+        "Kararlar toplantı sonrası kayboluyor.",
+        "Aksiyon sahipleri netleşmiyor.",
+        "Kullanıcı onay ekranını kabul ediyor."
+      ],
+      "stopSignals": [
+        "Toplantı kaydı için izin alınamıyor.",
+        "Ürün yanlış kişiye otomatik görev atıyor.",
+        "Mevcut araç zaten güvenilir karar kaydı sağlıyor."
+      ],
+      "mvp": {
+        "must": [
+          "Not/metin yapıştır",
+          "Karar ve aksiyonları çıkar",
+          "Sorumlu/tarih belirsizliğini işaretle",
+          "Onay/düzeltme ekranı göster",
+          "Markdown/CSV dışa aktar"
+        ],
+        "later": [
+          "Takvim/Slack entegrasyonu",
+          "Canlı transkripsiyon",
+          "Takip hatırlatmaları"
+        ],
+        "avoid": [
+          "İzinsiz toplantı kaydı",
+          "Otomatik görev atama",
+          "İlk sürümde bütün toplantı platformları"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Statik form",
+          "Ücretsiz model",
+          "localStorage",
+          "Markdown/CSV export"
+        ],
+        "low": [
+          "Serverless API",
+          "Ücretli model",
+          "Takım alanı",
+          "E-posta taslağı"
+        ],
+        "professional": [
+          "SSO",
+          "Takvim/Slack/Teams connectorleri",
+          "Audit",
+          "Retention politikası"
+        ]
+      },
+      "tests": [
+        "Net kararlar",
+        "Belirsiz sorumlu",
+        "Birbiriyle çelişen notlar",
+        "Gizli konuşma",
+        "İsim benzerliği",
+        "Prompt injection",
+        "Farklı dil",
+        "Çok uzun toplantı"
+      ],
+      "launch": {
+        "mode": "Takım beta",
+        "extras": [
+          "Önce yalnızca metin/not girişiyle başla.",
+          "Her aksiyon için onay zorunlu tut.",
+          "Kayıt ve saklama politikasını görünür yap."
+        ]
+      },
+      "channels": [
+        "Proje yönetimi toplulukları",
+        "Küçük ekip/ajans ağları",
+        "Verimlilik içerikleri"
+      ],
+      "marketing": {
+        "message": "Daha uzun toplantı özeti değil; kimin ne yapacağını onaylanabilir hale getir.",
+        "leadMagnet": "Karar ve aksiyon toplantı notu şablonu",
+        "contentIdeas": [
+          "Toplantı özeti ile karar kaydı farkı",
+          "Belirsiz görev sahibini nasıl işaretleriz?",
+          "AI toplantı notunda gizlilik",
+          "60 saniyelik nottan aksiyon demosu"
+        ]
+      },
+      "sales": {
+        "opening": "Toplantıdan bir hafta sonra hangi kararların kaybolduğunu nasıl fark ediyorsunuz?",
+        "demo": [
+          "Örnek notu yapıştır",
+          "Karar/aksiyonları göster",
+          "Belirsiz sorumlu/tarihi işaretle",
+          "Onay ve export akışını göster"
+        ],
+        "objections": [
+          {
+            "question": "Toplantı aracımız zaten özet çıkarıyor.",
+            "answer": "Fark; karar, sorumlu, tarih ve onaylı takip çıktısıdır."
+          },
+          {
+            "question": "Gizlilik riski var.",
+            "answer": "Metinle sınırlı pilot, saklamama ve izin politikasıyla başla."
+          }
+        ]
+      },
+      "pricing": [
+        "Kişisel ücretsiz plan",
+        "Takım başına aylık plan",
+        "Kurumsal entegrasyon"
+      ],
+      "activation": "İlk toplantıdan çıkan bir aksiyonun ekipçe onaylanması",
+      "metrics": [
+        "Onaylanan aksiyon",
+        "Unutulan görev",
+        "Toplantı başına süre",
+        "7 günlük geri dönüş",
+        "Takım dönüşümü"
+      ],
+      "pilot": "3 ekip, 20 toplantı, yalnızca not girişi"
+    },
+    {
+      "id": "knowledge-assistant",
+      "profile": "business-ops",
+      "recommendedRoute": "service",
+      "passport": {
+        "buyer": "Orta/büyük kurum bilgi veya operasyon yöneticisi",
+        "mvpTime": "30+ gün",
+        "techDifficulty": "İleri",
+        "salesDifficulty": "Zor",
+        "dataSensitivity": "Çok yüksek",
+        "revenue": [
+          "Kullanıcı başına",
+          "Kaynak/tenant lisansı",
+          "Kurulum + kurumsal destek"
+        ],
+        "firstChannel": "Kurumsal danışmanlık ve mevcut ağ",
+        "promise": "Çalışanın doğru bilgiye, doğru yetkiyle ve kaynak gösterilerek ulaşmasını sağla."
+      },
+      "validationTargets": [
+        "5 son kullanıcı",
+        "3 bilgi sahibi",
+        "2 IT/security yöneticisi"
+      ],
+      "goSignals": [
+        "Bilgi birçok sistemde dağınık.",
+        "Erişim hakları kaynak düzeyinde alınabiliyor.",
+        "Tek kaynakla pilot yapılabiliyor."
+      ],
+      "stopSignals": [
+        "Tüm sistemleri ilk günden bağlama zorunluluğu.",
+        "Belge düzeyi yetki taşınamıyor.",
+        "Kaynak göstermeyen cevap bekleniyor."
+      ],
+      "mvp": {
+        "must": [
+          "Tek bilgi kaynağını bağla",
+          "SSO/kullanıcı kimliği al",
+          "Kaynak düzeyi yetki uygula",
+          "Kaynaklı cevap ve cevap verememe davranışı",
+          "Her kaynak çağrısını audit et"
+        ],
+        "later": [
+          "Çoklu kaynak federasyonu",
+          "İş akışı aksiyonları",
+          "Kişisel hafıza"
+        ],
+        "avoid": [
+          "Bütün kurumu ilk günden indekslemek",
+          "Agent'a geniş yazma yetkisi",
+          "ACL'yi yalnızca prompt ile uygulamak"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Public/demo doküman",
+          "Yerel model",
+          "Basit ACL simülasyonu",
+          "Kaynak linkleri"
+        ],
+        "low": [
+          "Managed vector store",
+          "OAuth/SSO prototipi",
+          "Ücretli model",
+          "Audit tablosu"
+        ],
+        "professional": [
+          "Kurumsal SSO/RBAC",
+          "Özel model gateway",
+          "DLP",
+          "Tam audit/observability",
+          "Connector izin devri"
+        ]
+      },
+      "tests": [
+        "Yetkili kaynak",
+        "Yetkisiz kaynak",
+        "Çelişen bilgi",
+        "Eski belge",
+        "Prompt injection dokümanı",
+        "Kaynak çağrısı denetimi",
+        "Çoklu kullanıcı",
+        "Veri silme/retention"
+      ],
+      "launch": {
+        "mode": "Tek kaynak/tek ekip pilotu",
+        "extras": [
+          "Tek bilgi alanı ve tek ekip seç.",
+          "Kimlik ve yetkiyi her kaynak çağrısında kontrol et.",
+          "Yazma/aksiyon yetkilerini ilk pilotta kapalı tut."
+        ]
+      },
+      "channels": [
+        "Kurumsal danışmanlar",
+        "Bilgi yönetimi/IT yöneticileri",
+        "Mevcut müşteri ağı"
+      ],
+      "marketing": {
+        "message": "Her şeyi bilen bot değil; doğru kullanıcıya doğru kaynağı güvenli biçimde gösteren asistan.",
+        "leadMagnet": "Kurumsal AI bilgi asistanı güvenlik kontrol listesi",
+        "contentIdeas": [
+          "RAG'da ACL neden prompt değildir?",
+          "Tek kaynakla güvenli pilot",
+          "Prompt injection dokümanı testi",
+          "Kurumsal AI için audit tasarımı"
+        ]
+      },
+      "sales": {
+        "opening": "Çalışanlar doğru cevabı bulmak için kaç sisteme bakıyor ve yanlış yetki riski nerede oluşuyor?",
+        "demo": [
+          "Tek kaynak bağla",
+          "İki farklı kullanıcıyla aynı soruyu sor",
+          "Yetkili/yetkisiz sonucu göster",
+          "Kaynak ve audit kaydını göster"
+        ],
+        "objections": [
+          {
+            "question": "Tüm şirket verisini bağlamak çok zor.",
+            "answer": "Tek kaynak ve tek ekip ile güvenlik/yarar kanıtlandıktan sonra genişlet."
+          },
+          {
+            "question": "Veri sızıntısı riski kabul edilemez.",
+            "answer": "Kimlik, kaynak düzeyi ACL, özel model, audit ve yazma yetkisi kapalı pilot kullan."
+          }
+        ]
+      },
+      "pricing": [
+        "Tek ekip güvenlik değerlendirmesi/pilot",
+        "Kullanıcı + kaynak bazlı lisans",
+        "Kurumsal connector ve destek"
+      ],
+      "activation": "İki farklı yetkide kullanıcının doğru ve farklı kaynak sonucunu güvenle alması",
+      "metrics": [
+        "Doğru cevap",
+        "Doğru yetki",
+        "Kaynak tıklama",
+        "Cevap bulma süresi",
+        "Yetki ihlali"
+      ],
+      "pilot": "1 ekip, 1 kaynak, 20 kullanıcı, 100 gerçek soru"
+    },
+    {
+      "id": "video-brief",
+      "profile": "content-creator",
+      "recommendedRoute": "saas",
+      "passport": {
+        "buyer": "İçerik üreticisi, eğitmen veya pazarlama ekibi",
+        "mvpTime": "Hafta sonu",
+        "techDifficulty": "Kolay",
+        "salesDifficulty": "Kolay",
+        "dataSensitivity": "Düşük",
+        "revenue": [
+          "Freemium",
+          "Creator aboneliği",
+          "Ajans marka paketi"
+        ],
+        "firstChannel": "YouTube/Instagram içerik üreticileri",
+        "promise": "Boş sayfadan hedefi, kancası ve sahne akışı belli kısa video brief'ine geç."
+      },
+      "validationTargets": [
+        "6 içerik üreticisi",
+        "2 eğitmen",
+        "2 pazarlama çalışanı"
+      ],
+      "goSignals": [
+        "İçerik fikri var ama yapı kurmak zaman alıyor.",
+        "Taslakların çoğu yayına dönüşmüyor.",
+        "Tek format/kanalla başlanabilir."
+      ],
+      "stopSignals": [
+        "Kullanıcı tam otomatik özgün içerik bekliyor.",
+        "Telifli içerik kopyalama talebi yüksek.",
+        "Ürün bir platformdaki tüm üretim sürecini ilk günden çözmeye çalışıyor."
+      ],
+      "mvp": {
+        "must": [
+          "Hedef kitle ve mesaj formu",
+          "Kanca/ana fikir/sahne akışı üret",
+          "Süre ve platforma göre kısalt",
+          "Marka tonu düzenleme",
+          "Kopyalama/export"
+        ],
+        "later": [
+          "Storyboard görselleri",
+          "Ekip şablonları",
+          "Yayın takvimi"
+        ],
+        "avoid": [
+          "Otomatik video üretimi",
+          "Telifli senaryo taklidi",
+          "İlk sürümde tüm platform formatları"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Statik form",
+          "Ücretsiz model",
+          "localStorage",
+          "Markdown export"
+        ],
+        "low": [
+          "Serverless API",
+          "Ücretli model",
+          "Hesap/şablonlar",
+          "D1/Supabase"
+        ],
+        "professional": [
+          "Takım alanı",
+          "Marka kütüphanesi",
+          "Asset entegrasyonu",
+          "Analytics"
+        ]
+      },
+      "tests": [
+        "30 saniyelik kısa video",
+        "5 dakikalık eğitim videosu",
+        "Belirsiz hedef kitle",
+        "Yanıltıcı iddia",
+        "Telifli stil talebi",
+        "Marka tonu",
+        "Farklı platform",
+        "Türkçe/İngilizce"
+      ],
+      "launch": {
+        "mode": "Creator beta",
+        "extras": [
+          "Tek video formatıyla başla.",
+          "Çıktıyı taslak olarak işaretle.",
+          "Telif ve iddia kontrol notunu göster."
+        ]
+      },
+      "channels": [
+        "YouTube/Instagram creator toplulukları",
+        "Eğitmen ağları",
+        "Ajans ortaklıkları"
+      ],
+      "marketing": {
+        "message": "Videoyu üretme; boş sayfadan çekilebilir bir plana geç.",
+        "leadMagnet": "10 kısa video kancası ve brief şablonu",
+        "contentIdeas": [
+          "Bir fikirden 30 saniyelik brief",
+          "Kanca ile yanıltıcı iddia arasındaki çizgi",
+          "Aynı mesajı 3 platforma uyarlama",
+          "AI senaryosunda marka tonu"
+        ]
+      },
+      "sales": {
+        "opening": "Bir video fikrini çekilebilir senaryoya çevirmek ne kadar sürüyor ve en çok nerede takılıyorsunuz?",
+        "demo": [
+          "Hedef/mesaj gir",
+          "Kanca ve sahne akışını göster",
+          "Süre/platform değiştir",
+          "Taslağı dışa aktar"
+        ],
+        "objections": [
+          {
+            "question": "ChatGPT zaten senaryo yazar.",
+            "answer": "Değer; brief formu, platform kısıtı, marka tonu, tekrar kullanılabilir şablon ve yayın dönüşümüdür."
+          },
+          {
+            "question": "İçerikler birbirine benzer.",
+            "answer": "Kullanıcı kaynakları, örnekleri ve marka kısıtlarıyla özgünlüğü yönlendirir."
+          }
+        ]
+      },
+      "pricing": [
+        "Sınırlı ücretsiz brief",
+        "Creator aylık plan",
+        "Ajans/marka şablon paketi"
+      ],
+      "activation": "İlk brief'in çekim veya yayın aşamasına geçmesi",
+      "metrics": [
+        "Brief oluşturma süresi",
+        "Taslak → yayın oranı",
+        "Düzenleme süresi",
+        "7 günlük tekrar kullanım",
+        "Creator dönüşümü"
+      ],
+      "pilot": "10 içerik üreticisi, kişi başına 3 brief"
+    },
+    {
+      "id": "podcast-notes",
+      "profile": "content-creator",
+      "recommendedRoute": "service",
+      "passport": {
+        "buyer": "Podcast üreticisi veya medya ekibi",
+        "mvpTime": "2 hafta",
+        "techDifficulty": "Orta",
+        "salesDifficulty": "Orta",
+        "dataSensitivity": "Orta",
+        "revenue": [
+          "Bölüm başına",
+          "Aylık abonelik",
+          "Ajans hizmet paketi"
+        ],
+        "firstChannel": "Podcast üretici toplulukları",
+        "promise": "Uzun kaydı doğru zaman damgaları, bölüm notları ve onaylı alıntılarla yayına hazırla."
+      },
+      "validationTargets": [
+        "5 bağımsız podcaster",
+        "2 prodüksiyon ekibi",
+        "1 medya ajansı"
+      ],
+      "goSignals": [
+        "Bölüm notu ve zaman damgası saatler alıyor.",
+        "Transkript düzeltmesi tekrarlanıyor.",
+        "İnsan onayıyla bölüm başına ödeme kabul ediliyor."
+      ],
+      "stopSignals": [
+        "Konuşmacı izni yok.",
+        "Yanlış alıntı riski için onay süreci istenmiyor.",
+        "Ses kalitesi transkripsiyona uygun değil."
+      ],
+      "mvp": {
+        "must": [
+          "Ses veya transkript al",
+          "Konuşmacı ve bölüm başlıklarını çıkar",
+          "Önemli anlara zaman damgası koy",
+          "Alıntıları kaynağıyla göster",
+          "İnsan düzeltmesi ve export"
+        ],
+        "later": [
+          "Otomatik sosyal klip",
+          "Çoklu dil",
+          "Podcast hosting entegrasyonu"
+        ],
+        "avoid": [
+          "Onaysız alıntı yayınlama",
+          "Ses iznini varsaymak",
+          "İlk sürümde otomatik video klip"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Açık kaynak speech-to-text",
+          "Yerel model",
+          "Basit web/CLI",
+          "Markdown export"
+        ],
+        "low": [
+          "Managed transcription",
+          "Ücretli model",
+          "Dosya saklama",
+          "Bölüm şablonları"
+        ],
+        "professional": [
+          "Takım alanı",
+          "Speaker diarization",
+          "Hosting connector",
+          "Retention ve audit"
+        ]
+      },
+      "tests": [
+        "Tek konuşmacı",
+        "Çok konuşmacı",
+        "Düşük ses kalitesi",
+        "Özel isim",
+        "Yanlış alıntı",
+        "Müzik/telif",
+        "Farklı dil",
+        "Çok uzun kayıt"
+      ],
+      "launch": {
+        "mode": "Bölüm başı hizmet pilotu",
+        "extras": [
+          "İlk üç bölümü elle kontrol ederek teslim et.",
+          "Her alıntıyı transkript ve zaman damgasıyla bağla.",
+          "Ses dosyası silme süresini açıkla."
+        ]
+      },
+      "channels": [
+        "Podcast üretici toplulukları",
+        "Prodüksiyon ajansları",
+        "YouTube/podcast eğitim içerikleri"
+      ],
+      "marketing": {
+        "message": "Kaydı özetleme; editörün yayına hazırlama süresini azalt.",
+        "leadMagnet": "Ücretsiz podcast bölüm notu şablonu",
+        "contentIdeas": [
+          "60 dakikalık kayıttan 5 dakikada show notes",
+          "Yanlış alıntıyı önleyen kontrol",
+          "Konuşmacı ayrımı nasıl test edilir?",
+          "Bir bölümün önce/sonra iş akışı"
+        ]
+      },
+      "sales": {
+        "opening": "Bir podcast bölümünün transkript, zaman damgası ve show notes hazırlığı kaç saat sürüyor?",
+        "demo": [
+          "Kısa kayıt yükle",
+          "Bölüm başlıklarını göster",
+          "Zaman damgası ve alıntı kaynağını göster",
+          "Editör düzeltmesi/export'u göster"
+        ],
+        "objections": [
+          {
+            "question": "Transkripsiyon aracımız var.",
+            "answer": "Değer; transkriptten editoryal bölüm, zaman damgası, alıntı ve yayın çıktısına geçiştir."
+          },
+          {
+            "question": "Yanlış alıntı bizi riske atar.",
+            "answer": "Kaynak bağlama ve zorunlu editör onayı olmadan yayın yapılmaz."
+          }
+        ]
+      },
+      "pricing": [
+        "İlk üç bölüm hizmet paketi",
+        "Aylık bölüm kotası",
+        "Ajans çoklu podcast paketi"
+      ],
+      "activation": "İlk bölüm notunun editör tarafından onaylanıp yayınlanması",
+      "metrics": [
+        "Bölüm başına süre",
+        "Zaman damgası doğruluğu",
+        "Alıntı düzeltmesi",
+        "Tekrar sipariş",
+        "Hizmet → abonelik"
+      ],
+      "pilot": "5 podcast, toplam 15 bölüm"
+    },
+    {
+      "id": "social-calendar",
+      "profile": "content-creator",
+      "recommendedRoute": "saas",
+      "passport": {
+        "buyer": "Küçük marka veya bireysel içerik üreticisi",
+        "mvpTime": "Hafta sonu",
+        "techDifficulty": "Kolay",
+        "salesDifficulty": "Kolay",
+        "dataSensitivity": "Düşük",
+        "revenue": [
+          "Freemium",
+          "Aylık creator planı",
+          "Ajans marka paketi"
+        ],
+        "firstChannel": "Küçük marka ve creator toplulukları",
+        "promise": "Marka hedefini tekrar etmeyen, onaylanabilir dört haftalık içerik planına çevir."
+      },
+      "validationTargets": [
+        "6 küçük marka",
+        "4 içerik üreticisi",
+        "2 sosyal medya yöneticisi"
+      ],
+      "goSignals": [
+        "Ekip her hafta konu bulmakta zorlanıyor.",
+        "İçerik planı yapılmasına rağmen yayınlanmıyor.",
+        "Marka tonu ve onay süreci tanımlanabiliyor."
+      ],
+      "stopSignals": [
+        "Kullanıcı otomatik yayın bekliyor.",
+        "Başarı yalnızca içerik sayısıyla ölçülüyor.",
+        "Marka iddiaları ve kaynak kontrolü yapılmıyor."
+      ],
+      "mvp": {
+        "must": [
+          "Marka hedefi/kitle/ton formu",
+          "4 haftalık konu sütunları",
+          "Format ve CTA önerisi",
+          "Tekrar/benzerlik kontrolü",
+          "Onay ve CSV export"
+        ],
+        "later": [
+          "Performans verisiyle öğrenme",
+          "Takım onayı",
+          "Platform planlama entegrasyonu"
+        ],
+        "avoid": [
+          "Otomatik yayın",
+          "Gerçek dışı marka iddiası",
+          "İlk sürümde her platform için içerik üretme"
+        ]
+      },
+      "stack": {
+        "free": [
+          "Statik form",
+          "Ücretsiz model",
+          "localStorage",
+          "CSV/Markdown export"
+        ],
+        "low": [
+          "Serverless API",
+          "Ücretli model",
+          "Hesap/marka şablonu",
+          "D1/Supabase"
+        ],
+        "professional": [
+          "Takım onayı",
+          "Brand library",
+          "Analytics connector",
+          "Audit"
+        ]
+      },
+      "tests": [
+        "Tek ürünlü marka",
+        "Birden çok hedef kitle",
+        "Tekrarlayan konu",
+        "Yanıltıcı iddia",
+        "Hassas sektör",
+        "Farklı platform",
+        "Türkçe marka tonu",
+        "Boş performans verisi"
+      ],
+      "launch": {
+        "mode": "4 haftalık beta",
+        "extras": [
+          "Tek platform ve tek marka profiliyle başla.",
+          "Her içeriği onay kuyruğunda tut.",
+          "İddia ve kaynak kontrol notu ekle."
+        ]
+      },
+      "channels": [
+        "Küçük marka toplulukları",
+        "Instagram/LinkedIn creator içerikleri",
+        "Ajans ortaklıkları"
+      ],
+      "marketing": {
+        "message": "Her gün yeni fikir arama; markanın birkaç güçlü tema etrafında tutarlı yayın yapmasını sağla.",
+        "leadMagnet": "Ücretsiz 4 haftalık içerik takvimi şablonu",
+        "contentIdeas": [
+          "Bir marka için 4 içerik sütunu",
+          "Tekrarlayan AI içeriklerini azaltma",
+          "Onay kuyruğu neden otomatik yayından güvenli?",
+          "Bir haftalık planı 5 dakikada kur"
+        ]
+      },
+      "sales": {
+        "opening": "İçerik takviminizin ne kadarı gerçekten yayına dönüşüyor ve en çok hangi aşamada kalıyor?",
+        "demo": [
+          "Marka hedefini gir",
+          "4 haftalık planı göster",
+          "Tekrar kontrolünü göster",
+          "Onay ve export'u göster"
+        ],
+        "objections": [
+          {
+            "question": "AI içerikleri birbirine benziyor.",
+            "answer": "Marka sütunları, tekrar kontrolü ve kullanıcı kaynaklarıyla çeşitliliği yönet."
+          },
+          {
+            "question": "Plan yapmak yayınlamak demek değil.",
+            "answer": "Aktivasyon ve metrik doğrudan taslak → onay → yayın dönüşümüne bağlanır."
+          }
+        ]
+      },
+      "pricing": [
+        "Tek marka ücretsiz plan",
+        "Creator aylık plan",
+        "Ajans çoklu marka paketi"
+      ],
+      "activation": "Planlanan ilk içeriğin onaylanıp yayınlanması",
+      "metrics": [
+        "Plan → yayın oranı",
+        "Hazırlama süresi",
+        "Tekrar oranı",
+        "7 günlük geri dönüş",
+        "Marka başına aktif kullanım"
+      ],
+      "pilot": "10 marka/creator, 4 hafta, tek platform"
+    }
+  ]
+}

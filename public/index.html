@@ -184,7 +184,7 @@
         <span class="section-number">04</span>
         <p class="kicker">ÜRÜN VE HİZMET FİKİRLERİ</p>
         <h2>AI fikri değil, insan problemi seç.</h2>
-        <p class="section-intro">İyi ürün “çok akıllı” olduğu için değil, belirli bir kişinin sıkıcı bir işini kolaylaştırdığı için kullanılır.</p>
+        <p class="section-intro">Bir fikri aç; ürün pasaportunu gör. Sonra PUSULA + KAZAN çalışma alanında doğrulamadan canlıya alma, ilk müşteri, pazarlama, satış ve takibe kadar ilerle.</p>
       </div>
 
       <div class="idea-toolbar">
@@ -212,10 +212,10 @@
       <div class="section-heading split-heading">
         <div>
           <span class="section-number">05</span>
-          <p class="kicker">PUSULA METODOLOJİSİ</p>
-          <h2>Fikirden ilk kullanıcıya altı küçük adım.</h2>
+          <p class="kicker">PUSULA + KAZAN</p>
+          <h2>Fikri ürüne, ürünü müşteriye taşı.</h2>
         </div>
-        <p id="methodContext">Bir fikir kartında “PUSULA ile geliştir” dersen bu bölüm o fikre göre örnek verir.</p>
+        <p id="methodContext">PUSULA fikri doğrular ve ürünü kurar. KAZAN ilk müşteriyi bulur, satışa ve takibe götürür. Bir fikir seçtiğinde örnekler ve ayrıntılı plan o ürüne göre değişir.</p>
       </div>
 
       <div class="method-layout">
@@ -289,7 +289,7 @@
         <label><input type="checkbox" data-progress="apps"><span>Ana uygulamalar ve kullanım alanları</span></label>
         <label><input type="checkbox" data-progress="models"><span>Model türleri ve karşılaştırma</span></label>
         <label><input type="checkbox" data-progress="ideas"><span>Ürün ve hizmet fikirleri</span></label>
-        <label><input type="checkbox" data-progress="method"><span>PUSULA ürün geliştirme yöntemi</span></label>
+        <label><input type="checkbox" data-progress="method"><span>PUSULA + KAZAN ürün ve müşteri yöntemi</span></label>
         <label><input type="checkbox" data-progress="security"><span>Agent Security kontrol kapıları</span></label>
       </div>
     </div>
@@ -334,6 +334,36 @@
   <div class="dialog-shell detail-shell">
     <div class="dialog-head"><div><span class="kicker">ÜRÜN FİKRİ</span><h2 id="ideaTitle">Fikir</h2></div><button class="icon-button" data-close-dialog="ideaDialog" aria-label="Kapat">×</button></div>
     <div id="ideaContent"></div>
+  </div>
+</dialog>
+
+<dialog class="dialog journey-dialog" id="journeyDialog" aria-labelledby="journeyTitle">
+  <div class="journey-shell">
+    <aside class="journey-rail" aria-label="Ürün planı ilerlemesi">
+      <div class="journey-rail-head">
+        <div><span class="kicker">ÜRÜN ÇALIŞMA ALANI</span><h2 id="journeyRailTitle">Ürün planı</h2></div>
+        <button class="icon-button journey-mobile-close" data-close-dialog="journeyDialog" aria-label="Kapat">×</button>
+      </div>
+      <div id="journeyPassport" class="journey-passport"></div>
+      <div class="journey-settings" id="journeySettings"></div>
+      <div class="journey-progress-card" aria-live="polite">
+        <div class="journey-progress-ring" id="journeyProgressRing"><span id="journeyProgressPercent">0%</span></div>
+        <div><b>PLAN İLERLEMESİ</b><span id="journeyProgressText">0 / 0 görev</span></div>
+      </div>
+      <div class="today-task"><span>BUGÜNKÜ TEK GÖREV</span><p id="journeyTodayTask">Önce bir ürün fikri seç.</p></div>
+      <nav class="journey-stage-nav" id="journeyStageNav" aria-label="Ürün yol haritası aşamaları"></nav>
+      <div class="journey-rail-actions">
+        <button class="text-button" id="copyJourneyPlan" type="button">Planı Markdown kopyala</button>
+        <button class="text-button danger-text" id="resetJourneyPlan" type="button">Bu planı sıfırla</button>
+      </div>
+    </aside>
+    <section class="journey-main">
+      <div class="journey-main-head">
+        <div><span class="kicker" id="journeyPhase">PUSULA</span><h2 id="journeyTitle">Ürün yol haritası</h2></div>
+        <button class="icon-button journey-desktop-close" data-close-dialog="journeyDialog" aria-label="Kapat">×</button>
+      </div>
+      <div id="journeyStageContent" class="journey-stage-content" aria-live="polite"></div>
+    </section>
   </div>
 </dialog>
 

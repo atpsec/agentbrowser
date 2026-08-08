@@ -3,7 +3,8 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
 const STORAGE = {
   progress: 'ai-pusula-progress-v2',
-  route: 'ai-pusula-route-v1'
+  route: 'ai-pusula-route-v1',
+  journeys: 'ai-pusula-product-journeys-v1'
 };
 
 const state = {
@@ -11,6 +12,7 @@ const state = {
   models: [],
   ideas: [],
   updates: [],
+  playbookCatalog: null,
   appCategory: 'all',
   appSearch: '',
   appFreeOnly: false,
@@ -22,6 +24,8 @@ const state = {
   ideaDifficulty: 'all',
   ideaLimit: 6,
   selectedIdea: null,
+  selectedPlaybook: null,
+  journeyPlan: null,
   methodStep: 0,
   wizardStep: 0,
   wizardComplete: false,
@@ -122,6 +126,19 @@ const methodData = [
     question: 'İlk hafta ürünü kimler deneyecek ve hangi geri bildirimi toplayacaksın?',
     example: idea => idea ? `İlk pilot: 3 ${idea.user.toLocaleLowerCase('tr-TR')} kullanıcısıyla 10 gerçek görev.` : 'Örnek: Üç analist, bir hafta boyunca yalnızca öneri modunda dener.'
   }
+];
+
+
+const journeyStageLabels = [
+  { id: 'validate', phase: 'PUSULA', number: '01', title: 'Problemi doğrula', summary: 'İnsanların gerçekten bu probleme sahip olduğunu kanıtla.' },
+  { id: 'offer', phase: 'PUSULA', number: '02', title: 'Teklifi oluştur', summary: 'Kime, hangi sonucu ve hangi ilk paketle sunduğunu netleştir.' },
+  { id: 'build', phase: 'PUSULA', number: '03', title: 'MVP’yi inşa et', summary: 'Tek kullanıcı ve tek ana iş akışı için en küçük çalışan ürünü kur.' },
+  { id: 'test', phase: 'PUSULA', number: '04', title: 'Güvenli test et', summary: 'Doğru örneklerin yanında kötü veri, hata ve saldırı durumlarını da dene.' },
+  { id: 'launch', phase: 'PUSULA', number: '05', title: 'Canlıya al', summary: 'Büyük lansman yerine ölçülebilir ve geri alınabilir bir pilot başlat.' },
+  { id: 'acquire', phase: 'KAZAN', number: '06', title: 'İlk müşterileri bul', summary: 'Dar bir hedef liste oluştur ve problem görüşmeleriyle ilk pilotları bul.' },
+  { id: 'market', phase: 'KAZAN', number: '07', title: 'Pazarla', summary: 'Ürünün özelliğini değil, çözdüğü problemi ve sonucu göster.' },
+  { id: 'sell', phase: 'KAZAN', number: '08', title: 'Sat', summary: 'Keşif, demo, pilot ve teklif akışını basit bir satış sistemine dönüştür.' },
+  { id: 'retain', phase: 'KAZAN', number: '09', title: 'Takip et ve büyüt', summary: 'İlk değer anını hızlandır, geri dönüşü ölç ve müşteriyi elde tut.' }
 ];
 
 const policyData = {
@@ -253,16 +270,18 @@ async function fetchJson(path) {
 }
 
 async function loadData() {
-  const [apps, models, ideas, updates] = await Promise.all([
+  const [apps, models, ideas, updates, playbooks] = await Promise.all([
     fetchJson('./data/apps.json'),
     fetchJson('./data/models.json'),
     fetchJson('./data/ideas.json'),
-    fetchJson('./data/updates.json')
+    fetchJson('./data/updates.json'),
+    fetchJson('./data/playbooks.json')
   ]);
   state.apps = apps.items;
   state.models = models.items;
   state.ideas = ideas.items;
   state.updates = updates.items;
+  state.playbookCatalog = playbooks;
 }
 
 function renderConcept(key) {
@@ -532,12 +551,17 @@ function filteredIdeas() {
 }
 
 function ideaCard(idea, index) {
+  const playbook = getPlaybook(idea.id);
+  const progress = playbook ? journeyPercentForIdea(idea, playbook) : 0;
+  const passport = playbook?.passport;
   return `<article class="idea-card">
     <div class="card-top"><span class="idea-number">${String(index + 1).padStart(2, '0')}</span><span class="difficulty ${escapeHtml(idea.difficulty)}">${escapeHtml(difficultyLabels[idea.difficulty])}</span></div>
     <h3>${escapeHtml(idea.title)}</h3>
     <p>${escapeHtml(idea.summary)}</p>
+    ${passport ? `<div class="idea-passport-mini"><span>${escapeHtml(passport.mvpTime)}</span><span>${escapeHtml(passport.salesDifficulty)} satış</span><span>${escapeHtml(passport.dataSensitivity)} veri</span></div>` : ''}
     <div class="tag-list"><span>${escapeHtml(categoryLabels[idea.category])}</span>${idea.tools.slice(0, 3).map(tool => `<span>${escapeHtml(tool)}</span>`).join('')}</div>
-    <div class="card-actions"><button type="button" data-idea-detail="${escapeHtml(idea.id)}">Fikri aç</button><button type="button" data-idea-build="${escapeHtml(idea.id)}">PUSULA ile geliştir →</button></div>
+    ${progress ? `<div class="idea-plan-progress"><span>Plan ilerlemesi</span><b>%${progress}</b><i style="--value:${progress}"></i></div>` : ''}
+    <div class="card-actions"><button type="button" data-idea-detail="${escapeHtml(idea.id)}">Fikri aç</button><button type="button" data-journey-open="${escapeHtml(idea.id)}">Kurma planını aç →</button></div>
   </article>`;
 }
 
@@ -567,9 +591,19 @@ function ideaDetailRows(idea) {
 
 function openIdeaDetail(id) {
   const idea = state.ideas.find(item => item.id === id);
+  const playbook = getPlaybook(id);
   if (!idea) return;
   $('#ideaTitle').textContent = idea.title;
-  $('#ideaContent').innerHTML = `<p class="child-copy">${escapeHtml(idea.summary)}</p><div class="idea-detail-list">${ideaDetailRows(idea)}</div><div class="dialog-actions"><span class="difficulty ${escapeHtml(idea.difficulty)}">${escapeHtml(difficultyLabels[idea.difficulty])}</span><button class="dark-button" type="button" data-idea-build="${escapeHtml(idea.id)}">PUSULA ile geliştir</button></div>`;
+  const passport = playbook?.passport;
+  const passportMarkup = passport ? `<div class="product-passport-grid">
+    <div><b>HEDEF ALICI</b><span>${escapeHtml(passport.buyer)}</span></div>
+    <div><b>MVP SÜRESİ</b><span>${escapeHtml(passport.mvpTime)}</span></div>
+    <div><b>TEKNİK ZORLUK</b><span>${escapeHtml(passport.techDifficulty)}</span></div>
+    <div><b>SATIŞ ZORLUĞU</b><span>${escapeHtml(passport.salesDifficulty)}</span></div>
+    <div><b>VERİ HASSASİYETİ</b><span>${escapeHtml(passport.dataSensitivity)}</span></div>
+    <div><b>İLK KANAL</b><span>${escapeHtml(passport.firstChannel)}</span></div>
+  </div><blockquote class="product-promise">${escapeHtml(passport.promise)}</blockquote>` : '';
+  $('#ideaContent').innerHTML = `<p class="child-copy">${escapeHtml(idea.summary)}</p>${passportMarkup}<div class="idea-detail-list">${ideaDetailRows(idea)}</div><div class="dialog-actions product-dialog-actions"><span class="difficulty ${escapeHtml(idea.difficulty)}">${escapeHtml(difficultyLabels[idea.difficulty])}</span><div><button class="text-button" type="button" data-idea-build="${escapeHtml(idea.id)}">PUSULA özeti</button><button class="dark-button" type="button" data-journey-open="${escapeHtml(idea.id)}">Detaylı kurma planı →</button></div></div>`;
   openDialog($('#ideaDialog'));
 }
 
@@ -586,6 +620,414 @@ function selectIdeaForMethod(id) {
   showToast('Fikir PUSULA çalışma alanına aktarıldı.');
 }
 
+
+function getPlaybook(id) {
+  return state.playbookCatalog?.items?.find(item => item.id === id) || null;
+}
+
+function journeyStore() {
+  return readJson(STORAGE.journeys, {});
+}
+
+function defaultJourneyPlan(playbook) {
+  return {
+    route: playbook?.recommendedRoute || 'service',
+    duration: 'two-weeks',
+    budget: 'free',
+    stage: 0,
+    completed: {}
+  };
+}
+
+function loadJourneyPlan(id, playbook) {
+  const saved = journeyStore()[id] || {};
+  return {
+    ...defaultJourneyPlan(playbook),
+    ...saved,
+    completed: saved.completed && typeof saved.completed === 'object' ? saved.completed : {}
+  };
+}
+
+function saveJourneyPlan() {
+  if (!state.selectedIdea || !state.journeyPlan) return;
+  const store = journeyStore();
+  store[state.selectedIdea.id] = state.journeyPlan;
+  writeJson(STORAGE.journeys, store);
+}
+
+function task(id, text, priority = 'essential') {
+  return { id, text, priority };
+}
+
+function tasksFromList(prefix, values = [], priorities = ['essential', 'standard', 'extended']) {
+  return values.map((value, index) => task(`${prefix}-${index + 1}`, value, priorities[Math.min(index, priorities.length - 1)]));
+}
+
+function buildJourneyStages(idea, playbook, plan) {
+  if (!idea || !playbook || !state.playbookCatalog) return [];
+  const catalog = state.playbookCatalog;
+  const profile = catalog.profiles[playbook.profile];
+  const route = catalog.routes[plan.route] || catalog.routes[playbook.recommendedRoute] || catalog.routes.service;
+  const budget = catalog.budgets[plan.budget] || catalog.budgets.free;
+  const duration = catalog.durations[plan.duration] || catalog.durations['two-weeks'];
+  const allowed = new Set(duration.priorities);
+  const stack = playbook.stack[budget.stackKey] || playbook.stack.free || [];
+  const stage = (id, objective, doneWhen, tasks, cards) => {
+    const meta = journeyStageLabels.find(item => item.id === id);
+    return { ...meta, objective, doneWhen, tasks: tasks.filter(item => allowed.has(item.priority)), cards };
+  };
+
+  return [
+    stage('validate',
+      'Gerçek problem, gerçek kullanıcı ve pilot isteği bul.',
+      'En az 5 görüşme yapıldı, üç kişi aynı problemi doğruladı ve en az bir kişi pilotu kabul etti.',
+      [
+        task('validate-targets', `Görüşme listesini hazırla: ${playbook.validationTargets.join(' · ')}`),
+        task('validate-interviews', 'En az 5 problem görüşmesi yap; ürün sunumu yapma.'),
+        task('validate-current-way', 'Kullanıcının bugün bu işi nasıl yaptığını ekranda veya gerçek örnekle izle.'),
+        task('validate-go-stop', 'Go ve stop sinyallerini görüşme notlarıyla karşılaştır.', 'standard'),
+        task('validate-pilot', `En az bir pilot sözü al: ${playbook.pilot}`),
+        ...tasksFromList('validate-question', profile.validationQuestions, ['standard', 'standard', 'standard', 'extended', 'extended'])
+      ],
+      [
+        { title: 'Görüşülecek kişiler', list: playbook.validationTargets },
+        { title: 'Sorulacak sorular', list: profile.validationQuestions },
+        { title: 'Devam et sinyalleri', list: playbook.goSignals },
+        { title: 'Dur veya daralt sinyalleri', list: playbook.stopSignals, tone: 'danger' }
+      ]),
+    stage('offer',
+      'Bir cümlelik ürün vaadini, başlangıç rotasını ve ilk fiyat hipotezini yaz.',
+      'Kullanıcı kim, hangi sonucu alıyor, pilotun kapsamı ve bedeli ne soruları tek sayfada cevaplanıyor.',
+      [
+        task('offer-promise', `Ürün vaadini yaz ve sadeleştir: ${playbook.passport.promise}`),
+        task('offer-route', `${route.label} rotasını neden seçtiğini bir cümleyle yaz.`),
+        task('offer-pilot', `İlk pilot kapsamını yaz: ${playbook.pilot}`),
+        task('offer-pricing', `Üç fiyat hipotezinden birini test için seç: ${playbook.pricing.join(' · ')}`, 'standard'),
+        task('offer-boundaries', 'Pilotun yapacaklarını ve özellikle yapmayacaklarını açıkça yaz.'),
+        task('offer-one-page', 'Tek sayfalık pilot teklifi hazırla: problem, sonuç, kapsam, süre, güvenlik ve sonraki karar.', 'extended')
+      ],
+      [
+        { title: 'Tek cümlelik vaat', quote: playbook.passport.promise },
+        { title: 'Seçilen rota', body: `${route.label}: ${route.summary}` },
+        { title: 'Gelir seçenekleri', list: playbook.passport.revenue },
+        { title: 'Fiyat hipotezleri', list: playbook.pricing }
+      ]),
+    stage('build',
+      'Tek kullanıcı için tek ana işi baştan sona tamamlayan en küçük ürünü kur.',
+      'Kullanıcı ana girdiyi verir, sonucu alır ve insan kontrolüyle işlemi tamamlar.',
+      [
+        task('build-stack', `Seçilen bütçeyle başlangıç stack’ini kur: ${stack.join(' · ')}`),
+        ...tasksFromList('build-must', playbook.mvp.must, ['essential', 'essential', 'essential', 'standard', 'standard']),
+        ...tasksFromList('build-route', route.buildTasks, ['standard', 'standard', 'extended']),
+        task('build-out-of-scope', `Şimdilik yapılmayacakları backlog'a yaz: ${playbook.mvp.avoid.join(' · ')}`, 'standard')
+      ],
+      [
+        { title: 'İlk sürümde olmalı', list: playbook.mvp.must },
+        { title: 'Daha sonra', list: playbook.mvp.later },
+        { title: 'Şimdilik yapma', list: playbook.mvp.avoid, tone: 'danger' },
+        { title: `${budget.label} stack`, list: stack },
+        { title: 'Kapsam sınırı', body: duration.scope }
+      ]),
+    stage('test',
+      'Ürünü normal, zor, eksik ve kötü niyetli girdilerle dene.',
+      'Kritik testler kaydedildi, hatalar güvenli davranıyor ve insan onayı gereken noktalar teknik olarak kapalı.',
+      [
+        task('test-risk', `En önemli risk için koruma ekle: ${idea.risk}`),
+        ...tasksFromList('test-case', playbook.tests, ['essential', 'essential', 'essential', 'standard', 'standard', 'standard', 'extended', 'extended']),
+        task('test-cost', 'Maliyet ve istek sınırı testi yap; tek kullanıcı sınırsız tüketim oluşturamasın.', 'standard'),
+        task('test-rollback', 'Hatalı sürümü geri alma veya özelliği kapatma yolunu dene.', 'extended')
+      ],
+      [
+        { title: 'Ürüne özel testler', list: playbook.tests },
+        { title: 'Kırmızı çizgi', quote: idea.risk, tone: 'danger' },
+        { title: 'Test sonucu', body: 'Her test için beklenen sonuç, gerçek sonuç, karar ve sorumlu alanlarını kaydet.' }
+      ]),
+    stage('launch',
+      'Geri alınabilir, ölçülebilir ve dar kapsamlı bir pilotu gerçek kullanıcıya aç.',
+      'Pilot kullanıcı ürüne erişiyor, ana görevi tamamlıyor, destek ve geri alma yolu çalışıyor.',
+      [
+        task('launch-mode', `Yayın seviyesini hazırla: ${playbook.launch.mode}`),
+        ...tasksFromList('launch-profile', profile.launchBase, ['essential', 'essential', 'standard', 'standard']),
+        ...tasksFromList('launch-extra', playbook.launch.extras, ['essential', 'standard', 'standard']),
+        ...tasksFromList('launch-route', route.launchTasks, ['standard', 'extended']),
+        task('launch-support', 'İletişim, hata mesajı, gizlilik ve basit kullanım rehberini yayınla.'),
+        task('launch-monitor', 'İlk hafta kullanım, hata, maliyet ve güvenlik alarmını izle.', 'standard')
+      ],
+      [
+        { title: 'Önerilen yayın biçimi', quote: playbook.launch.mode },
+        { title: 'Canlıya alma kontrolleri', list: [...profile.launchBase, ...playbook.launch.extras] },
+        { title: 'Rota notu', body: route.launchTasks.join(' ') }
+      ]),
+    stage('acquire',
+      'İlk 10 müşteriye giden dar hedef listeyi ve temas düzenini kur.',
+      'Hedef liste hazır, problem görüşmeleri başladı ve üç pilot adayı oluştu.',
+      [
+        task('acquire-list', `İlk hedef listeyi oluştur. Başlangıç kanalı: ${playbook.passport.firstChannel}`),
+        task('acquire-ten', 'İlk 10 kişiye satış mesajı değil problem görüşmesi isteği gönder.'),
+        task('acquire-demo', 'Beş kişiye gerçekçi örnekle kısa demo göster.'),
+        task('acquire-pilots', 'Üç uygun kişiye sınırlı pilot teklif et.'),
+        ...tasksFromList('acquire-channel', playbook.channels, ['standard', 'standard', 'extended']),
+        ...tasksFromList('acquire-first-ten', profile.firstTenBase, ['standard', 'standard', 'standard', 'standard', 'extended', 'extended', 'extended', 'extended', 'extended', 'extended'])
+      ],
+      [
+        { title: 'İlk müşteri kanalları', list: playbook.channels },
+        { title: 'İlk 10 müşteri planı', list: profile.firstTenBase },
+        { title: 'Pilot tanımı', quote: playbook.pilot }
+      ]),
+    stage('market',
+      'Tek bir ana mesaj, bir ücretsiz değer ve dört haftalık içerik düzeni oluştur.',
+      'Hedef kitle için üç ana kanal seçildi, ilk içerik ve ücretsiz değer yayınlandı.',
+      [
+        task('market-message', `Ana mesajı kullanıcının diliyle yaz: ${playbook.marketing.message}`),
+        task('market-lead', `Ücretsiz değer üret: ${playbook.marketing.leadMagnet}`),
+        task('market-proof', 'Ürünün nasıl çalıştığını gösteren kısa demo veya önce/sonra örneği hazırla.'),
+        ...tasksFromList('market-content', playbook.marketing.contentIdeas, ['essential', 'standard', 'standard', 'extended']),
+        task('market-calendar', 'Dört haftalık düzen kur: problem → demo → vaka → pilot çağrısı.', 'standard'),
+        task('market-channel-focus', `En fazla üç kanalda kal: ${playbook.channels.join(' · ')}`, 'standard')
+      ],
+      [
+        { title: 'Ana pazarlama mesajı', quote: playbook.marketing.message },
+        { title: 'Ücretsiz değer', body: playbook.marketing.leadMagnet },
+        { title: 'İçerik başlıkları', list: playbook.marketing.contentIdeas },
+        { title: '4 haftalık ritim', list: ['1. hafta: problemi anlat', '2. hafta: ürünün nasıl çalıştığını göster', '3. hafta: gerçek kullanım veya vaka paylaş', '4. hafta: demo/pilot çağrısı yap'] }
+      ]),
+    stage('sell',
+      'Keşif görüşmesi, demo, pilot ve teklif adımlarını tekrar edilebilir hale getir.',
+      'İlk satış mesajı, demo akışı, fiyat hipotezi ve itiraz cevapları hazır.',
+      [
+        task('sell-opening', `İlk mesajı kişiselleştir ve gönder: ${playbook.sales.opening}`),
+        task('sell-discovery', `Keşif görüşmesinde şu soruları kullan: ${profile.discoveryQuestions.join(' · ')}`),
+        task('sell-demo', `5–10 dakikalık demo akışını prova et: ${playbook.sales.demo.join(' → ')}`),
+        task('sell-pilot', `Pilot teklifini rota ile eşleştir: ${route.offer}`),
+        task('sell-price', `Bir fiyat hipotezi seç ve üç görüşmede test et: ${playbook.pricing.join(' · ')}`, 'standard'),
+        ...tasksFromList('sell-route', route.salesTasks, ['standard', 'extended']),
+        task('sell-objections', 'En sık iki itiraza kısa ve dürüst cevap hazırla.', 'standard')
+      ],
+      [
+        { title: 'İlk mesaj', quote: playbook.sales.opening },
+        { title: 'Keşif soruları', list: profile.discoveryQuestions },
+        { title: 'Demo akışı', list: playbook.sales.demo },
+        { title: 'İtirazlar', objections: playbook.sales.objections },
+        { title: 'Fiyat seçenekleri', list: playbook.pricing }
+      ]),
+    stage('retain',
+      'Müşteriyi ilk değere hızlı ulaştır, düzenli takip et ve gerçek kullanım metriklerini izle.',
+      'İlk değer anı ölçülüyor; 1, 3, 7 ve 30. gün takibi ile devam/bırakma nedenleri biliniyor.',
+      [
+        task('retain-activation', `İlk değer anını ölç: ${playbook.activation}`),
+        task('retain-day1', `1. gün: ${profile.followUp.day1}`),
+        task('retain-day3', `3. gün: ${profile.followUp.day3}`, 'standard'),
+        task('retain-day7', `7. gün: ${profile.followUp.day7}`),
+        task('retain-day30', `30. gün: ${profile.followUp.day30}`, 'extended'),
+        task('retain-metrics', `En fazla beş temel metriği takip et: ${playbook.metrics.join(' · ')}`),
+        task('retain-reference', 'Değer gören müşteriden izinli vaka, referans veya tanıştırma iste.', 'standard'),
+        task('retain-roadmap', 'Özellik isteğini kullanım kanıtı, gelir etkisi ve risk ile önceliklendir.', 'extended')
+      ],
+      [
+        { title: 'Aktivasyon anı', quote: playbook.activation },
+        { title: 'Takip düzeni', list: [`1. gün — ${profile.followUp.day1}`, `3. gün — ${profile.followUp.day3}`, `7. gün — ${profile.followUp.day7}`, `30. gün — ${profile.followUp.day30}`] },
+        { title: 'Temel metrikler', list: playbook.metrics }
+      ])
+  ];
+}
+
+function journeyPercent(stages, completed = {}) {
+  const tasks = stages.flatMap(stage => stage.tasks);
+  if (!tasks.length) return 0;
+  const done = tasks.filter(item => completed[item.id]).length;
+  return Math.round((done / tasks.length) * 100);
+}
+
+function journeyPercentForIdea(idea, playbook) {
+  if (!state.playbookCatalog) return 0;
+  const plan = loadJourneyPlan(idea.id, playbook);
+  return journeyPercent(buildJourneyStages(idea, playbook, plan), plan.completed);
+}
+
+function journeyCardMarkup(card) {
+  const className = `journey-note${card.tone === 'danger' ? ' is-danger' : ''}`;
+  const list = card.list?.length ? `<ul>${card.list.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '';
+  const objections = card.objections?.length ? `<div class="journey-objections">${card.objections.map(item => `<details><summary>${escapeHtml(item.question)}</summary><p>${escapeHtml(item.answer)}</p></details>`).join('')}</div>` : '';
+  const quote = card.quote ? `<blockquote>${escapeHtml(card.quote)}</blockquote>` : '';
+  const body = card.body ? `<p>${escapeHtml(card.body)}</p>` : '';
+  return `<article class="${className}"><h4>${escapeHtml(card.title)}</h4>${quote}${body}${list}${objections}</article>`;
+}
+
+function renderJourneySettings() {
+  const catalog = state.playbookCatalog;
+  const plan = state.journeyPlan;
+  const playbook = state.selectedPlaybook;
+  const options = (items, current, recommended = '') => Object.entries(items).map(([key, item]) => `<option value="${escapeHtml(key)}" ${key === current ? 'selected' : ''}>${escapeHtml(item.label)}${key === recommended ? ' · önerilen' : ''}</option>`).join('');
+  $('#journeySettings').innerHTML = `
+    <label>Başlangıç rotası<select data-journey-setting="route">${options(catalog.routes, plan.route, playbook.recommendedRoute)}</select></label>
+    <label>Süre<select data-journey-setting="duration">${options(catalog.durations, plan.duration)}</select></label>
+    <label>Bütçe<select data-journey-setting="budget">${options(catalog.budgets, plan.budget)}</select></label>`;
+}
+
+function renderJourneyPassport() {
+  const playbook = state.selectedPlaybook;
+  const passport = playbook.passport;
+  $('#journeyRailTitle').textContent = state.selectedIdea.title;
+  $('#journeyPassport').innerHTML = `
+    <p>${escapeHtml(passport.promise)}</p>
+    <div><span>${escapeHtml(passport.mvpTime)}</span><span>${escapeHtml(passport.techDifficulty)} teknik</span><span>${escapeHtml(passport.salesDifficulty)} satış</span></div>`;
+}
+
+function renderJourneyStageNav(stages) {
+  const completed = state.journeyPlan.completed;
+  $('#journeyStageNav').innerHTML = stages.map((stage, index) => {
+    const done = stage.tasks.filter(item => completed[item.id]).length;
+    const total = stage.tasks.length;
+    return `<button type="button" data-journey-stage="${index}" aria-current="${index === state.journeyPlan.stage ? 'step' : 'false'}"><span>${escapeHtml(stage.number)}</span><b>${escapeHtml(stage.title)}</b><small>${done}/${total}</small></button>`;
+  }).join('');
+}
+
+function renderJourneyProgress(stages) {
+  const tasks = stages.flatMap(stage => stage.tasks);
+  const done = tasks.filter(item => state.journeyPlan.completed[item.id]).length;
+  const percent = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+  const ring = $('#journeyProgressRing');
+  ring.style.setProperty('--progress', String(percent));
+  $('#journeyProgressPercent').textContent = `${percent}%`;
+  $('#journeyProgressText').textContent = `${done} / ${tasks.length} görev`;
+  const next = tasks.find(item => !state.journeyPlan.completed[item.id]);
+  $('#journeyTodayTask').textContent = next ? next.text : 'Plan tamamlandı. Şimdi sonuçları ölç, müşterilerle konuş ve bir sonraki öğrenme döngüsünü başlat.';
+}
+
+function renderJourneyStageContent(stages) {
+  const index = Math.min(Math.max(Number(state.journeyPlan.stage) || 0, 0), stages.length - 1);
+  state.journeyPlan.stage = index;
+  const stage = stages[index];
+  $('#journeyPhase').textContent = `${stage.phase} · ${stage.number}`;
+  $('#journeyTitle').textContent = stage.title;
+  const done = stage.tasks.filter(item => state.journeyPlan.completed[item.id]).length;
+  $('#journeyStageContent').innerHTML = `
+    <header class="journey-stage-intro"><p>${escapeHtml(stage.summary)}</p><div><span>AŞAMA</span><b>${done}/${stage.tasks.length}</b></div></header>
+    <div class="journey-objective"><div><b>AMAÇ</b><p>${escapeHtml(stage.objective)}</p></div><div><b>BİTTİ SAYILIR</b><p>${escapeHtml(stage.doneWhen)}</p></div></div>
+    <div class="journey-task-list">
+      <div class="journey-subhead"><h3>Yapılacaklar</h3><span>Görevleri tamamladıkça soldaki yüzde güncellenir.</span></div>
+      ${stage.tasks.map(item => `<label><input type="checkbox" data-journey-task="${escapeHtml(item.id)}" ${state.journeyPlan.completed[item.id] ? 'checked' : ''}><span><b>${escapeHtml(item.text)}</b><small>${item.priority === 'essential' ? 'Temel görev' : item.priority === 'standard' ? 'MVP görevi' : '30 günlük genişletme'}</small></span></label>`).join('')}
+    </div>
+    <div class="journey-notes">${stage.cards.map(journeyCardMarkup).join('')}</div>
+    <div class="journey-stage-actions"><button class="text-button" type="button" data-journey-nav="prev" ${index === 0 ? 'disabled' : ''}>← Önceki aşama</button><button class="dark-button" type="button" data-journey-nav="next">${index === stages.length - 1 ? 'İlk aşamaya dön' : 'Sonraki aşama →'}</button></div>`;
+}
+
+function renderProductJourney() {
+  if (!state.selectedIdea || !state.selectedPlaybook || !state.journeyPlan) return;
+  const stages = buildJourneyStages(state.selectedIdea, state.selectedPlaybook, state.journeyPlan);
+  renderJourneyPassport();
+  renderJourneySettings();
+  renderJourneyStageNav(stages);
+  renderJourneyProgress(stages);
+  renderJourneyStageContent(stages);
+}
+
+function openProductJourney(id) {
+  const idea = state.ideas.find(item => item.id === id);
+  const playbook = getPlaybook(id);
+  if (!idea || !playbook) {
+    showToast('Bu fikir için ürün planı bulunamadı.');
+    return;
+  }
+  state.selectedIdea = idea;
+  state.selectedPlaybook = playbook;
+  state.journeyPlan = loadJourneyPlan(id, playbook);
+  renderProductJourney();
+  closeDialog($('#ideaDialog'));
+  openDialog($('#journeyDialog'));
+}
+
+function updateJourneySetting(key, value) {
+  if (!state.journeyPlan || !['route', 'duration', 'budget'].includes(key)) return;
+  state.journeyPlan[key] = value;
+  saveJourneyPlan();
+  renderProductJourney();
+}
+
+function toggleJourneyTask(id, checked) {
+  if (!state.journeyPlan) return;
+  if (checked) state.journeyPlan.completed[id] = true;
+  else delete state.journeyPlan.completed[id];
+  saveJourneyPlan();
+  const stages = buildJourneyStages(state.selectedIdea, state.selectedPlaybook, state.journeyPlan);
+  renderJourneyStageNav(stages);
+  renderJourneyProgress(stages);
+  const current = stages[state.journeyPlan.stage];
+  const done = current.tasks.filter(item => state.journeyPlan.completed[item.id]).length;
+  const counter = $('.journey-stage-intro div b');
+  if (counter) counter.textContent = `${done}/${current.tasks.length}`;
+  renderIdeas();
+}
+
+function journeyMarkdown() {
+  const idea = state.selectedIdea;
+  const playbook = state.selectedPlaybook;
+  const plan = state.journeyPlan;
+  const stages = buildJourneyStages(idea, playbook, plan);
+  const catalog = state.playbookCatalog;
+  const route = catalog.routes[plan.route];
+  const duration = catalog.durations[plan.duration];
+  const budget = catalog.budgets[plan.budget];
+  const lines = [
+    `# ${idea.title} — Ürün Yol Haritası`,
+    '',
+    `> ${playbook.passport.promise}`,
+    '',
+    `- Rota: ${route.label}`,
+    `- Süre: ${duration.label}`,
+    `- Bütçe: ${budget.label}`,
+    `- Hedef alıcı: ${playbook.passport.buyer}`,
+    `- Pilot: ${playbook.pilot}`,
+    ''
+  ];
+  stages.forEach(stage => {
+    lines.push(`## ${stage.number}. ${stage.title} — ${stage.phase}`, '', stage.objective, '');
+    stage.tasks.forEach(item => lines.push(`- [${plan.completed[item.id] ? 'x' : ' '}] ${item.text}`));
+    lines.push('', `**Bitti sayılır:** ${stage.doneWhen}`, '');
+  });
+  lines.push('---', 'Gerçek müşteri isimleri ve özel veriler bu plana eklenmemelidir.');
+  return lines.join('\n');
+}
+
+async function copyText(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  textarea.remove();
+}
+
+async function copyJourneyPlan() {
+  if (!state.journeyPlan) return;
+  try {
+    await copyText(journeyMarkdown());
+    showToast('Ürün planı Markdown olarak kopyalandı.');
+  } catch {
+    showToast('Plan kopyalanamadı. Tarayıcı pano iznini kontrol et.');
+  }
+}
+
+function resetJourneyPlan() {
+  if (!state.selectedIdea || !state.selectedPlaybook) return;
+  const accepted = window.confirm('Bu ürün için işaretlenen bütün görevler ve seçimler sıfırlansın mı?');
+  if (!accepted) return;
+  const store = journeyStore();
+  delete store[state.selectedIdea.id];
+  writeJson(STORAGE.journeys, store);
+  state.journeyPlan = defaultJourneyPlan(state.selectedPlaybook);
+  renderProductJourney();
+  renderIdeas();
+  showToast('Ürün planı sıfırlandı.');
+}
+
 function renderMethodSteps() {
   $('#methodSteps').innerHTML = methodData.map((step, index) => `<li><button type="button" data-method-step="${index}" aria-current="${index === state.methodStep ? 'step' : 'false'}"><b>${escapeHtml(step.letter)}</b><span>${escapeHtml(step.title)}</span></button></li>`).join('');
 }
@@ -600,6 +1042,7 @@ function renderMethodPanel() {
     <p class="child-copy">${escapeHtml(step.child)}</p>
     <div class="method-question"><b>Kendine sor:</b><br>${escapeHtml(step.question)}</div>
     <div class="method-example"><b>Bu fikre uygulanışı:</b><p>${escapeHtml(step.example(idea))}</p></div>
+    ${idea ? `<div class="method-full-plan"><b>PUSULA’dan sonra KAZAN:</b><span>Canlıya alma, ilk müşteri, pazarlama, satış ve takip planını aç.</span><button class="dark-button" type="button" data-journey-open="${escapeHtml(idea.id)}">Detaylı ürün yol haritası →</button></div>` : ''}
     <div class="method-nav"><button class="text-button" type="button" data-method-nav="prev" ${state.methodStep === 0 ? 'disabled' : ''}>← Önceki</button><button class="dark-button" type="button" data-method-nav="next">${state.methodStep === methodData.length - 1 ? 'Başa dön' : 'Sonraki adım →'}</button></div>`;
 }
 
@@ -770,12 +1213,16 @@ function wireEvents() {
   $('#ideaGrid').addEventListener('click', event => {
     const detail = event.target.closest('[data-idea-detail]');
     const build = event.target.closest('[data-idea-build]');
+    const journey = event.target.closest('[data-journey-open]');
     if (detail) openIdeaDetail(detail.dataset.ideaDetail);
     if (build) selectIdeaForMethod(build.dataset.ideaBuild);
+    if (journey) openProductJourney(journey.dataset.journeyOpen);
   });
   $('#ideaContent').addEventListener('click', event => {
-    const button = event.target.closest('[data-idea-build]');
-    if (button) selectIdeaForMethod(button.dataset.ideaBuild);
+    const build = event.target.closest('[data-idea-build]');
+    const journey = event.target.closest('[data-journey-open]');
+    if (build) selectIdeaForMethod(build.dataset.ideaBuild);
+    if (journey) openProductJourney(journey.dataset.journeyOpen);
   });
 
   $('#methodSteps').addEventListener('click', event => {
@@ -786,6 +1233,11 @@ function wireEvents() {
     renderMethodPanel();
   });
   $('#methodPanel').addEventListener('click', event => {
+    const journey = event.target.closest('[data-journey-open]');
+    if (journey) {
+      openProductJourney(journey.dataset.journeyOpen);
+      return;
+    }
     const button = event.target.closest('[data-method-nav]');
     if (!button || button.disabled) return;
     if (button.dataset.methodNav === 'prev') state.methodStep = Math.max(0, state.methodStep - 1);
@@ -793,6 +1245,34 @@ function wireEvents() {
     renderMethodSteps();
     renderMethodPanel();
   });
+
+  $('#journeySettings').addEventListener('change', event => {
+    const control = event.target.closest('[data-journey-setting]');
+    if (control) updateJourneySetting(control.dataset.journeySetting, control.value);
+  });
+  $('#journeyStageNav').addEventListener('click', event => {
+    const button = event.target.closest('[data-journey-stage]');
+    if (!button || !state.journeyPlan) return;
+    state.journeyPlan.stage = Number(button.dataset.journeyStage);
+    saveJourneyPlan();
+    renderProductJourney();
+  });
+  $('#journeyStageContent').addEventListener('change', event => {
+    const checkbox = event.target.closest('[data-journey-task]');
+    if (checkbox) toggleJourneyTask(checkbox.dataset.journeyTask, checkbox.checked);
+  });
+  $('#journeyStageContent').addEventListener('click', event => {
+    const button = event.target.closest('[data-journey-nav]');
+    if (!button || !state.journeyPlan) return;
+    const total = journeyStageLabels.length;
+    if (button.dataset.journeyNav === 'prev') state.journeyPlan.stage = Math.max(0, state.journeyPlan.stage - 1);
+    else state.journeyPlan.stage = state.journeyPlan.stage === total - 1 ? 0 : state.journeyPlan.stage + 1;
+    saveJourneyPlan();
+    renderProductJourney();
+    $('.journey-main')?.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  $('#copyJourneyPlan').addEventListener('click', copyJourneyPlan);
+  $('#resetJourneyPlan').addEventListener('click', resetJourneyPlan);
 
   $$('.security-actions [data-policy-action]').forEach(button => button.addEventListener('click', () => renderPolicy(button.dataset.policyAction)));
 
