@@ -36,6 +36,7 @@ jobs:
         run: |
           node --check public/studio/studio-engine.js
           node --check public/studio/studio.js
+          node --check public/studio/studio-simple.js
           node --check public/studio-link.js
           node --input-type=module - <<'NODE'
           import {templates,families,buildProject,securityAudit,improvePrompt,recommend} from './public/studio/studio-engine.js';
@@ -64,7 +65,7 @@ jobs:
           grep -q "connect-src 'none'" public/studio/studio-engine.js
           grep -q "form-action 'none'" public/studio/studio-engine.js
           grep -q "'/studio/'" public/sw.js
-          grep -q '"url":"/studio/"' public/manifest.webmanifest
+          grep -q '"url":"/studio/?mode=simple"' public/manifest.webmanifest
 
   browser-studio:
     runs-on: ubuntu-latest
@@ -92,8 +93,8 @@ jobs:
           page.on('pageerror',e=>failures.push(`pageerror:${e.message}`));
           page.on('console',m=>{if(m.type()==='error')failures.push(`console:${m.text()}`)});
           await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
-          if(await page.locator('[data-studio-hub]').count()!==1) throw new Error('Home Studio entry missing');
-          await page.goto('http://127.0.0.1:8080/studio/',{waitUntil:'networkidle'});
+          if(await page.locator('.experience-action[href="/studio/?mode=simple"]').count()!==1) throw new Error('Home Create entry missing');
+          await page.goto('http://127.0.0.1:8080/studio/?mode=advanced',{waitUntil:'networkidle'});
           page.on('request',r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())});
           if(await page.locator('.template-card').count()!==100) throw new Error('Expected 100 templates');
           await page.fill('#templateSearch','quiz');if(await page.locator('.template-card').count()<5)throw new Error('Template search failed');await page.fill('#templateSearch','');
