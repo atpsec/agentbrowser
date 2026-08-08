@@ -1,18 +1,22 @@
 name: Apply product playbook package
 
-# All verified archive parts are present; this revision triggers the final apply run.
+# The package is applied once on this same-repository branch, then this workflow removes itself.
 on:
   push:
     branches:
       - agent/product-playbooks
     paths:
       - '.github/workflows/apply-product-playbooks.yml'
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout product playbook branch
