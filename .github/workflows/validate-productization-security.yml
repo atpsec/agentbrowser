@@ -28,7 +28,10 @@ jobs:
           grep -q "frame-src 'none'" public/_headers
           grep -q 'upgrade-insecure-requests' public/_headers
           grep -q 'mode.*local-only' public/data/analytics-schema.json
+          grep -q "ai-pusula-purchase-intent-v1" public/a/product-page.js
+          grep -q "checkout-not-connected" public/a/product-page.js
           ! grep -RIE --exclude='*.yml' --exclude='*.yaml' --exclude='*.md' '(sk-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' public
+          ! grep -Eiq 'stripe|paddle|lemonsqueezy|checkout\.session|card[number_-]|cvv|cvc' public/a/product-page.js public/account/account.js
           for p in photofix pdf-toolbox qr-maker passport-photo; do test -f "public/a/$p/index.html"; done
   browser-product:
     runs-on: ubuntu-latest
@@ -64,9 +67,24 @@ jobs:
           await page.waitForFunction(()=>document.querySelectorAll('.ph-result').length>0);
           if(!(await page.locator('.ph-result').first().textContent()).includes('PDF'))throw new Error('Tool finder failed');
           let overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);if(overflow>2)throw new Error(`Root mobile overflow ${overflow}`);
-          for(const slug of ['photofix','pdf-toolbox','qr-maker','passport-photo']){await page.goto(base+'/a/'+slug+'/',{waitUntil:'networkidle'});if((await page.locator('h1').count())!==1)throw new Error('Landing h1 missing '+slug);if((await page.locator('.plans .plan').count())!==2)throw new Error('Plans missing '+slug);overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);if(overflow>2)throw new Error(`Landing overflow ${slug} ${overflow}`)}
-          await page.goto(base+'/account/',{waitUntil:'networkidle'});if(!(await page.locator('#mode').textContent()).includes('Gerçek hesap backend'))throw new Error('Account boundary missing');await page.click('#exportLocal');
-          if(external.length)throw new Error('Unexpected external requests: '+external.join(','));if(errors.length)throw new Error('Browser errors: '+errors.join(' | '));await browser.close();console.log('Productized home + finder + 4 landings + account PASS');
+          for(const slug of ['photofix','pdf-toolbox','qr-maker','passport-photo']){
+            await page.goto(base+'/a/'+slug+'/',{waitUntil:'networkidle'});
+            if((await page.locator('h1').count())!==1)throw new Error('Landing h1 missing '+slug);
+            if((await page.locator('.plans .plan').count())!==4)throw new Error('Expected four purchase plans '+slug);
+            if((await page.locator('[data-plan-card="lifetime"] .plan-price').textContent()).trim()!=='$49')throw new Error('Lifetime reference price missing '+slug);
+            if((await page.locator('[data-plan-card="agency"] .plan-price').textContent()).trim()!=='$199')throw new Error('Agency reference price missing '+slug);
+            overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);if(overflow>2)throw new Error(`Landing overflow ${slug} ${overflow}`)
+          }
+          await page.goto(base+'/a/photofix/',{waitUntil:'networkidle'});
+          await page.locator('.purchase-intent[data-plan="lifetime"]').click();
+          await page.waitForURL(/\/account\/\?purchase=photofix&plan=lifetime/);
+          const intent=await page.evaluate(()=>JSON.parse(localStorage.getItem('ai-pusula-purchase-intent-v1')||'null'));
+          if(!intent||intent.product!=='photofix'||intent.plan!=='lifetime'||intent.status!=='checkout-not-connected')throw new Error('Purchase intent contract failed');
+          if(await page.locator('#purchasePanel').isHidden())throw new Error('Purchase intent panel not shown');
+          if(!(await page.locator('#purchaseIntent').textContent()).includes('Personal Lifetime'))throw new Error('Purchase intent details missing');
+          if(!(await page.locator('#mode').textContent()).includes('Gerçek hesap backend'))throw new Error('Account boundary missing');
+          await page.click('#clearPurchase');if(!(await page.locator('#purchasePanel').isHidden()))throw new Error('Purchase intent clear failed');
+          if(external.length)throw new Error('Unexpected external requests: '+external.join(','));if(errors.length)throw new Error('Browser errors: '+errors.join(' | '));await browser.close();console.log('Productized home + 4 purchase-plan landings + local intent boundary PASS');
           NODE
   lighthouse:
     runs-on: ubuntu-latest
