@@ -3,7 +3,7 @@ name: E2E product builder
 on:
   push:
     branches:
-      - agent/product-builder-map
+      - 'agent/**'
   pull_request:
     branches:
       - main
@@ -28,7 +28,7 @@ jobs:
           python3 -m http.server 8080 -d public >/tmp/ai-pusula-builder.log 2>&1 &
           echo $! > /tmp/server.pid
           sleep 2
-      - name: Verify interactive builder
+      - name: Verify interactive 18-product builder
         run: |
           node --input-type=module - <<'NODE'
           import { chromium } from 'playwright';
@@ -39,32 +39,38 @@ jobs:
           page.on('console', message => { if (message.type() === 'error') failures.push(`console: ${message.text()}`); });
           await page.goto('http://127.0.0.1:8080/', { waitUntil: 'networkidle' });
           await page.locator('#product-builder').waitFor({ state: 'visible' });
-          await page.locator('[data-builder-open]').click();
-          await page.locator('#builderDialog[open]').waitFor();
-          const title = await page.locator('#builderMain h2').first().textContent();
-          if (!title?.includes('Dil Öğrenme')) throw new Error(`Unexpected builder title: ${title}`);
-          if (await page.locator('[data-arch-node]').count() < 10) throw new Error('Expected at least 10 architecture nodes');
-          await page.locator('[data-builder-tab="stages"]').click();
-          if (await page.locator('[data-builder-stage]').count() !== 14) throw new Error('Expected exactly 14 build stages');
+          if (await page.locator('#builderCatalog [data-builder-open]').count() !== 18) throw new Error('Expected 18 builder cards');
+          const ids = await page.locator('#builderCatalog [data-builder-open]').evaluateAll(nodes => nodes.map(node => node.dataset.builderOpen));
+          for (const id of ids) {
+            await page.locator(`#builderCatalog [data-builder-open="${id}"]`).click();
+            await page.locator('#builderDialog[open]').waitFor();
+            const selected = await page.locator('[data-builder-product]').inputValue();
+            if (selected !== id) throw new Error(`${id}: wrong selected product ${selected}`);
+            if (await page.locator('[data-builder-stage]').count() !== 14) throw new Error(`${id}: expected 14 stages`);
+            await page.locator('[data-builder-tab="architecture"]').click();
+            if (await page.locator('[data-builder-node]').count() < 10) throw new Error(`${id}: architecture incomplete`);
+            await page.locator('[data-builder-tab="database"]').click();
+            if (await page.locator('[data-builder-entity]').count() < 6) throw new Error(`${id}: database model incomplete`);
+            await page.locator('[data-builder-close]').click();
+          }
+          await page.locator('#builderCatalog [data-builder-open]').first().click();
+          await page.locator('[data-builder-tab="roadmap"]').click();
           const before = await page.locator('.builder-progress-card strong').textContent();
           await page.locator('[data-builder-task]').first().check();
           const after = await page.locator('.builder-progress-card strong').textContent();
-          if (before === after) throw new Error('Progress did not update after task completion');
-          await page.locator('#builderProfile').selectOption('pro');
+          if (before === after) throw new Error('Progress did not update');
           await page.locator('[data-builder-tab="tools"]').click();
-          if (await page.locator('.builder-tool-card').count() < 8) throw new Error('Professional tool profile is incomplete');
-          await page.locator('[data-builder-tab="database"]').click();
-          if (await page.locator('[data-db-table]').count() < 10) throw new Error('Database explorer is incomplete');
+          await page.locator('[data-builder-profile="pro"]').click();
+          if (await page.locator('.builder-tool-grid article').count() < 8) throw new Error('Pro tool profile incomplete');
           await page.reload({ waitUntil: 'networkidle' });
-          await page.locator('[data-builder-open]').click();
-          await page.locator('[data-builder-tab="stages"]').click();
-          if (!(await page.locator('[data-builder-task]').first().isChecked())) throw new Error('Task progress did not persist');
+          await page.locator('#builderCatalog [data-builder-open]').first().click();
+          if (!(await page.locator('[data-builder-task]').first().isChecked())) throw new Error('Progress did not persist');
           await page.setViewportSize({ width: 390, height: 844 });
           const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
           if (overflow > 2) throw new Error(`Mobile horizontal overflow: ${overflow}px`);
           if (failures.length) throw new Error(failures.join('\n'));
           await browser.close();
-          console.log('Interactive builder browser smoke test passed.');
+          console.log('18-product builder browser smoke test passed.');
           NODE
       - name: Stop server
         if: always()
