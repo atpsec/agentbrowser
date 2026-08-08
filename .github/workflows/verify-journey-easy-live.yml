@@ -29,13 +29,14 @@ jobs:
             sleep 5
           done
           exit 1
-      - name: Verify security headers
+      - name: Verify security headers and repository isolation
         run: |
           set -euo pipefail
           h=$(curl -fsSI https://agentbrowser.tpberg3tp.workers.dev/easy/ | tr -d '\r')
           echo "$h" | grep -qi "content-security-policy:.*script-src 'self'"
           echo "$h" | grep -qi "content-security-policy:.*connect-src 'self'"
-          ! curl -fsS https://agentbrowser.tpberg3tp.workers.dev/.git/HEAD
+          curl -fsS https://agentbrowser.tpberg3tp.workers.dev/.git/HEAD -o /tmp/git-head-response
+          ! grep -Eq '^ref: refs/heads/|^[0-9a-f]{40}$' /tmp/git-head-response
       - name: Install Chromium
         run: |
           npm install --no-save playwright
