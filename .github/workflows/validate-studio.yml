@@ -1,0 +1,122 @@
+name: Validate AI Pusula Studio
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/studio/**'
+      - 'public/studio-link.js'
+      - 'public/product-builder.js'
+      - 'public/sw.js'
+      - 'public/manifest.webmanifest'
+      - 'STUDIO_SPEC.md'
+      - '.github/workflows/validate-studio.yml'
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - 'public/studio/**'
+      - 'public/studio-link.js'
+      - 'public/product-builder.js'
+      - 'public/sw.js'
+      - 'public/manifest.webmanifest'
+      - '.github/workflows/validate-studio.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and engine contract
+        run: |
+          node --check public/studio/studio-engine.js
+          node --check public/studio/studio.js
+          node --check public/studio-link.js
+          node --input-type=module - <<'NODE'
+          import {templates,families,buildProject,securityAudit,improvePrompt,recommend} from './public/studio/studio-engine.js';
+          if(templates.length!==100) throw new Error(`templates ${templates.length}`);
+          if(families.length!==8) throw new Error(`families ${families.length}`);
+          for(const family of families){
+            const p=buildProject({family:family.id,title:`Test ${family.id}`,purpose:'Güvenli küçük uygulama',audience:'Test kullanıcı',blocks:['form','storage','auth','ai']});
+            if(!p.html.includes("connect-src 'none'")) throw new Error(`${family.id}: network CSP`);
+            if(!p.filename.endsWith('-offline.html')) throw new Error(`${family.id}: filename`);
+            if(p.architecture.length!==2) throw new Error(`${family.id}: server architecture`);
+            if(securityAudit(p.html).score<100) throw new Error(`${family.id}: audit`);
+          }
+          if(!improvePrompt('bana site yap','pro').includes('Kabul kriteri')) throw new Error('prompt lab');
+          if(recommend({level:'beginner',intent:'work',time:'30'}).picks.length!==3) throw new Error('recommendation');
+          console.log('Studio engine contract passed');
+          NODE
+      - name: Security boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -R -n -E 'XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|document\.write' public/studio public/studio-link.js
+          ! grep -R -n -E 'sk-[A-Za-z0-9]{12,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' public/studio public/studio-link.js
+          ! grep -R -n -E 'https?://' public/studio/*.js public/studio-link.js
+          ! grep -R -n -E 'fetch\(' public/studio/*.js public/studio-link.js
+          ! grep -R -n -E 'style="|\.style\.' public/studio/*.js public/studio-link.js
+          grep -q "connect-src 'none'" public/studio/studio-engine.js
+          grep -q "form-action 'none'" public/studio/studio-engine.js
+          grep -q "'/studio/'" public/sw.js
+          grep -q '"url":"/studio/"' public/manifest.webmanifest
+
+  browser-studio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start site
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/studio-http.log 2>&1 &
+          echo $! >/tmp/studio-http.pid
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/studio/ >/dev/null && break; sleep 1; done
+      - name: Exercise Studio end to end
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true});
+          const page=await context.newPage();const failures=[];const external=[];
+          page.on('pageerror',e=>failures.push(`pageerror:${e.message}`));
+          page.on('console',m=>{if(m.type()==='error')failures.push(`console:${m.text()}`)});
+          await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
+          if(await page.locator('[data-studio-hub]').count()!==1) throw new Error('Home Studio entry missing');
+          await page.goto('http://127.0.0.1:8080/studio/',{waitUntil:'networkidle'});
+          page.on('request',r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())});
+          if(await page.locator('.template-card').count()!==100) throw new Error('Expected 100 templates');
+          await page.fill('#templateSearch','quiz');if(await page.locator('.template-card').count()<5)throw new Error('Template search failed');await page.fill('#templateSearch','');
+          await page.click('#recommendButton');if(await page.locator('.recommend-card').count()<4)throw new Error('Recommendation failed');
+          const families=['web','tool','game','quiz','dashboard','content','automation','assistant'];
+          for(const family of families){
+            await page.check(`input[name="family"][value="${family}"]`);
+            await page.fill('#projectTitle',`Studio ${family}`);
+            await page.click('#buildButton');
+            if(!String(await page.textContent('#codeView')).includes("connect-src 'none'"))throw new Error(`${family}: code missing CSP`);
+            if((await page.textContent('#securityScore')).trim()!=='100/100')throw new Error(`${family}: audit not 100`);
+          }
+          await page.check('#blockGrid input[value="auth"]');await page.check('#blockGrid input[value="ai"]');await page.click('#buildButton');
+          if(await page.locator('#architecture .architecture-item').count()<2)throw new Error('Backend architecture guidance missing');
+          await page.click('.prompt-mode[data-mode="pro"]');if(!String(await page.textContent('#promptOutput')).includes('Kabul kriteri'))throw new Error('Prompt lab failed');
+          await page.getByRole('button',{name:'Security (güvenlik)'}).click();if(!String(await page.textContent('#conceptCard')).includes('Secret'))throw new Error('Learning card failed');
+          const downloadPromise=page.waitForEvent('download');await page.click('#downloadButton');const download=await downloadPromise;if(!download.suggestedFilename().endsWith('-offline.html'))throw new Error('Download failed');
+          await page.reload({waitUntil:'networkidle'});if((await page.inputValue('#projectTitle')).length<3)throw new Error('Persistence failed');
+          const reg=await page.evaluate(async()=>{await navigator.serviceWorker.ready;return Boolean(await navigator.serviceWorker.getRegistration('/'))});if(!reg)throw new Error('Service worker missing');
+          await page.setViewportSize({width:390,height:844});const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);if(overflow>2)throw new Error(`Mobile overflow ${overflow}`);
+          if(external.length)throw new Error(`Studio external requests: ${external.join(',')}`);if(failures.length)throw new Error(failures.join('\n'));
+          await browser.close();console.log('AI Pusula Studio browser validation passed');
+          NODE
+      - name: Stop site
+        if: always()
+        run: kill "$(cat /tmp/studio-http.pid)" || true
