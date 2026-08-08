@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="AI Pusula Studio: başlangıçtan orta seviyeye kadar çalışan mini uygulamalar üret, güvenlik kontrolünü çalıştır ve indir.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <title>AI Pusula Studio</title>
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand">AI PUSULA</a>
+    <nav aria-label="Ana navigasyon"><a href="/apps/">Uygulamalar</a><a href="/kids/">Çocuk</a></nav>
+  </header>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">ÜRETİM STÜDYOSU · LOCAL-FIRST</p>
+      <h1>Fikri seç. Adım adım üret. Çalıştır. İndir.</h1>
+      <p class="lead">Kod bilmeyen kullanıcı için yönlendirmeli; orta seviye kullanıcı için kod, mimari ve güvenlik detayları açık.</p>
+      <div class="hero-actions"><a class="button primary" href="#wizard">Benimle oluştur</a><a class="button" href="#templates">100 şablonu gör</a></div>
+    </section>
+
+    <section id="wizard" class="panel">
+      <div class="section-head"><div><p class="eyebrow">1 · YOLUNU BUL</p><h2>Ne üretmek istiyorsun?</h2></div><span class="badge">5 dakikada ilk çıktı</span></div>
+      <div class="wizard-grid">
+        <label>Seviyen<select id="level"><option value="beginner">Hiç kod bilmiyorum</option><option value="lowcode">Biraz / az kod</option><option value="intermediate">Orta seviye</option></select></label>
+        <label>Amacın<select id="intent"><option value="build">Bir uygulama yapmak</option><option value="work">İşimi hızlandırmak</option><option value="content">İçerik üretmek</option><option value="learn">Öğrenmek</option><option value="security">Güvenlik işi yapmak</option><option value="game">Oyun yapmak</option></select></label>
+        <label>Zamanın<select id="time"><option value="10">10 dakika</option><option value="30">30 dakika</option><option value="60">1 saat</option><option value="120">2 saat</option></select></label>
+      </div>
+      <button id="recommendButton" class="button primary">Bana yol öner</button>
+      <div id="recommendation" class="recommendation" aria-live="polite"></div>
+    </section>
+
+    <section id="templates" class="panel">
+      <div class="section-head"><div><p class="eyebrow">2 · ŞABLON SEÇ</p><h2>100 başlangıç şablonu</h2></div><span id="templateCount" class="badge">100</span></div>
+      <div class="filter-row"><input id="templateSearch" type="search" placeholder="Quiz, dashboard, bütçe, oyun..." aria-label="Şablon ara"><select id="familyFilter" aria-label="Üretim tipi"><option value="all">Tüm tipler</option></select></div>
+      <div id="templateGrid" class="template-grid"></div>
+    </section>
+
+    <section class="panel build-panel">
+      <div class="section-head"><div><p class="eyebrow">3 · UYGULAMAYI TANIMLA</p><h2>Üretim alanı</h2></div><span id="modeBadge" class="badge">Adım adım</span></div>
+      <div class="form-grid">
+        <label>Uygulama adı<input id="projectTitle" maxlength="80" value="Benim Akıllı Aracım"></label>
+        <label>Hedef kullanıcı<input id="audience" maxlength="120" value="Günlük işini hızlandırmak isteyen kullanıcı"></label>
+        <label class="wide">Ne yapacak?<textarea id="purpose" maxlength="280" rows="4">Kullanıcıdan bilgi alıp düzenli ve anlaşılır bir sonuç üretecek.</textarea></label>
+      </div>
+      <fieldset><legend>Üretim tipi</legend><div id="familyButtons" class="choice-grid"></div></fieldset>
+      <fieldset><legend>Build Blocks — ihtiyacın olan parçaları seç</legend><div id="blockGrid" class="block-grid"></div><p class="note">“Backend gerekir” etiketli bloklar offline dosyada sahte olarak çalıştırılmaz; mimari planına eklenir.</p></fieldset>
+      <div class="action-row"><button id="buildButton" class="button primary">Projeyi oluştur</button><button id="downloadButton" class="button" disabled>Offline HTML indir</button><button id="copyCodeButton" class="button" disabled>Kodu kopyala</button></div>
+    </section>
+
+    <section class="workspace">
+      <article class="panel"><p class="eyebrow">CANLI ÖNİZLEME</p><div id="preview" class="preview empty">Henüz proje oluşturulmadı.</div></article>
+      <article class="panel"><p class="eyebrow">PROFESYONEL MİMARİ</p><div id="architecture" class="architecture empty">Backend gerektiren bir blok seçersen burada gerçek entegrasyon gereksinimleri görünür.</div></article>
+    </section>
+
+    <section class="panel">
+      <div class="section-head"><div><p class="eyebrow">4 · GÜVENLİK KAPISI</p><h2>AI Pusula Güvenlik Kontrolü</h2></div><strong id="securityScore" class="score">—</strong></div>
+      <div id="securityResults" class="security-grid"><p class="muted">Proje oluşturulduğunda otomatik kontrol edilir.</p></div>
+    </section>
+
+    <section class="panel code-panel">
+      <div class="section-head"><div><p class="eyebrow">5 · KODU GÖR</p><h2>Tek dosyalık uygulama</h2></div></div>
+      <pre id="codeView" tabindex="0"><code>Henüz kod üretilmedi.</code></pre>
+    </section>
+
+    <section class="two-col">
+      <article class="panel">
+        <p class="eyebrow">PROMPT LAB</p><h2>Kötü prompt'u üretim görevine çevir</h2>
+        <label>Prompt<textarea id="promptInput" rows="5">bana site yap</textarea></label>
+        <div class="action-row"><button class="button prompt-mode" data-mode="simple">Basit</button><button class="button prompt-mode" data-mode="good">İyi</button><button class="button primary prompt-mode" data-mode="pro">Profesyonel</button></div>
+        <pre id="promptOutput" class="prompt-output">Bir mod seç.</pre>
+      </article>
+      <article class="panel">
+        <p class="eyebrow">BAĞLAMSAL ÖĞRENME</p><h2>Terime tıkla, projendeki görevini öğren</h2>
+        <div id="conceptButtons" class="concept-buttons"></div>
+        <div id="conceptCard" class="concept-card"><p>Bir kavram seç.</p></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <p class="eyebrow">ORTA SEVİYEYE GEÇİŞ</p><h2>Bu prototipten production'a</h2>
+      <ol class="production-path"><li>Çalışan küçük uygulamayı doğrula</li><li>Gerçek kullanıcı verisi gerekiyorsa backend + database tasarla</li><li>Auth ve authorization'ı server-side uygula</li><li>Harici AI gerekiyorsa secret'ı server-side tut, kota ve veri sınırı ekle</li><li>Test + güvenlik kapılarını geçir</li><li>Staging, smoke test, production ve rollback</li></ol>
+    </section>
+  </main>
+  <footer>AI Pusula Studio · Üret → doğrula → güvenli biçimde geliştir</footer>
+  <script type="module" src="./studio.js"></script>
+</body>
+</html>
