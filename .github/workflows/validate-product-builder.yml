@@ -80,10 +80,12 @@ jobs:
           assert "object-src 'none'" in headers
           assert '"directory": "./public"' in wrangler
           assert "fetch('./data/build-blueprints.json'" in core
+          assert 'style="width:' not in core
+          assert '<progress class="builder-card-progress"' in core
           assert "fetch('./data/ideas.json'" in core
           assert "fetch('./data/build-blueprints.json'" in assistant
           assert "fetch('http" not in assistant and 'fetch("http' not in assistant
-          print('CSP, local fetch boundaries, module loader and deployment scope verified.')
+          print('CSP, local fetch boundaries, module loader, progress markup and deployment scope verified.')
           PY
           if grep -RInE '(sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' public --exclude='*.svg'; then
             echo 'Potential secret found.' >&2

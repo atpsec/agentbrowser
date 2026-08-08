@@ -184,7 +184,7 @@ function renderCatalog() {
   root.innerHTML = builderState.data.products.map((product,index) => {
     const stages = stageTemplate(product);
     const progress = completionFor(product, stages);
-    return `<button class="builder-product-card" type="button" data-builder-open="${esc(product.id)}"><span>${String(index+1).padStart(2,'0')} · ${esc(categoryLabel(product.category))}</span><b>${esc(product.title)}</b><small>${esc(product.promise)}</small><i><u style="width:${progress.percent}%"></u></i><em>${progress.percent}% · İnşa haritasını aç →</em></button>`;
+    return `<button class="builder-product-card" type="button" data-builder-open="${esc(product.id)}"><span>${String(index+1).padStart(2,'0')} · ${esc(categoryLabel(product.category))}</span><b>${esc(product.title)}</b><small>${esc(product.promise)}</small><progress class="builder-card-progress" max="100" value="${progress.percent}" aria-label="${progress.percent}% tamamlandı"></progress><em>${progress.percent}% · İnşa haritasını aç →</em></button>`;
   }).join('');
 }
 
