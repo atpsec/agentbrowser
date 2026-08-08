@@ -32,7 +32,7 @@ jobs:
           node --check public/studio/studio.js
           grep -q 'template-gallery-v4.css' public/studio/index.html
           grep -q "import './preview-runtime-v4.js'" public/studio/studio.js
-          grep -q "ai-pusula-v17" public/sw.js
+          grep -q "ai-pusula-v19" public/sw.js
           grep -q "'/studio/template-gallery-v4.css'" public/sw.js
           grep -q "'/studio/preview-runtime-v4.js'" public/sw.js
           ! grep -n -E 'fetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|document\.write|https?://' public/studio/template-previews.js public/studio/preview-runtime-v4.js
@@ -55,7 +55,7 @@ jobs:
           page.on('pageerror',e=>failures.push(`pageerror:${e.message}`));
           page.on('console',m=>{if(m.type()==='error')failures.push(`console:${m.text()}`)});
           page.on('request',r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())});
-          await page.goto('http://127.0.0.1:8080/studio/#templates',{waitUntil:'networkidle'});
+          await page.goto('http://127.0.0.1:8080/studio/?mode=advanced#templates',{waitUntil:'networkidle'});
           const cards=page.locator('.template-card');
           if(await cards.count()!==100) throw new Error('Expected 100 template cards');
           const previews=page.locator('.template-preview svg');
