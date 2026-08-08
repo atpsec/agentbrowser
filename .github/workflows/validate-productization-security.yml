@@ -1,0 +1,88 @@
+name: Validate productization security
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate syntax, policies and SEO assets
+        run: |
+          set -euo pipefail
+          node --check public/productization.js
+          node --check public/a/product-page.js
+          node --check public/account/account.js
+          test -f public/robots.txt
+          test -f public/sitemap.xml
+          grep -q 'Strict-Transport-Security' public/_headers
+          grep -q 'Cross-Origin-Opener-Policy: same-origin' public/_headers
+          grep -q "frame-src 'none'" public/_headers
+          grep -q 'upgrade-insecure-requests' public/_headers
+          grep -q 'mode.*local-only' public/data/analytics-schema.json
+          ! grep -RIE --exclude='*.yml' --exclude='*.yaml' --exclude='*.md' '(sk-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' public
+          for p in photofix pdf-toolbox qr-maker passport-photo; do test -f "public/a/$p/index.html"; done
+  browser-product:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test dependency
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+      - name: Start local server
+        run: |
+          python3 -m http.server 4173 --directory public >/tmp/product-server.log 2>&1 &
+          echo $! > /tmp/product-server.pid
+      - name: Run product flows
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const base='http://127.0.0.1:4173';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844}});
+          const errors=[];const external=[];
+          page.on('pageerror',e=>errors.push(String(e)));
+          page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+          page.on('request',r=>{const u=new URL(r.url());if(/^https?:/.test(u.protocol)&&u.origin!==base)external.push(r.url())});
+          await page.goto(base+'/',{waitUntil:'networkidle'});
+          await page.waitForSelector('.product-home');
+          if((await page.locator('.ph-grid4 .ph-card').count())!==4)throw new Error('Expected four primary paths');
+          await page.fill('#phSearch','pdf birleştir');
+          await page.waitForFunction(()=>document.querySelectorAll('.ph-result').length>0);
+          if(!(await page.locator('.ph-result').first().textContent()).includes('PDF'))throw new Error('Tool finder failed');
+          let overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);if(overflow>2)throw new Error(`Root mobile overflow ${overflow}`);
+          for(const slug of ['photofix','pdf-toolbox','qr-maker','passport-photo']){await page.goto(base+'/a/'+slug+'/',{waitUntil:'networkidle'});if((await page.locator('h1').count())!==1)throw new Error('Landing h1 missing '+slug);if((await page.locator('.plans .plan').count())!==2)throw new Error('Plans missing '+slug);overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);if(overflow>2)throw new Error(`Landing overflow ${slug} ${overflow}`)}
+          await page.goto(base+'/account/',{waitUntil:'networkidle'});if(!(await page.locator('#mode').textContent()).includes('Gerçek hesap backend'))throw new Error('Account boundary missing');await page.click('#exportLocal');
+          if(external.length)throw new Error('Unexpected external requests: '+external.join(','));if(errors.length)throw new Error('Browser errors: '+errors.join(' | '));await browser.close();console.log('Productized home + finder + 4 landings + account PASS');
+          NODE
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Start local server
+        run: |
+          python3 -m http.server 4173 --directory public >/tmp/lh-server.log 2>&1 &
+          sleep 2
+      - name: Run Lighthouse budgets
+        run: |
+          set -euo pipefail
+          npx -y lighthouse@12.8.2 http://127.0.0.1:4173/a/photofix/ --quiet --chrome-flags='--headless --no-sandbox' --output=json --output-path=/tmp/lh.json
+          node - <<'NODE'
+          const r=require('/tmp/lh.json');const c=r.categories;const scores={performance:c.performance.score*100,accessibility:c.accessibility.score*100,bestPractices:c['best-practices'].score*100,seo:c.seo.score*100};console.log(scores);if(scores.performance<80)throw new Error('Performance below 80');if(scores.accessibility<95)throw new Error('Accessibility below 95');if(scores.bestPractices<95)throw new Error('Best Practices below 95');if(scores.seo<90)throw new Error('SEO below 90');
+          NODE
