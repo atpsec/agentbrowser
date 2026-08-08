@@ -6,3 +6,4 @@ import './platform-pwa.js';
 import './kids-link.js';
 import './studio-link.js';
 import './journey-easy-links.js';
+import './productization.js';
