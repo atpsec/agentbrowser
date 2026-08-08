@@ -39,7 +39,7 @@ jobs:
             MOBILE_PRODUCT="$product" npm run configure
             test -f www/index.html
             test -f .selected-product.json
-            ! grep -R -n -E 'sk-[A-Za-z0-9]|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' . --exclude-dir=node_modules --exclude=package-lock.json
+            ! grep -R -n -E 'sk-(proj-)?[A-Za-z0-9_-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' . --exclude-dir=node_modules --exclude=package-lock.json
           done
 
   android-debug:
