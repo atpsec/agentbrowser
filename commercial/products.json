@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ai-pusula-tools",
+    "displayName": "AI Pusula Tools",
+    "category": "Utilities",
+    "shortDescription": "Fotoğraf, PDF, QR ve günlük yardımcıları tek mobil uygulamada.",
+    "privacyModel": "local-first",
+    "plans": ["free", "pro-yearly", "lifetime"],
+    "marketplaces": ["google-play", "appsumo", "flippa", "trustmrr"],
+    "storeKeywords": ["fotoğraf", "pdf", "qr", "araçlar", "utility"]
+  },
+  {
+    "id": "photofix",
+    "displayName": "PhotoFix",
+    "category": "Photography",
+    "shortDescription": "Fotoğraf düzeltme, vesikalık, kolaj, yazı, logo ve arka plan araçları.",
+    "privacyModel": "local-first",
+    "plans": ["free", "pro-yearly", "lifetime"],
+    "marketplaces": ["google-play", "appsumo", "flippa", "trustmrr"],
+    "storeKeywords": ["photo", "fotoğraf", "vesikalık", "kolaj", "background"]
+  },
+  {
+    "id": "pdf-toolbox",
+    "displayName": "PDF Toolbox",
+    "category": "Productivity",
+    "shortDescription": "PDF birleştir, sayfa çıkar ve dosyayı yerel olarak optimize et.",
+    "privacyModel": "local-first",
+    "plans": ["free", "pro-yearly", "lifetime"],
+    "marketplaces": ["google-play", "appsumo", "flippa", "trustmrr"],
+    "storeKeywords": ["pdf", "merge", "split", "document", "productivity"]
+  },
+  {
+    "id": "qr-maker",
+    "displayName": "QR Maker",
+    "category": "Utilities",
+    "shortDescription": "Metin, URL, Wi-Fi ve vCard için yerel QR kod üretici.",
+    "privacyModel": "local-first",
+    "plans": ["free", "pro-yearly", "lifetime"],
+    "marketplaces": ["google-play", "appsumo", "flippa", "trustmrr"],
+    "storeKeywords": ["qr", "wifi", "vcard", "barcode", "utility"]
+  }
+]

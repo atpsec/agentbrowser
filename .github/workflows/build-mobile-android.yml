@@ -5,13 +5,15 @@ on:
     branches: [main]
     paths:
       - 'mobile/**'
+      - 'commercial/**'
       - 'public/easy/**'
       - 'public/vendor/**'
       - '.github/workflows/build-mobile-android.yml'
   push:
-    branches: [main, 'feature/mobile-factory']
+    branches: [main, 'feature/mobile-factory', 'feature/mobile-commercial-packaging']
     paths:
       - 'mobile/**'
+      - 'commercial/**'
       - 'public/easy/**'
       - 'public/vendor/**'
       - '.github/workflows/build-mobile-android.yml'
@@ -28,12 +30,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate mobile factory
+      - name: Validate mobile factory and commercial catalog
         working-directory: mobile
         run: |
           set -euo pipefail
           npm install --ignore-scripts --no-audit --no-fund
           npm run validate
+          node - <<'NODE'
+          const fs=require('fs');
+          const mobile=JSON.parse(fs.readFileSync('products.json','utf8'));
+          const commercial=JSON.parse(fs.readFileSync('../commercial/products.json','utf8'));
+          const ids=new Set(commercial.map(x=>x.id));
+          for(const p of mobile) if(!ids.has(p.id)) throw new Error(`Commercial metadata missing for ${p.id}`);
+          if(commercial.some(x=>x.privacyModel!=='local-first')) throw new Error('Unexpected privacy model');
+          console.log(`Validated ${commercial.length} commercial products`);
+          NODE
           for product in ai-pusula-tools photofix pdf-toolbox qr-maker; do
             MOBILE_PRODUCT="$product" npm run prepare:web
             MOBILE_PRODUCT="$product" npm run configure
@@ -81,5 +92,46 @@ jobs:
         with:
           name: android-${{ matrix.product }}-debug
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  android-release-candidate:
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [ai-pusula-tools, photofix, pdf-toolbox, qr-maker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install Capacitor dependencies
+        working-directory: mobile
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Generate native Android project
+        working-directory: mobile
+        env:
+          MOBILE_PRODUCT: ${{ matrix.product }}
+        run: npm run android:prepare
+      - name: Build unsigned release AAB
+        working-directory: mobile/android
+        run: ./gradlew bundleRelease --no-daemon
+      - name: Verify release candidate
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          test -s android/app/build/outputs/bundle/release/app-release.aab
+          test ! -f android/app/release.keystore
+          test ! -f android/app/upload-keystore.jks
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ matrix.product }}-unsigned-aab
+          path: mobile/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 14
