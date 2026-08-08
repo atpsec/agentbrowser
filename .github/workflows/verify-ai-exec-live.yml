@@ -1,0 +1,134 @@
+name: Verify live AI execution mode
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/verify-ai-exec-live.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Cloudflare and verify live assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          ready=false
+          for attempt in $(seq 1 36); do
+            echo "Production asset verification ${attempt}/36"
+            status=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' "${base}/" || true)
+            loader=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/product-builder.js" || true)
+            assistant=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/ai-build-assistant.js" || true)
+            if [ "$status" = '200' ] && echo "$loader" | grep -q 'ai-build-assistant.js' && echo "$assistant" | grep -q 'Gemini Code Assist'; then
+              ready=true
+              printf '%s' "$loader" >/tmp/product-builder.js
+              printf '%s' "$assistant" >/tmp/ai-build-assistant.js
+              break
+            fi
+            sleep 10
+          done
+          test "$ready" = 'true'
+
+          curl --fail --retry 3 --retry-all-errors -sS "${base}/product-builder-core.js" -o /tmp/product-builder-core.js
+          curl --fail --retry 3 --retry-all-errors -sS "${base}/ai-build-assistant.css" -o /tmp/ai-build-assistant.css
+          curl --fail --retry 3 --retry-all-errors -sS "${base}/data/build-blueprints.json" -o /tmp/build-blueprints.json
+
+          grep -q 'product-builder-core.js' /tmp/product-builder.js
+          grep -q 'ai-build-assistant.js' /tmp/product-builder.js
+          grep -q 'initBuilder' /tmp/product-builder-core.js
+          grep -q 'Cursor' /tmp/ai-build-assistant.js
+          grep -q 'Codex' /tmp/ai-build-assistant.js
+          grep -q 'Claude Code' /tmp/ai-build-assistant.js
+          grep -q 'Gemini Code Assist' /tmp/ai-build-assistant.js
+          grep -qi 'prompt injection' /tmp/ai-build-assistant.js
+          grep -q '.ai-exec' /tmp/ai-build-assistant.css
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('/tmp/build-blueprints.json').read_text(encoding='utf-8'))
+          assert data['version'] == 2
+          assert len(data['products']) == 18
+          assert {'minimum','balanced','pro'} <= set(data['profiles'])
+          PY
+
+          tr -d '\r' < /tmp/index.headers | tr '[:upper:]' '[:lower:]' > /tmp/index.headers.lower
+          grep -q '^content-security-policy:' /tmp/index.headers.lower
+          grep -q "script-src 'self'" /tmp/index.headers.lower
+          grep -q "connect-src 'self'" /tmp/index.headers.lower
+          grep -q "frame-ancestors 'none'" /tmp/index.headers.lower
+          grep -q '^x-content-type-options: nosniff' /tmp/index.headers.lower
+
+          git_status=$(curl --connect-timeout 10 --max-time 30 -sS -o /tmp/git-head -w '%{http_code}' "${base}/.git/HEAD" || true)
+          if grep -q '^ref: refs/' /tmp/git-head 2>/dev/null; then
+            echo "Repository metadata leak detected with HTTP ${git_status}." >&2
+            exit 1
+          fi
+          for path in .noop .noop2 .noop3; do
+            curl --connect-timeout 10 --max-time 30 -sS "${base}/${path}" -o "/tmp/${path#.}" || true
+            if grep -q '^noop' "/tmp/${path#.}" 2>/dev/null; then
+              echo "Accidental no-op asset is still exposed: ${path}" >&2
+              exit 1
+            fi
+          done
+          echo 'Live AI execution assets, security headers and repository isolation verified.'
+
+  verify-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Verify live interactive experience
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const base='https://agentbrowser.tpberg3tp.workers.dev';
+          const browser=await chromium.launch({headless:true});
+          let page;
+          let ready=false;
+          for(let attempt=1;attempt<=24;attempt++){
+            page=await browser.newPage({viewport:{width:1440,height:1000}});
+            try{
+              await page.goto(base,{waitUntil:'networkidle',timeout:45000});
+              if(await page.locator('[data-builder-open]').count()>0){ready=true;break;}
+            }catch{}
+            await page.close();
+            await new Promise(r=>setTimeout(r,10000));
+          }
+          if(!ready) throw new Error('Live builder did not become ready in time');
+          const failures=[];
+          page.on('pageerror',e=>failures.push(`pageerror: ${e.message}`));
+          page.on('console',m=>{if(m.type()==='error') failures.push(`console: ${m.text()}`)});
+          await page.locator('[data-builder-open]').first().click();
+          await page.locator('#builderDialog[open]').waitFor();
+          await page.locator('[data-ai-exec]').waitFor();
+          if(await page.locator('[data-ai-provider]').count()!==4) throw new Error('Expected four AI coding providers');
+          await page.locator('[data-ai-provider="codex"]').click();
+          await page.locator('[data-ai-preview]').click();
+          let packet=await page.locator('[data-ai-output]').textContent();
+          for(const term of ['Codex','Güvenlik kapıları','Bitti sayılması','Ajan talimatı']) if(!packet?.includes(term)) throw new Error(`Missing live packet term: ${term}`);
+          await page.locator('[data-builder-stage="7"]').click();
+          await page.locator('[data-ai-exec]').waitFor();
+          await page.locator('[data-ai-preview]').click();
+          packet=await page.locator('[data-ai-output]').textContent();
+          if(!packet?.toLowerCase().includes('prompt injection')) throw new Error('Live AI-stage packet is missing prompt-injection gate');
+          await page.locator('[data-builder-product]').selectOption({index:1});
+          await page.locator('[data-ai-exec]').waitFor();
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Live mobile horizontal overflow: ${overflow}px`);
+          if(failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log('Live AI execution mode browser verification passed.');
+          NODE
