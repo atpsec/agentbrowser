@@ -2,6 +2,9 @@
   "name": "agentbrowser",
   "compatibility_date": "2026-08-07",
   "main": "./src/worker.js",
+  "vars": {
+    "GOOGLE_CLIENT_ID": "265960154359-tkobbesdv88ujlnfimdild31vk5pgv2c.apps.googleusercontent.com"
+  },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
