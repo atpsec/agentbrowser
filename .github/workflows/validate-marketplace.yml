@@ -1,0 +1,44 @@
+name: Validate marketplace
+on:
+  pull_request:
+    branches: [main]
+    paths: ['public/store/**','public/use/**','public/experience-shell.js','src/worker.js','wrangler.jsonc','.github/workflows/validate-marketplace.yml']
+  push:
+    branches: ['feature/**']
+    paths: ['public/store/**','public/use/**','public/experience-shell.js','src/worker.js','wrangler.jsonc','.github/workflows/validate-marketplace.yml']
+permissions:
+  contents: read
+jobs:
+  marketplace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Static and security checks
+        run: |
+          node --check public/store/store.js
+          node --check public/experience-shell.js
+          node --check src/worker.js
+          grep -q '/api/commerce/\*' wrangler.jsonc
+          grep -q 'STRIPE_SECRET_KEY' src/worker.js
+          grep -q 'STRIPE_PRICE_MAP_JSON' src/worker.js
+          ! grep -R -n -E 'sk_live_[A-Za-z0-9]+|rk_live_[A-Za-z0-9]+' public src wrangler.jsonc
+          ! grep -n -E 'eval\(|new Function|document\.write|innerHTML' public/store/store.js
+      - name: Validate public catalog without Stripe secrets
+        run: |
+          npm install --no-save wrangler@latest
+          npx wrangler dev --local --port 8787 >/tmp/wrangler.log 2>&1 &
+          echo $! >/tmp/wrangler.pid
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8787/api/commerce/catalog >/tmp/catalog.json && break; sleep 1; done
+          node - <<'NODE'
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/catalog.json','utf8'));if(!Array.isArray(x)||x.length!==18)throw new Error('Expected 18 marketplace apps');if(x.some(p=>p.purchasable))throw new Error('Products must not pretend to be purchasable without price configuration');
+          NODE
+      - name: Checkout fails closed when unconfigured
+        run: |
+          code=$(curl -sS -o /tmp/checkout.json -w '%{http_code}' -X POST -H 'content-type: application/json' --data '{"productId":"phishing-explainer"}' http://127.0.0.1:8787/api/commerce/checkout)
+          test "$code" = "503"
+          grep -q 'ödeme henüz yapılandırılmadı' /tmp/checkout.json
+      - name: Stop worker
+        if: always()
+        run: kill "$(cat /tmp/wrangler.pid)" || true
