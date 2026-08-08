@@ -1,0 +1,125 @@
+name: Final live AI Pusula verification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/final-live-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  final-production-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for final Cloudflare production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          ready=false
+          for attempt in $(seq 1 36); do
+            echo "Final production verification ${attempt}/36"
+            status=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' "${base}/" || true)
+            app=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/app.js" || true)
+            core=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/product-builder-core.js" || true)
+            assistant=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/ai-build-assistant.js" || true)
+            if [ "$status" = '200' ] && echo "$app" | grep -q 'clipboard-fallback' && echo "$app" | grep -q 'csp-progress' && ! echo "$app" | grep -q 'style="width:' && ! echo "$app" | grep -q '\.style\.' && echo "$core" | grep -q 'builder-card-progress' && ! echo "$core" | grep -q 'style="width:' && echo "$assistant" | grep -q 'Gemini Code Assist'; then
+              ready=true
+              printf '%s' "$app" >/tmp/app.js
+              printf '%s' "$core" >/tmp/core.js
+              printf '%s' "$assistant" >/tmp/assistant.js
+              break
+            fi
+            sleep 10
+          done
+          test "$ready" = 'true'
+          curl --fail -sS "${base}/product-builder.js" -o /tmp/loader.js
+          curl --fail -sS "${base}/styles.css" -o /tmp/styles.css
+          curl --fail -sS "${base}/product-builder.css" -o /tmp/builder.css
+          curl --fail -sS "${base}/data/build-blueprints.json" -o /tmp/blueprints.json
+          grep -q 'product-builder-core.js' /tmp/loader.js
+          grep -q 'ai-build-assistant.js' /tmp/loader.js
+          grep -q 'csp-progress' /tmp/styles.css
+          grep -q 'clipboard-fallback' /tmp/styles.css
+          grep -q 'builder-card-progress' /tmp/builder.css
+          for provider in Cursor Codex 'Claude Code' 'Gemini Code Assist'; do grep -q "$provider" /tmp/assistant.js; done
+          grep -qi 'prompt injection' /tmp/assistant.js
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('/tmp/blueprints.json').read_text(encoding='utf-8'))
+          assert data['version'] == 2
+          assert len(data['products']) == 18
+          assert {'minimum','balanced','pro'} <= set(data['profiles'])
+          PY
+          tr -d '\r' < /tmp/index.headers | tr '[:upper:]' '[:lower:]' > /tmp/index.headers.lower
+          grep -q '^content-security-policy:' /tmp/index.headers.lower
+          grep -q "style-src 'self'" /tmp/index.headers.lower
+          grep -q "script-src 'self'" /tmp/index.headers.lower
+          grep -q "connect-src 'self'" /tmp/index.headers.lower
+          grep -q "frame-ancestors 'none'" /tmp/index.headers.lower
+          grep -q "object-src 'none'" /tmp/index.headers.lower
+          grep -q '^x-content-type-options: nosniff' /tmp/index.headers.lower
+          git_status=$(curl --connect-timeout 10 --max-time 30 -sS -o /tmp/git-head -w '%{http_code}' "${base}/.git/HEAD" || true)
+          if grep -q '^ref: refs/' /tmp/git-head 2>/dev/null; then
+            echo "Repository metadata leak detected with HTTP ${git_status}." >&2
+            exit 1
+          fi
+          echo 'Final live assets and strict CSP boundaries verified.'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Exercise product journeys and AI builder with zero console errors
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const base='https://agentbrowser.tpberg3tp.workers.dev';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1440,height:1000}});
+          const failures=[];
+          page.on('pageerror',e=>failures.push(`pageerror: ${e.message}`));
+          page.on('console',m=>{if(m.type()==='error') failures.push(`console: ${m.text()}`)});
+          await page.goto(base,{waitUntil:'networkidle',timeout:45000});
+
+          // Exercise legacy idea journey progress UI that previously violated CSP.
+          const journeyButton=page.locator('[data-product-plan]').first();
+          await journeyButton.scrollIntoViewIfNeeded();
+          await journeyButton.click();
+          await page.locator('#ideaDialog[open]').waitFor();
+          if(await page.locator('.csp-progress').count()<2) throw new Error('Expected CSP-safe journey progress elements');
+          const journeyStep=page.locator('[data-journey-step]').nth(1);
+          if(await journeyStep.count()) await journeyStep.click();
+          await page.locator('[data-close-dialog]').click().catch(async()=>{ await page.keyboard.press('Escape'); });
+
+          // Exercise the 18-product builder and AI execution task packet.
+          await page.locator('[data-builder-open]').first().click();
+          await page.locator('#builderDialog[open]').waitFor();
+          await page.locator('[data-ai-exec]').waitFor();
+          if(await page.locator('[data-ai-provider]').count()!==4) throw new Error('Expected four AI coding providers');
+          await page.locator('[data-ai-provider="codex"]').click();
+          await page.locator('[data-ai-preview]').click();
+          let packet=await page.locator('[data-ai-output]').textContent();
+          for(const term of ['Codex','Güvenlik kapıları','Bitti sayılması','Ajan talimatı']) if(!packet?.includes(term)) throw new Error(`Missing packet term: ${term}`);
+          await page.locator('[data-builder-stage="7"]').click();
+          await page.locator('[data-ai-exec]').waitFor();
+          await page.locator('[data-ai-preview]').click();
+          packet=await page.locator('[data-ai-output]').textContent();
+          if(!packet?.toLowerCase().includes('prompt injection')) throw new Error('AI-stage packet missing prompt-injection gate');
+          await page.locator('[data-builder-product]').selectOption({index:1});
+          await page.locator('[data-ai-exec]').waitFor();
+          if(await page.locator('.builder-card-progress').count()<18) throw new Error('Expected CSP-safe product card progress elements');
+
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Mobile horizontal overflow: ${overflow}px`);
+          if(failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log('Final live browser verification passed with zero page/console errors.');
+          NODE
