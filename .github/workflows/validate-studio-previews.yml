@@ -35,7 +35,7 @@ jobs:
           ! grep -n -E 'sk-[A-Za-z0-9]{12,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' public/studio/template-previews.js
           ! grep -n -E 'https?://' public/studio/template-previews.js
           grep -q "'/studio/template-previews.js'" public/sw.js
-          grep -q "ai-pusula-v14" public/sw.js
+          grep -q "ai-pusula-v19" public/sw.js
       - name: Install Chromium
         run: |
           npm install --no-save playwright
@@ -55,7 +55,7 @@ jobs:
           page.on('pageerror',e=>errors.push(e.message));
           page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
           page.on('request',r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())});
-          await page.goto('http://127.0.0.1:8080/studio/',{waitUntil:'networkidle'});
+          await page.goto('http://127.0.0.1:8080/studio/?mode=advanced',{waitUntil:'networkidle'});
           const cards=page.locator('.template-card');
           const previews=page.locator('.template-preview');
           if(await cards.count()!==100) throw new Error('Expected exactly 100 cards');
