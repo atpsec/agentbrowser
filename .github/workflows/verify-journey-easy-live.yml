@@ -16,7 +16,16 @@ jobs:
           set -euo pipefail
           base='https://agentbrowser.tpberg3tp.workers.dev'
           for i in $(seq 1 30); do
-            if curl -fsS "$base/journey/journey.js" | grep -q 'ai-pusula-journey-v1' && curl -fsS "$base/easy/easy.js" | grep -q 'Portreyi' && curl -fsS "$base/launch/launch.js" | grep -q 'PAYMENT_WEBHOOK_SECRET' && curl -fsS "$base/studio/studio-plus.js" | grep -q 'project.tar'; then exit 0; fi
+            if curl -fsS "$base/journey/journey.js" -o /tmp/journey.js && \
+               curl -fsS "$base/easy/easy.js" -o /tmp/easy.js && \
+               curl -fsS "$base/launch/launch.js" -o /tmp/launch.js && \
+               curl -fsS "$base/studio/studio-plus.js" -o /tmp/studio-plus.js && \
+               grep -q 'ai-pusula-journey-v1' /tmp/journey.js && \
+               grep -q 'function slim' /tmp/easy.js && \
+               grep -q 'PAYMENT_WEBHOOK_SECRET' /tmp/launch.js && \
+               grep -q 'project.tar' /tmp/studio-plus.js; then
+              exit 0
+            fi
             sleep 5
           done
           exit 1
