@@ -1,0 +1,67 @@
+name: Validate phishing explainer
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'public/labs/phishing-explainer/**'
+      - 'public/lab-links.js'
+      - 'public/product-builder.js'
+      - '.github/workflows/validate-phishing-explainer.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and unit tests
+        run: |
+          node --check public/labs/phishing-explainer/analyzer.js
+          node --check public/labs/phishing-explainer/app.js
+          node --check public/lab-links.js
+          node public/labs/phishing-explainer/test.mjs
+      - name: Security boundaries
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          files = [
+              Path('public/labs/phishing-explainer/index.html'),
+              Path('public/labs/phishing-explainer/app.js'),
+              Path('public/labs/phishing-explainer/analyzer.js'),
+              Path('public/lab-links.js'),
+          ]
+          text='\n'.join(p.read_text(encoding='utf-8') for p in files)
+          assert 'fetch(' not in text
+          assert 'XMLHttpRequest' not in text
+          assert 'WebSocket' not in text
+          assert 'innerHTML = location' not in text
+          assert 'eval(' not in text
+          assert 'new Function(' not in text
+          assert '.style.' not in text
+          assert 'style="' not in text
+          assert 'target="_blank"' not in text
+          assert 'href="http' not in Path('public/labs/phishing-explainer/index.html').read_text(encoding='utf-8')
+          assert "./labs/phishing-explainer/" in Path('public/lab-links.js').read_text(encoding='utf-8')
+          print('Local-only, CSP-safe lab boundaries verified.')
+          PY
+          if grep -RInE '(sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' public/labs/phishing-explainer public/lab-links.js; then
+            echo 'Potential secret found.' >&2
+            exit 1
+          fi
+      - name: HTTP smoke test
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/phish-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid' EXIT
+          sleep 2
+          curl --fail --silent http://127.0.0.1:8080/labs/phishing-explainer/ | grep --quiet 'Phishing E-postası Açıklayıcı'
+          curl --fail --silent http://127.0.0.1:8080/labs/phishing-explainer/analyzer.js | grep --quiet 'analyzeEmail'
+          curl --fail --silent http://127.0.0.1:8080/labs/phishing-explainer/app.js | grep --quiet 'reportText'
+          curl --fail --silent http://127.0.0.1:8080/lab-links.js | grep --quiet 'Canlı prototip'
