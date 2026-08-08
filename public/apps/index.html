@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>AI Pusula — Canlı Ürünler</title>
+  <meta name="description" content="AI Pusula ürün fikirlerinin tarayıcıda çalışan ve offline indirilebilen MVP sürümleri.">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../">AI PUSULA</a>
+    <span>CANLI ÜRÜNLER / LOCAL-FIRST</span>
+  </header>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">HEMEN KULLAN · HESAP GEREKMEZ</span>
+        <h1 id="productTitle">Canlı ürün</h1>
+        <p id="productSummary"></p>
+      </div>
+      <div class="privacy-box">
+        <b>GİZLİLİK SINIRI</b>
+        <p>Bu MVP araçlarının hesaplama ve metin işleme adımları tarayıcı içinde çalışır. Harici AI API'si çağrılmaz. Hassas gerçek veriler yerine mümkün olduğunca maskelenmiş/sentetik veri kullan.</p>
+      </div>
+    </section>
+
+    <section class="toolbar" aria-label="Ürün seçimi">
+      <label>Ürün
+        <select id="productSelect"></select>
+      </label>
+      <div class="toolbar-actions">
+        <button id="sampleButton" type="button">Örnek yükle</button>
+        <button id="downloadButton" type="button">Offline uygulamayı indir</button>
+      </div>
+    </section>
+
+    <div class="workspace">
+      <section class="panel input-panel">
+        <div class="panel-head"><span>01</span><div><b>GİRDİ</b><small>Ürünün ihtiyacı olan alanları doldur.</small></div></div>
+        <form id="productForm"></form>
+        <button class="run" id="runButton" type="button">Çalıştır →</button>
+        <p class="notice" id="specialNotice" hidden></p>
+      </section>
+
+      <section class="panel output-panel" aria-live="polite">
+        <div class="panel-head"><span>02</span><div><b>SONUÇ</b><small>Kararın nedenini ve sonraki adımları gör.</small></div></div>
+        <div id="emptyResult" class="empty">Örnek yükle veya kendi verini gir; ardından <b>Çalıştır</b>.</div>
+        <div id="result" hidden>
+          <div class="score-row"><div><span id="scoreLabel">SONUÇ</span><strong id="resultLabel"></strong></div><div id="scoreBox" class="score-box" hidden><b id="scoreValue"></b><small>/100</small></div></div>
+          <p id="resultSummary" class="result-summary"></p>
+          <div id="resultSections"></div>
+          <div class="result-actions"><button id="copyButton" type="button">Sonucu kopyala</button><button id="textDownloadButton" type="button">Raporu indir</button></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="catalog">
+      <div class="catalog-head"><span class="eyebrow">18 ÜRÜN</span><h2>Başka bir araç aç</h2></div>
+      <div id="catalogGrid" class="catalog-grid"></div>
+    </section>
+  </main>
+  <div id="toast" class="toast" hidden></div>
+  <script type="module" src="./product-app.js"></script>
+</body>
+</html>

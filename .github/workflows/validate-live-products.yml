@@ -1,0 +1,118 @@
+name: Validate live products
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/apps/**'
+      - 'public/product-live-links.js'
+      - 'public/live-links.css'
+      - 'public/product-builder.js'
+      - '.github/workflows/validate-live-products.yml'
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - 'public/apps/**'
+      - 'public/product-live-links.js'
+      - 'public/live-links.css'
+      - 'public/product-builder.js'
+      - '.github/workflows/validate-live-products.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and 18-product contract
+        run: |
+          node --check public/apps/product-engines.js
+          node --check public/apps/product-app.js
+          node --check public/product-live-links.js
+          node --input-type=module - <<'NODE'
+          import { productDefinitions, runProduct, resultToText } from './public/apps/product-engines.js';
+          if (productDefinitions.length !== 18) throw new Error(`Expected 18 products, got ${productDefinitions.length}`);
+          const ids = new Set(productDefinitions.map(p => p.id));
+          if (ids.size !== 18) throw new Error('Duplicate product ids');
+          for (const p of productDefinitions) {
+            if (!p.fields?.length || !p.sample) throw new Error(`Incomplete product contract: ${p.id}`);
+            const result = runProduct(p.id, p.sample);
+            if (!result?.label || !Array.isArray(result.sections) || !result.sections.length) throw new Error(`No usable result: ${p.id}`);
+            if (resultToText(p, result).length < 40) throw new Error(`Result too short: ${p.id}`);
+          }
+          console.log('18/18 product engines passed');
+          NODE
+      - name: Security boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -R -n -E 'XMLHttpRequest|WebSocket|sendBeacon|eval\(|new Function|document\.write' public/apps public/product-live-links.js
+          ! grep -R -n -E 'style="|\.style\.' public/apps/*.js public/product-live-links.js
+          test "$(grep -R -n 'fetch(' public/apps/*.js | wc -l)" -eq 1
+          grep -q "fetch('./product-engines.js'" public/apps/product-app.js
+          ! grep -R -n -E 'sk-[A-Za-z0-9]|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' public/apps public/product-live-links.js
+          grep -q "default-src 'none'" public/apps/product-app.js
+          grep -q "Harici AI API'si çağrılmaz" public/apps/index.html
+
+  browser-all-products:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start site
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/live-products-http.log 2>&1 &
+          echo $! >/tmp/live-products-http.pid
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/apps/ >/dev/null && break; sleep 1; done
+      - name: Exercise all 18 products and offline download
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          import { productDefinitions } from './public/apps/product-engines.js';
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
+          const failures=[];
+          page.on('pageerror', e => failures.push(`pageerror: ${e.message}`));
+          page.on('console', m => { if (m.type()==='error') failures.push(`console: ${m.text()}`); });
+          await page.goto('http://127.0.0.1:8080/', { waitUntil: 'networkidle' });
+          const more=page.locator('#showMoreIdeas');
+          while(await more.count() && await more.isVisible()) await more.click();
+          const liveLinks = page.locator('[data-live-product]');
+          if (await liveLinks.count() !== 18) throw new Error(`Expected 18 live product links after expansion, got ${await liveLinks.count()}`);
+          await page.goto('http://127.0.0.1:8080/apps/?app=phishing-explainer', { waitUntil: 'networkidle' });
+          for (const product of productDefinitions) {
+            await page.selectOption('#productSelect', product.id);
+            await page.click('#sampleButton');
+            await page.locator('#result:not([hidden])').waitFor();
+            const label=(await page.locator('#resultLabel').textContent())?.trim();
+            if(!label) throw new Error(`No browser result for ${product.id}`);
+          }
+          const downloadPromise=page.waitForEvent('download');
+          await page.click('#downloadButton');
+          const download=await downloadPromise;
+          if(!download.suggestedFilename().endsWith('-offline.html')) throw new Error('Offline download filename invalid');
+          const path=await download.path();
+          const fs=await import('node:fs/promises');
+          const downloaded=await fs.readFile(path,'utf8');
+          for(const term of ['OFFLINE / LOCAL-ONLY','default-src \'none\'','runProduct']) if(!downloaded.includes(term)) throw new Error(`Offline app missing ${term}`);
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Mobile horizontal overflow: ${overflow}px`);
+          if(failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log('18/18 browser apps and offline download passed');
+          NODE
+      - name: Stop site
+        if: always()
+        run: kill "$(cat /tmp/live-products-http.pid)" || true
