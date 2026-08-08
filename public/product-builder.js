@@ -5,3 +5,4 @@ import './product-live-links.js';
 import './platform-pwa.js';
 import './kids-link.js';
 import './studio-link.js';
+import './journey-easy-links.js';
