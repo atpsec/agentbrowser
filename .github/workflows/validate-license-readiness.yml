@@ -1,0 +1,61 @@
+name: Validate license readiness
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/license-api/**'
+      - 'commercial/**'
+      - 'mobile/products.json'
+      - 'public/vendor/THIRD_PARTY.txt'
+      - '.github/workflows/validate-license-readiness.yml'
+  push:
+    branches: [main, 'feature/license-readiness']
+    paths:
+      - 'services/license-api/**'
+      - 'commercial/**'
+      - 'mobile/products.json'
+      - 'public/vendor/THIRD_PARTY.txt'
+      - '.github/workflows/validate-license-readiness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test entitlement rules
+        run: node services/license-api/entitlement-rules.test.mjs
+      - name: Validate license security contracts
+        run: |
+          set -euo pipefail
+          test -s services/license-api/openapi.yaml
+          test -s services/license-api/schema.sql
+          grep -q 'key_hash TEXT NOT NULL UNIQUE' services/license-api/schema.sql
+          grep -q 'installation_hash TEXT NOT NULL' services/license-api/schema.sql
+          grep -q 'must not be a hardware fingerprint' services/license-api/openapi.yaml
+          grep -q 'MUST remain disabled' services/license-api/openapi.yaml
+          ! grep -R -n -E 'sk-(proj-)?[A-Za-z0-9_-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' services/license-api commercial/scripts
+      - name: Build readiness reports and SBOM
+        run: |
+          set -euo pipefail
+          node commercial/scripts/build-readiness.mjs
+          test -s commercial/dist-readiness/SBOM.json
+          for p in ai-pusula-tools photofix pdf-toolbox qr-maker; do
+            test -s "commercial/dist-readiness/$p.md"
+            grep -q 'TBD_VERIFIED' "commercial/dist-readiness/$p.md"
+            grep -q 'Google Play upload signing' "commercial/dist-readiness/$p.md"
+            grep -q 'AppSumo redemption' "commercial/dist-readiness/$p.md"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: commercial-readiness
+          path: commercial/dist-readiness/
+          if-no-files-found: error
+          retention-days: 30

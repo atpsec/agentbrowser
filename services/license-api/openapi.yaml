@@ -1,0 +1,113 @@
+openapi: 3.1.0
+info:
+  title: AI Pusula License API
+  version: 0.1.0
+  description: Provider-neutral entitlement and activation contract. No payment provider is implied by this specification.
+servers:
+  - url: https://LICENSE_API_ORIGIN.example
+paths:
+  /v1/licenses/verify:
+    post:
+      summary: Verify a license entitlement without consuming a new activation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntitlementResponse'
+        '400': { description: Invalid request }
+        '429': { description: Rate limited }
+  /v1/licenses/activate:
+    post:
+      summary: Activate one device installation for a valid license
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivateRequest'
+      responses:
+        '200':
+          description: Activation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntitlementResponse'
+        '409': { description: Activation limit reached or entitlement conflict }
+        '429': { description: Rate limited }
+  /v1/licenses/deactivate:
+    post:
+      summary: Deactivate the caller's device installation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivateRequest'
+      responses:
+        '204': { description: Deactivated or already inactive }
+        '429': { description: Rate limited }
+  /v1/appsumo/redeem:
+    post:
+      summary: Redeem a marketplace code after server-side marketplace validation
+      description: MUST remain disabled until marketplace/provider validation credentials are configured. Never trust a client-only code list.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [productId, code]
+              properties:
+                productId: { type: string }
+                code: { type: string, minLength: 6, maxLength: 160 }
+      responses:
+        '200': { description: Redeemed entitlement }
+        '501': { description: Marketplace redemption provider not configured }
+components:
+  schemas:
+    VerifyRequest:
+      type: object
+      additionalProperties: false
+      required: [productId, licenseKey]
+      properties:
+        productId: { type: string, pattern: '^[a-z0-9-]{2,64}$' }
+        licenseKey: { type: string, minLength: 12, maxLength: 160 }
+    ActivateRequest:
+      allOf:
+        - $ref: '#/components/schemas/VerifyRequest'
+        - type: object
+          required: [installationId]
+          properties:
+            installationId:
+              type: string
+              minLength: 16
+              maxLength: 128
+              description: Random opaque installation identifier; must not be a hardware fingerprint.
+    EntitlementResponse:
+      type: object
+      additionalProperties: false
+      required: [valid, productId, status, plan, features, activation]
+      properties:
+        valid: { type: boolean }
+        productId: { type: string }
+        status: { type: string, enum: [active, expired, revoked, suspended, invalid] }
+        plan: { type: string, enum: [free, pro-yearly, lifetime, team, agency, white-label] }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        features:
+          type: array
+          items: { type: string }
+        activation:
+          type: object
+          required: [active, limit]
+          properties:
+            active: { type: integer, minimum: 0 }
+            limit: { type: integer, minimum: 0 }
