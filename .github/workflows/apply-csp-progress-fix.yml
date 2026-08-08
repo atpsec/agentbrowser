@@ -1,0 +1,65 @@
+name: Apply CSP progress fix
+
+on:
+  push:
+    branches:
+      - fix/csp-builder-progress
+    paths:
+      - '.github/workflows/apply-csp-progress-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/csp-builder-progress
+      - name: Replace inline progress style without weakening CSP
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          core_path = Path('public/product-builder-core.js')
+          core = core_path.read_text(encoding='utf-8')
+          old = '<i><u style="width:${progress.percent}%"></u></i><em>${progress.percent}% · İnşa haritasını aç →</em>'
+          new = '<progress class="builder-card-progress" max="100" value="${progress.percent}" aria-label="${progress.percent}% tamamlandı"></progress><em>${progress.percent}% · İnşa haritasını aç →</em>'
+          assert core.count(old) == 1, f'Expected one inline progress occurrence, got {core.count(old)}'
+          core = core.replace(old, new)
+          assert 'style="width:${progress.percent}%' not in core
+          core_path.write_text(core, encoding='utf-8')
+
+          css_path = Path('public/product-builder.css')
+          css = css_path.read_text(encoding='utf-8')
+          marker = '.builder-card-progress'
+          addition = '\n.builder-card-progress{width:100%;height:8px;border:1px solid var(--ink);appearance:none;background:var(--line)}.builder-card-progress::-webkit-progress-bar{background:var(--line)}.builder-card-progress::-webkit-progress-value{background:var(--blue)}.builder-card-progress::-moz-progress-bar{background:var(--blue)}\n'
+          if marker not in css:
+              css_path.write_text(css + addition, encoding='utf-8')
+
+          workflow_path = Path('.github/workflows/validate-product-builder.yml')
+          workflow = workflow_path.read_text(encoding='utf-8')
+          needle = "assert \"fetch('./data/build-blueprints.json'\" in core\n"
+          insert = needle + "          assert 'style=\"width:' not in core\n          assert '<progress class=\"builder-card-progress\"' in core\n"
+          assert needle in workflow
+          if "assert 'style=\"width:' not in core" not in workflow:
+              workflow = workflow.replace(needle, insert)
+              workflow_path.write_text(workflow, encoding='utf-8')
+          PY
+      - name: Verify exact change
+        run: |
+          node --check public/product-builder-core.js
+          grep -q 'builder-card-progress' public/product-builder-core.js
+          grep -q 'builder-card-progress' public/product-builder.css
+          if grep -q 'style="width:' public/product-builder-core.js; then
+            echo 'Inline progress style still present.' >&2
+            exit 1
+          fi
+      - name: Commit CSP-safe progress fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/product-builder-core.js public/product-builder.css .github/workflows/validate-product-builder.yml
+          git commit -m 'Fix builder progress CSP violation'
+          git push origin HEAD:fix/csp-builder-progress
