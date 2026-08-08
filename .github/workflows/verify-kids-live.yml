@@ -1,0 +1,73 @@
+name: Verify AI Pusula Kids live
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-kids-live.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for Cloudflare production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://agentbrowser.tpberg3tp.workers.dev'
+          for i in $(seq 1 30); do
+            if curl -fsS "$BASE/kids/kids-engine.js" | grep -q 'teacherPack' && curl -fsS "$BASE/kids/" | grep -q 'AI Pusula Çocuk'; then
+              break
+            fi
+            sleep 10
+          done
+          curl -fsS "$BASE/kids/" | grep -q '13'
+          curl -fsS "$BASE/kids/kids.js" | grep -q 'serviceWorker'
+          curl -fsS "$BASE/sw.js" | grep -q "'/kids/'"
+          curl -fsS "$BASE/manifest.webmanifest" | grep -q '"url":"/kids/"'
+          headers=$(curl -fsSI "$BASE/kids/")
+          printf '%s' "$headers" | grep -qi "content-security-policy:.*script-src 'self'"
+          printf '%s' "$headers" | grep -qi "content-security-policy:.*style-src 'self'"
+          printf '%s' "$headers" | grep -qi "content-security-policy:.*connect-src 'self'"
+          ! curl -fsS "$BASE/.git/HEAD" | grep -q '^ref:'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Exercise live kids hub
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const BASE='https://agentbrowser.tpberg3tp.workers.dev';
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({viewport:{width:1280,height:900}});
+          const page=await context.newPage();const failures=[];const external=[];
+          page.on('pageerror',e=>failures.push(`pageerror:${e.message}`));
+          page.on('console',m=>{if(m.type()==='error')failures.push(`console:${m.text()}`)});
+          await page.goto(BASE+'/',{waitUntil:'networkidle'});
+          if(await page.locator('[data-kids-hub]').count()!==1) throw new Error('Home kids entry missing');
+          page.on('request',r=>{const u=new URL(r.url());if(u.origin!==BASE)external.push(r.url())});
+          await page.goto(BASE+'/kids/',{waitUntil:'networkidle'});
+          if(await page.locator('.module').count()!==13) throw new Error('Expected 13 modules');
+          await page.click('#learnRun');if(!(await page.textContent('#learnOut')).includes('Kara delik'))throw new Error('learn');
+          await page.click('#storyRun');if(!(await page.textContent('#storyOut')).includes('Mırmır'))throw new Error('story');
+          await page.click('#quizRun');if(await page.locator('#quizOut .quiz-card').count()!==4)throw new Error('quiz');
+          await page.click('#gameBuild');if(!(await page.textContent('#gameOut')).includes('Hazine Avı'))throw new Error('game');
+          await page.click('#codeRun');if(await page.locator('#codeOut .code-block').count()!==1)throw new Error('code');
+          await page.getByRole('button',{name:'Şüpheli',exact:true}).first().click();if(!(await page.textContent('#cyberOut')).includes('Şifre'))throw new Error('cyber');
+          await page.click('#mathRun');await page.getByRole('button',{name:'Cevabı kontrol için göster'}).click();if(!(await page.textContent('#mathOut')).includes('102'))throw new Error('math');
+          await page.click('#homeworkRun');if(!(await page.textContent('#homeworkOut')).includes('Soruyu çözümle'))throw new Error('homework');
+          await page.selectOption('#experimentSelect','density');await page.click('#scienceRun');if(!(await page.textContent('#scienceOut')).includes('Güvenlik'))throw new Error('science');
+          await page.click('#creativeRun');await page.click('#dailyButton');await page.click('#parentRun');await page.click('#teacherRun');
+          if(Number(await page.textContent('#progressValue'))<7)throw new Error('progress');
+          const reg=await page.evaluate(async()=>{await navigator.serviceWorker.ready;return Boolean(await navigator.serviceWorker.getRegistration('/'))});if(!reg)throw new Error('service worker');
+          await page.setViewportSize({width:390,height:844});const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);if(overflow>2)throw new Error(`overflow ${overflow}`);
+          if(external.length)throw new Error(`Kids external requests: ${external.join(',')}`);if(failures.length)throw new Error(failures.join('\n'));
+          await browser.close();console.log('Live AI Pusula Kids verification passed');
+          NODE
