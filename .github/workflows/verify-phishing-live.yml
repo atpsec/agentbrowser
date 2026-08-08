@@ -1,0 +1,89 @@
+name: Verify live phishing explainer
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/verify-phishing-live.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for Cloudflare production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          ready=false
+          for attempt in $(seq 1 36); do
+            echo "Phishing lab production verification ${attempt}/36"
+            status=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS -D /tmp/lab.headers -o /tmp/lab.html -w '%{http_code}' "${base}/labs/phishing-explainer/" || true)
+            curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/labs/phishing-explainer/analyzer.js" -o /tmp/analyzer.js || true
+            curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/labs/phishing-explainer/app.js" -o /tmp/lab-app.js || true
+            curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/lab-links.js" -o /tmp/lab-links.js || true
+            if [ "$status" = '200' ] && grep -q 'Phishing E-postası Açıklayıcı' /tmp/lab.html && grep -q 'analyzeEmail' /tmp/analyzer.js && grep -q 'reportText' /tmp/lab-app.js && grep -q 'Canlı prototip' /tmp/lab-links.js; then
+              ready=true
+              break
+            fi
+            sleep 10
+          done
+          test "$ready" = 'true'
+          ! grep -q 'fetch(' /tmp/analyzer.js
+          ! grep -q 'fetch(' /tmp/lab-app.js
+          ! grep -q '\.style\.' /tmp/lab-app.js
+          tr -d '\r' < /tmp/lab.headers | tr '[:upper:]' '[:lower:]' > /tmp/lab.headers.lower
+          grep -q '^content-security-policy:' /tmp/lab.headers.lower
+          grep -q "style-src 'self'" /tmp/lab.headers.lower
+          grep -q "script-src 'self'" /tmp/lab.headers.lower
+          grep -q "connect-src 'self'" /tmp/lab.headers.lower
+          grep -q "frame-ancestors 'none'" /tmp/lab.headers.lower
+          grep -q "object-src 'none'" /tmp/lab.headers.lower
+          echo 'Live phishing assets and CSP verified.'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Exercise live phishing workflow
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const base='https://agentbrowser.tpberg3tp.workers.dev';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1440,height:1000}});
+          const failures=[];
+          page.on('pageerror',e=>failures.push(`pageerror: ${e.message}`));
+          page.on('console',m=>{if(m.type()==='error') failures.push(`console: ${m.text()}`)});
+
+          await page.goto(base,{waitUntil:'networkidle',timeout:45000});
+          const plan=page.locator('[data-product-plan="phishing-explainer"]');
+          await plan.waitFor();
+          const labLink=page.locator('[data-phishing-lab-link]');
+          await labLink.waitFor();
+          await labLink.click();
+          await page.waitForURL('**/labs/phishing-explainer/');
+          await page.locator('[data-sample="credential"]').click();
+          await page.locator('#results:not([hidden])').waitFor();
+          const score=Number(await page.locator('#scoreValue').textContent());
+          if(!(score>=70)) throw new Error(`Expected high-risk sample score >=70, got ${score}`);
+          const findingText=await page.locator('#findings').textContent();
+          for(const term of ['Şifre','Reply-To','DMARC']) if(!findingText?.includes(term)) throw new Error(`Missing finding: ${term}`);
+          const linkText=await page.locator('#links').textContent();
+          if(!linkText?.includes('bit.ly')) throw new Error('Expected short-link evidence');
+          await page.locator('[data-sample="benign"]').click();
+          const benignScore=Number(await page.locator('#scoreValue').textContent());
+          if(!(benignScore<15)) throw new Error(`Expected benign score <15, got ${benignScore}`);
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Mobile horizontal overflow: ${overflow}px`);
+          if(failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log('Live phishing explainer browser verification passed.');
+          NODE
