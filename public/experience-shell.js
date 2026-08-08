@@ -4,8 +4,12 @@ const oldSections=new Set(['basics','apps','models','ideas','method','security',
 const requestedOld=oldSections.has(location.hash.replace('#',''))||new URLSearchParams(location.search).get('guide')==='1';
 
 function ensureStyles(){
-  if(document.querySelector('link[data-experience-shell]'))return;
-  const link=document.createElement('link');link.rel='stylesheet';link.href='/experience-shell.css';link.dataset.experienceShell='true';document.head.append(link);
+  if(!document.querySelector('link[data-experience-shell]')){
+    const link=document.createElement('link');link.rel='stylesheet';link.href='/experience-shell.css';link.dataset.experienceShell='true';document.head.append(link);
+  }
+  if(!document.querySelector('link[data-experience-shell-guards]')){
+    const guard=document.createElement('link');guard.rel='stylesheet';guard.href='/experience-shell-guards.css';guard.dataset.experienceShellGuards='true';document.head.append(guard);
+  }
 }
 
 function routeIntent(raw){
