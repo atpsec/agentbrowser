@@ -41,6 +41,19 @@ function setNav(){
   const nav=$('.topbar nav');if(nav){nav.className='studio-experience-nav';nav.innerHTML='<a href="/use/">Kullan</a><a href="/studio/?mode=simple" aria-current="page">Oluştur</a><a href="/learn/">Öğren</a><a href="/account/">Hesabım</a>'}
   const brand=$('.topbar .brand');if(brand)brand.href='/';
 }
+function updateHero(next){
+  const hero=$('.hero');if(!hero)return;
+  const eyebrow=hero.querySelector('.eyebrow');const title=hero.querySelector('h1');const lead=hero.querySelector('.lead');
+  if(next==='simple'){
+    if(eyebrow)eyebrow.textContent='OLUŞTUR · BASİT MOD';
+    if(title)title.textContent='Ne yapmak istediğini söyle. Gerisini adım adım daraltalım.';
+    if(lead)lead.textContent='Önce üç öneri gör. Birini seç. Üç kısa soruyla çalışan sürümü üret. Kod ve mimari yalnız istersen açılır.';
+  }else{
+    if(eyebrow)eyebrow.textContent='ÜRETİM STÜDYOSU · GELİŞMİŞ MOD';
+    if(title)title.textContent='Fikri seç. Adım adım üret. Çalıştır. İndir.';
+    if(lead)lead.textContent='Şablonlar, Build Blocks, mimari, güvenlik, kod ve production ayrıntıları açık.';
+  }
+}
 function placePreview(next){
   const preview=$('#preview');if(!preview)return;
   if(next==='simple')$('#simplePreviewWrap')?.append(preview);
@@ -48,7 +61,7 @@ function placePreview(next){
 }
 function setMode(next,{push=true}={}){
   mode=next;document.body.classList.toggle('studio-simple-mode',next==='simple');document.body.classList.toggle('studio-advanced-mode',next==='advanced');
-  placePreview(next);
+  updateHero(next);placePreview(next);
   $$('[data-studio-mode]').forEach(b=>b.classList.toggle('is-active',b.dataset.studioMode===next));
   if(push){const url=new URL(location.href);url.searchParams.set('mode',next);history.replaceState({},'',url)}
 }
@@ -90,7 +103,6 @@ function showReady(){
 }
 function buildSimpleUI(){
   const hero=$('.hero');
-  if(hero){hero.querySelector('.eyebrow').textContent='OLUŞTUR · BASİT MOD';hero.querySelector('h1').textContent='Ne yapmak istediğini söyle. Gerisini adım adım daraltalım.';hero.querySelector('.lead').textContent='Önce üç öneri gör. Birini seç. Üç kısa soruyla çalışan sürümü üret. Kod ve mimari yalnız istersen açılır.'}
   const section=document.createElement('section');section.id='simpleStudio';section.innerHTML=`
     <div class="simple-studio-shell">
       <div class="simple-mode-row">
@@ -122,7 +134,7 @@ function buildSimpleUI(){
     </div>`;
   hero?.after(section);
   const preview=$('#preview');if(preview)previewHome=preview.parentElement;
-  const advancedBar=document.createElement('div');advancedBar.className='mode-bar-advanced';advancedBar.innerHTML='<div class="experience-mode-switch" aria-label="Studio modu"><button type="button" data-studio-mode="simple">Basit mod</button><button type="button" data-studio-mode="advanced">Gelişmiş mod</button></div>';$('.hero')?.before(advancedBar);
+  const advancedBar=document.createElement('div');advancedBar.className='mode-bar-advanced';advancedBar.innerHTML='<div class="experience-mode-switch" aria-label="Studio modu"><button type="button" data-studio-mode="simple">Basit mod</button><button type="button" data-studio-mode="advanced">Gelişmiş mod</button></div>';hero?.before(advancedBar);
 }
 
 setNav();buildSimpleUI();setMode(mode,{push:false});progress(0);
