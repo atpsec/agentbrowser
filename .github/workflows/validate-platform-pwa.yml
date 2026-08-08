@@ -39,7 +39,7 @@ jobs:
           node - <<'NODE'
           const fs=require('fs');
           const m=JSON.parse(fs.readFileSync('public/manifest.webmanifest','utf8'));
-          if(m.display!=='standalone'||m.scope!=='/'||!m.start_url.startsWith('/apps')) throw new Error('PWA manifest contract failed');
+          if(m.display!=='standalone'||m.scope!=='/'||m.start_url!=='/') throw new Error('PWA manifest contract failed');
           if(!Array.isArray(m.shortcuts)||m.shortcuts.length<4) throw new Error('PWA shortcuts missing');
           NODE
       - name: Security boundaries
