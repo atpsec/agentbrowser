@@ -7,3 +7,4 @@ import './kids-link.js';
 import './studio-link.js';
 import './journey-easy-links.js';
 import './productization.js';
+import './toolbox-link.js';
