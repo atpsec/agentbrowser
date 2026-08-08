@@ -1,0 +1,107 @@
+name: Verify platform PWA live
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-platform-pwa-live.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for Cloudflare production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          ok=0
+          for i in $(seq 1 30); do
+            if curl -fsS "$base/sw.js" -o /tmp/sw.js \
+              && curl -fsS "$base/platform-pwa.js" -o /tmp/platform-pwa.js \
+              && curl -fsS "$base/apps/product-app.js" -o /tmp/product-app.js \
+              && curl -fsS "$base/apps/platform.css" -o /tmp/platform.css \
+              && curl -fsS "$base/manifest.webmanifest" -o /tmp/manifest.webmanifest; then
+              if grep -q 'ai-pusula-v4' /tmp/sw.js \
+                && grep -q 'serviceWorker.register' /tmp/platform-pwa.js \
+                && grep -q 'globalThis.LanguageModel' /tmp/product-app.js \
+                && grep -q 'device-profile' /tmp/platform.css \
+                && grep -q '"start_url": "/apps/"' /tmp/manifest.webmanifest; then ok=1; break; fi
+            fi
+            sleep 4
+          done
+          test "$ok" -eq 1
+          node - <<'NODE'
+          const fs=require('fs');
+          const m=JSON.parse(fs.readFileSync('/tmp/manifest.webmanifest','utf8'));
+          if(m.start_url!=='/apps/'||m.scope!=='/'||m.display!=='standalone') throw new Error('Live manifest mismatch');
+          if(!Array.isArray(m.shortcuts)||m.shortcuts.length<4) throw new Error('Live shortcuts missing');
+          NODE
+          headers="$(curl -fsSI "$base/apps/")"
+          echo "$headers" | grep -qi "content-security-policy:"
+          echo "$headers" | grep -qi "script-src 'self'"
+          echo "$headers" | grep -qi "style-src 'self'"
+          echo "$headers" | grep -qi "connect-src 'self'"
+          echo "$headers" | grep -qi "frame-ancestors 'none'"
+          if curl -fsS "$base/.git/HEAD" -o /tmp/git-head; then
+            ! grep -qE 'ref: refs/|^[0-9a-f]{40}$' /tmp/git-head
+          fi
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Exercise live PWA platform
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const base='https://agentbrowser.tpberg3tp.workers.dev';
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true});
+          await context.addInitScript(()=>{
+            globalThis.LanguageModel={
+              availability:async()=> 'available',
+              create:async()=>({prompt:async()=> '1. Canlı AI entegrasyon testi\n2. Somut adımlar\n3. İnsan doğrulaması gerekir',destroy(){}})
+            };
+          });
+          const page=await context.newPage();
+          const failures=[];
+          page.on('pageerror',e=>failures.push(`pageerror:${e.message}`));
+          page.on('console',m=>{if(m.type()==='error') failures.push(`console:${m.text()}`)});
+          await page.goto(`${base}/apps/?app=phishing-explainer`,{waitUntil:'networkidle'});
+          if(await page.locator('#catalogGrid .catalog-card').count()!==18) throw new Error('Live catalog does not contain 18 apps');
+          await page.fill('#catalogSearch','quiz');
+          if(await page.locator('#catalogGrid .catalog-card').count()<1) throw new Error('Live search failed');
+          await page.fill('#catalogSearch','');
+          await page.selectOption('#categoryFilter','Siber güvenlik');
+          if(await page.locator('#catalogGrid .catalog-card').count()!==4) throw new Error('Live category filter failed');
+          await page.selectOption('#categoryFilter','all');
+          await page.click('#favoriteButton');
+          if(await page.getAttribute('#favoriteButton','aria-pressed')!=='true') throw new Error('Live favorite failed');
+          await page.check('#favoritesOnly');
+          if(await page.locator('#catalogGrid .catalog-card').count()!==1) throw new Error('Live favorites filter failed');
+          await page.uncheck('#favoritesOnly');
+          await page.fill('#profileName','Production Test');
+          await page.click('#sampleButton');
+          await page.locator('#result:not([hidden])').waitFor();
+          if(Number(await page.textContent('#usageCount'))<1) throw new Error('Live device profile usage failed');
+          await page.click('#aiEnhanceButton');
+          await page.waitForFunction(()=>document.querySelector('#aiOutput')?.textContent?.includes('Canlı AI entegrasyon testi'));
+          const downloadPromise=page.waitForEvent('download');
+          await page.click('#downloadButton');
+          const download=await downloadPromise;
+          if(!download.suggestedFilename().endsWith('-offline.html')) throw new Error('Live offline download failed');
+          const sw=await page.evaluate(async()=>{await navigator.serviceWorker.ready;return Boolean(await navigator.serviceWorker.getRegistration('/'))});
+          if(!sw) throw new Error('Live service worker registration failed');
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Live mobile overflow ${overflow}`);
+          if(failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log('Live platform PWA verification passed');
+          NODE
