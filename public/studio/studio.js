@@ -1,4 +1,5 @@
 import './studio-plus.js';
+import './preview-runtime-v4.js';
 import {families,templates,blocks,concepts,recommend,buildProject,improvePrompt,securityAudit,learningCard} from './studio-engine.js';
 import {createTemplatePreview} from './template-previews.js';
 
