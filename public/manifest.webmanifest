@@ -9,15 +9,13 @@
   "background_color": "#f6f1e8",
   "theme_color": "#f6f1e8",
   "categories": ["productivity", "education", "utilities", "photo"],
-  "icons": [
-    {"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
-  ],
+  "icons": [{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}],
   "shortcuts": [
     {"name":"AI Pusula Studio","short_name":"Studio","url":"/studio/"},
     {"name":"AI Pusula Yolculuk","short_name":"Yolculuk","url":"/journey/"},
     {"name":"Kolay Fotoğraf Araçları","short_name":"Fotoğraf","url":"/easy/"},
+    {"name":"Production'a Geç","short_name":"Production","url":"/launch/"},
     {"name":"AI Pusula Çocuk","short_name":"Çocuk","url":"/kids/"},
-    {"name":"Phishing Açıklayıcı","short_name":"Phishing","url":"/apps/?app=phishing-explainer"},
-    {"name":"CVE Önceliklendirici","short_name":"CVE","url":"/apps/?app=cve-prioritizer"}
+    {"name":"Phishing Açıklayıcı","short_name":"Phishing","url":"/apps/?app=phishing-explainer"}
   ]
 }
