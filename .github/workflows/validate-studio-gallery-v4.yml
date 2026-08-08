@@ -1,0 +1,86 @@
+name: Validate Studio gallery v4
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/studio/**'
+      - 'public/sw.js'
+      - '.github/workflows/validate-studio-gallery-v4.yml'
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - 'public/studio/**'
+      - 'public/sw.js'
+      - '.github/workflows/validate-studio-gallery-v4.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  gallery-diversity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static security checks
+        run: |
+          node --check public/studio/template-previews.js
+          node --check public/studio/preview-runtime-v4.js
+          node --check public/studio/studio.js
+          grep -q 'template-gallery-v4.css' public/studio/index.html
+          grep -q "import './preview-runtime-v4.js'" public/studio/studio.js
+          grep -q "ai-pusula-v17" public/sw.js
+          grep -q "'/studio/template-gallery-v4.css'" public/sw.js
+          grep -q "'/studio/preview-runtime-v4.js'" public/sw.js
+          ! grep -n -E 'fetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|document\.write|https?://' public/studio/template-previews.js public/studio/preview-runtime-v4.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start site
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/studio-v4-http.log 2>&1 &
+          echo $! >/tmp/studio-v4-http.pid
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/studio/ >/dev/null && break; sleep 1; done
+      - name: Validate diverse gallery
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1440,height:1000}});
+          const failures=[];const external=[];
+          page.on('pageerror',e=>failures.push(`pageerror:${e.message}`));
+          page.on('console',m=>{if(m.type()==='error')failures.push(`console:${m.text()}`)});
+          page.on('request',r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())});
+          await page.goto('http://127.0.0.1:8080/studio/#templates',{waitUntil:'networkidle'});
+          const cards=page.locator('.template-card');
+          if(await cards.count()!==100) throw new Error('Expected 100 template cards');
+          const previews=page.locator('.template-preview svg');
+          if(await previews.count()!==100) throw new Error('Expected 100 previews');
+          const keys=await page.locator('.template-preview').evaluateAll(xs=>xs.map(x=>x.dataset.previewKey));
+          if(new Set(keys).size!==100) throw new Error(`Preview keys not unique: ${new Set(keys).size}`);
+          const arts=new Set(await previews.evaluateAll(xs=>xs.map(x=>x.getAttribute('data-art-direction'))));
+          if(arts.size<18) throw new Error(`Art direction diversity too low: ${arts.size}`);
+          const kinds=new Set(await previews.evaluateAll(xs=>xs.map(x=>x.getAttribute('data-preview-kind'))));
+          if(kinds.size<14) throw new Error(`Content layout diversity too low: ${kinds.size}`);
+          const geometries=await previews.evaluateAll(xs=>xs.map(x=>`${x.querySelectorAll('rect').length}:${x.querySelectorAll('circle').length}:${x.querySelectorAll('line').length}:${x.querySelectorAll('path').length}`));
+          if(new Set(geometries).size<18) throw new Error(`Composition diversity too low: ${new Set(geometries).size}`);
+          for(const q of ['Portföy','Kişisel CV','Etkinlik sayfası','Restoran menüsü','Bütçe hesaplayıcı','Siber güvenlik oyunu','Siber güvenlik quiz','SOC özet dashboard','Podcast bölüm planı','Müşteri onboarding akışı','Öğrenme asistanı']){
+            await page.fill('#templateSearch',q);
+            if(await cards.count()<1) throw new Error(`Search missing ${q}`);
+          }
+          await page.fill('#templateSearch','');
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Mobile overflow ${overflow}`);
+          if(external.length) throw new Error(`Unexpected external requests: ${external.join(',')}`);
+          if(failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log(`Studio gallery v4 PASS: 100 unique previews / ${arts.size} art directions / ${kinds.size} content layouts / ${new Set(geometries).size} compositions`);
+          NODE
+      - name: Stop site
+        if: always()
+        run: kill "$(cat /tmp/studio-v4-http.pid)" || true

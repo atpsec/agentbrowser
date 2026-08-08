@@ -1,83 +1,13 @@
-name: Validate Studio gallery v2
+name: Validate Studio gallery v2 (archived)
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'public/studio/**'
-      - 'public/sw.js'
-      - '.github/workflows/validate-studio-gallery-v2.yml'
-  push:
-    branches: [main, 'feature/**']
-    paths:
-      - 'public/studio/**'
-      - 'public/sw.js'
-      - '.github/workflows/validate-studio-gallery-v2.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  gallery-quality:
+  archived:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Static checks
-        run: |
-          node --check public/studio/template-previews.js
-          node --check public/studio/studio.js
-          grep -q 'template-gallery-v2.css' public/studio/index.html
-          grep -q "ai-pusula-v15" public/sw.js
-          grep -q "'/studio/template-gallery-v2.css'" public/sw.js
-          ! grep -n -E 'fetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|document\.write|https?://' public/studio/template-previews.js
-      - name: Install Chromium
-        run: |
-          npm install --no-save playwright
-          npx playwright install --with-deps chromium
-      - name: Start site
-        run: |
-          python3 -m http.server 8080 -d public >/tmp/studio-v2-http.log 2>&1 &
-          echo $! >/tmp/studio-v2-http.pid
-          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/studio/ >/dev/null && break; sleep 1; done
-      - name: Validate premium gallery
-        run: |
-          node --input-type=module - <<'NODE'
-          import { chromium } from 'playwright';
-          const browser=await chromium.launch({headless:true});
-          const page=await browser.newPage({viewport:{width:1440,height:1000}});
-          const failures=[];const external=[];
-          page.on('pageerror',e=>failures.push(`pageerror:${e.message}`));
-          page.on('console',m=>{if(m.type()==='error')failures.push(`console:${m.text()}`)});
-          page.on('request',r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())});
-          await page.goto('http://127.0.0.1:8080/studio/#templates',{waitUntil:'networkidle'});
-          const cards=page.locator('.template-card');
-          if(await cards.count()!==100) throw new Error('Expected 100 template cards');
-          const previews=page.locator('.template-preview svg');
-          if(await previews.count()!==100) throw new Error('Expected 100 SVG previews');
-          const kinds=new Set(await previews.evaluateAll(xs=>xs.map(x=>x.getAttribute('data-preview-kind'))));
-          if(kinds.size<14) throw new Error(`Preview archetype variety too low: ${kinds.size}`);
-          const viewBoxes=new Set(await previews.evaluateAll(xs=>xs.map(x=>x.getAttribute('viewBox'))));
-          if(!viewBoxes.has('0 0 480 290')) throw new Error('Premium preview canvas missing');
-          const firstBox=await cards.first().boundingBox();
-          if(!firstBox||firstBox.width<300) throw new Error(`Desktop cards are too small: ${firstBox?.width}`);
-          for(const q of ['Kişisel CV','Etkinlik sayfası','Restoran menüsü','Bütçe hesaplayıcı','Siber güvenlik quiz','Müşteri onboarding','Öğrenme asistanı']){
-            await page.fill('#templateSearch',q);
-            if(await cards.count()<1) throw new Error(`Search missing: ${q}`);
-            const kind=await page.locator('.template-preview svg').first().getAttribute('data-preview-kind');
-            if(!kind) throw new Error(`Missing preview kind: ${q}`);
-          }
-          await page.fill('#templateSearch','');
-          await page.setViewportSize({width:390,height:844});
-          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
-          if(overflow>2) throw new Error(`Mobile overflow ${overflow}`);
-          if(external.length) throw new Error(`Unexpected external requests: ${external.join(',')}`);
-          if(failures.length) throw new Error(failures.join('\n'));
-          await browser.close();
-          console.log(`Studio gallery v2 PASS: 100 previews / ${kinds.size} archetypes`);
-          NODE
-      - name: Stop site
-        if: always()
-        run: kill "$(cat /tmp/studio-v2-http.pid)" || true
+      - run: echo 'Studio gallery v2 is archived; current validation is validate-studio-gallery-v4.yml.'
