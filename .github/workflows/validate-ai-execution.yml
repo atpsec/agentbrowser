@@ -1,0 +1,110 @@
+name: Validate AI execution mode
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'public/product-builder.js'
+      - 'public/product-builder-core.js'
+      - 'public/ai-build-assistant.js'
+      - 'public/ai-build-assistant.css'
+      - '.github/workflows/validate-ai-execution.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check public/product-builder-core.js
+          node --check public/ai-build-assistant.js
+          node --input-type=module --check < public/product-builder.js
+      - name: Loader and security boundaries
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          loader=Path('public/product-builder.js').read_text(encoding='utf-8')
+          ai=Path('public/ai-build-assistant.js').read_text(encoding='utf-8')
+          assert "./product-builder-core.js" in loader
+          assert "./ai-build-assistant.js" in loader
+          assert "fetch('./data/build-blueprints.json'" in ai
+          assert "fetch('http" not in ai and 'fetch("http' not in ai
+          assert 'eval(' not in ai
+          assert 'new Function(' not in ai
+          assert 'document.write(' not in ai
+          assert 'localStorage' not in ai
+          for provider in ['Cursor','Codex','Claude Code','Gemini Code Assist']:
+              assert provider in ai, provider
+          for gate in ['secret','authorization','Prompt injection','rate limit']:
+              assert gate.lower() in ai.lower(), gate
+          print('AI execution loader and security boundaries verified.')
+          PY
+      - name: Common secret scan
+        run: |
+          if grep -RInE '(sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' public --exclude='*.svg'; then
+            echo 'Potential secret found.' >&2
+            exit 1
+          fi
+
+  browser-ai-exec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium runner
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Run local site
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/ai-exec-http.log 2>&1 &
+          echo $! >/tmp/ai-exec-server.pid
+          sleep 2
+      - name: Verify AI execution experience
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1440,height:1000}});
+          const failures=[];
+          page.on('pageerror',e=>failures.push(`pageerror: ${e.message}`));
+          page.on('console',m=>{if(m.type()==='error') failures.push(`console: ${m.text()}`)});
+          await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
+          await page.locator('[data-builder-open]').first().click();
+          await page.locator('#builderDialog[open]').waitFor();
+          await page.locator('[data-ai-exec]').waitFor();
+          if(await page.locator('[data-ai-provider]').count()!==4) throw new Error('Expected four AI coding providers');
+          await page.locator('[data-ai-provider="codex"]').click();
+          await page.locator('[data-ai-preview]').click();
+          const packet=await page.locator('[data-ai-output]').textContent();
+          for(const term of ['Codex','Güvenlik kapıları','Bitti sayılması','Ajan talimatı']) if(!packet?.includes(term)) throw new Error(`Missing packet term: ${term}`);
+          await page.locator('[data-builder-tab="roadmap"]').click();
+          await page.locator('[data-builder-stage="7"]').click();
+          await page.locator('[data-ai-exec]').waitFor();
+          await page.locator('[data-ai-preview]').click();
+          const aiPacket=await page.locator('[data-ai-output]').textContent();
+          if(!aiPacket?.toLowerCase().includes('prompt injection')) throw new Error('AI-stage packet is missing prompt-injection gate');
+          await page.locator('[data-builder-product]').selectOption({index:1});
+          await page.locator('[data-ai-exec]').waitFor();
+          const productTitle=await page.locator('#builderMain h2').first().textContent();
+          if(!productTitle) throw new Error('Product switch failed');
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Mobile horizontal overflow: ${overflow}px`);
+          if(failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log('AI execution mode browser verification passed.');
+          NODE
+      - name: Stop server
+        if: always()
+        run: kill $(cat /tmp/ai-exec-server.pid) 2>/dev/null || true
