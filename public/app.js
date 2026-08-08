@@ -577,7 +577,7 @@ function ideaCard(idea, index) {
     <p>${escapeHtml(idea.summary)}</p>
     ${journey ? `<div class="idea-passport"><span><b>MVP</b>${escapeHtml(journey.mvpTime)}</span><span><b>Müşteri</b>${escapeHtml(journey.customerType)}</span><span><b>Satış</b>${escapeHtml(journey.salesDifficulty)}</span></div>` : ''}
     <div class="tag-list"><span>${escapeHtml(categoryLabels[idea.category])}</span>${idea.tools.slice(0, 3).map(tool => `<span>${escapeHtml(tool)}</span>`).join('')}</div>
-    ${progress.total ? `<div class="idea-plan-progress"><span>Yol haritası</span><b>${progress.percent}%</b><i><u style="width:${progress.percent}%"></u></i></div>` : ''}
+    ${progress.total ? `<div class="idea-plan-progress"><span>Yol haritası</span><b>${progress.percent}%</b><i><progress class="csp-progress" max="100" value="${progress.percent}" aria-label="${progress.percent}% tamamlandı"></progress></i></div>` : ''}
     <div class="card-actions"><button type="button" data-idea-detail="${escapeHtml(idea.id)}">Hızlı bak</button><button type="button" data-product-plan="${escapeHtml(idea.id)}">Yol haritasını aç →</button></div>
   </article>`;
 }
@@ -629,7 +629,7 @@ function renderJourneyStepList(steps, completed) {
   return steps.map((step, index) => {
     const done = step.tasks.filter(task => completed[task.id]).length;
     const percent = step.tasks.length ? Math.round((done / step.tasks.length) * 100) : 0;
-    return `<button type="button" data-journey-step="${index}" class="${index === state.journeyStep ? 'is-active' : ''}" aria-current="${index === state.journeyStep ? 'step' : 'false'}"><span>${escapeHtml(step.number)}</span><div><b>${escapeHtml(step.title)}</b><small>${escapeHtml(step.phase)} · ${percent}%</small></div><i><u style="width:${percent}%"></u></i></button>`;
+    return `<button type="button" data-journey-step="${index}" class="${index === state.journeyStep ? 'is-active' : ''}" aria-current="${index === state.journeyStep ? 'step' : 'false'}"><span>${escapeHtml(step.number)}</span><div><b>${escapeHtml(step.title)}</b><small>${escapeHtml(step.phase)} · ${percent}%</small></div><i><progress class="csp-progress" max="100" value="${percent}" aria-label="${percent}% tamamlandı"></progress></i></button>`;
   }).join('');
 }
 
@@ -655,7 +655,7 @@ function renderProductJourney(preserveScroll = false) {
   $('#ideaContent').innerHTML = `
     <div class="journey-overview">
       <div class="journey-overview-copy"><span class="kicker">${escapeHtml(categoryLabels[idea.category])} · ${escapeHtml(category.customerMotion)}</span><p>${escapeHtml(journey.promise)}</p></div>
-      <div class="journey-overall"><span>TOPLAM İLERLEME</span><strong>${percent}%</strong><i><u style="width:${percent}%"></u></i><small>${done} / ${total} görev</small></div>
+      <div class="journey-overall"><span>TOPLAM İLERLEME</span><strong>${percent}%</strong><i><progress class="csp-progress" max="100" value="${percent}" aria-label="${percent}% tamamlandı"></progress></i><small>${done} / ${total} görev</small></div>
     </div>
     <div class="journey-passport-grid">
       <div><span>HEDEF MÜŞTERİ</span><b>${escapeHtml(journey.customerType)}</b></div>
@@ -759,8 +759,7 @@ async function copyText(value) {
   }
   const textarea = document.createElement('textarea');
   textarea.value = value;
-  textarea.style.position = 'fixed';
-  textarea.style.opacity = '0';
+  textarea.className = 'clipboard-fallback';
   document.body.append(textarea);
   textarea.select();
   document.execCommand('copy');
