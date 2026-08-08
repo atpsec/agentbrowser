@@ -9,6 +9,7 @@ on:
       - 'public/product-builder-core.js'
       - 'public/ai-build-assistant.js'
       - 'public/ai-build-assistant.css'
+      - 'public/productization.js'
       - '.github/workflows/validate-ai-execution.yml'
 
 permissions:
@@ -80,6 +81,7 @@ jobs:
           page.on('pageerror',e=>failures.push(`pageerror: ${e.message}`));
           page.on('console',m=>{if(m.type()==='error') failures.push(`console: ${m.text()}`)});
           await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
+          await page.getByRole('button',{name:'Gelişmiş AI rehberini aç'}).click();
           await page.locator('[data-builder-open]').first().click();
           await page.locator('#builderDialog[open]').waitFor();
           await page.locator('[data-ai-exec]').waitFor();
