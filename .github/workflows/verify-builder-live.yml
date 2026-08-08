@@ -47,8 +47,8 @@ jobs:
           bp=payload['blueprints'][0]
           assert len(bp['stages']) == 14
           assert len(bp['architecture']) >= 10
-          assert len(bp['database']['tables']) >= 10
-          assert {'minimum','balanced','professional'} <= set(payload['profiles'])
+          assert len(bp['tables']) >= 10
+          assert {'minimum','balanced','pro'} <= set(payload['toolProfiles'])
           PY
 
           tr -d '\r' < /tmp/index.headers | tr '[:upper:]' '[:lower:]' > /tmp/index.headers.lower
