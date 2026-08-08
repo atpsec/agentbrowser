@@ -1,0 +1,65 @@
+name: Verify Easy tools live
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for production assets
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          for i in $(seq 1 30); do
+            if curl -fsS "$base/easy/easy.js" -o /tmp/easy.js && \
+               curl -fsS "$base/easy/utility.js" -o /tmp/utility.js && \
+               grep -q 'function removebg' /tmp/easy.js && \
+               grep -q 'function makePassword' /tmp/utility.js; then exit 0; fi
+            sleep 5
+          done
+          exit 1
+      - name: Verify production CSP
+        run: |
+          set -euo pipefail
+          h=$(curl -fsSI https://agentbrowser.tpberg3tp.workers.dev/easy/ | tr -d '\r')
+          echo "$h" | grep -qi "content-security-policy:.*script-src 'self'"
+          echo "$h" | grep -qi "content-security-policy:.*connect-src 'self'"
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Exercise 17 live Easy tools
+        run: |
+          node --input-type=module - <<'NODE'
+          import {chromium} from 'playwright';
+          const base='https://agentbrowser.tpberg3tp.workers.dev';
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true});
+          const page=await context.newPage();const errors=[];const external=[];
+          page.on('pageerror',e=>errors.push(`page:${e.message}`));
+          page.on('console',m=>{if(m.type()==='error')errors.push(`console:${m.text()}`)});
+          page.on('request',r=>{const u=new URL(r.url());if((u.protocol==='http:'||u.protocol==='https:')&&u.hostname!=='agentbrowser.tpberg3tp.workers.dev')external.push(r.url())});
+          await page.goto(base+'/easy/',{waitUntil:'networkidle'});
+          if(await page.locator('.tool').count()!==10)throw new Error('photo tool count');
+          if(await page.locator('.utility').count()!==7)throw new Error('utility count');
+          const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZxHkAAAAASUVORK5CYII=','base64');
+          await page.setInputFiles('#fileInput',{name:'live.png',mimeType:'image/png',buffer:png});
+          await page.waitForFunction(()=>!document.querySelector('#applyButton').disabled);
+          for(const mode of ['restore','slim','focus','profile','compress','bw','removebg','upscale','scan','rotate']){await page.click(`[data-mode="${mode}"]`);await page.click('#applyButton');const d=await page.evaluate(()=>[resultCanvas.width,resultCanvas.height]);if(d[0]<1||d[1]<1)throw new Error(mode)}
+          await page.selectOption('#format','image/jpeg');const download=page.waitForEvent('download');await page.click('#downloadButton');if(!(await download).suggestedFilename().endsWith('.jpg'))throw new Error('download');
+          if((await page.inputValue('#passwordOutput')).length!==20)throw new Error('password');
+          await page.fill('#textInput','  a   b  \n\n\n c  ');await page.click('#cleanTextButton');if(await page.inputValue('#textOutput')!=='a b\n\nc')throw new Error('clean');
+          await page.fill('#slugInput','İyi Günler Dünya');await page.click('#slugButton');if(await page.inputValue('#slugOutput')!=='iyi-gunler-dunya')throw new Error('slug');
+          await page.fill('#jsonInput','{"a":1}');await page.click('#jsonButton');if(!(await page.inputValue('#jsonOutput')).includes('  "a": 1'))throw new Error('json');
+          await page.click('#vatButton');if(!(await page.textContent('#vatResult')).includes('1200.00'))throw new Error('vat');
+          await page.click('#budgetButton');if(!(await page.textContent('#budgetResult')).includes('15000.00'))throw new Error('budget');
+          await page.click('#unitButton');if(await page.inputValue('#unitOutput')!=='0.001')throw new Error('unit');
+          await page.setViewportSize({width:390,height:844});if(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)>2)throw new Error('mobile overflow');
+          if(external.length)throw new Error('external requests: '+external.join(','));if(errors.length)throw new Error(errors.join('\n'));
+          await browser.close();console.log('Live 17 Easy tools verification passed');
+          NODE
