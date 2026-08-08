@@ -1,0 +1,53 @@
+name: Apply product builder map
+
+on:
+  push:
+    branches:
+      - agent/product-builder-map
+    paths:
+      - '.github/workflows/apply-product-builder-map.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/product-builder-map
+      - name: Integrate builder assets safely
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          index = Path('public/index.html')
+          html = index.read_text(encoding='utf-8')
+          css_needle = '  <link rel="stylesheet" href="fit-scores.css">\n'
+          if 'href="product-builder.css"' not in html:
+              if css_needle not in html:
+                  raise SystemExit('CSS insertion point not found')
+              html = html.replace(css_needle, css_needle + '  <link rel="stylesheet" href="product-builder.css">\n', 1)
+          js_needle = '<script type="module" src="app.js"></script>\n'
+          if 'src="product-builder.js"' not in html:
+              if js_needle not in html:
+                  raise SystemExit('JS insertion point not found')
+              html = html.replace(js_needle, js_needle + '<script type="module" src="product-builder.js"></script>\n', 1)
+          index.write_text(html, encoding='utf-8')
+
+          script = Path('public/product-builder.js')
+          js = script.read_text(encoding='utf-8')
+          js = js.replace(' loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>', ' loading="lazy"><span hidden>')
+          if ' onerror=' in js:
+              raise SystemExit('Inline event handler remains in product-builder.js')
+          script.write_text(js, encoding='utf-8')
+          PY
+          rm .github/workflows/apply-product-builder-map.yml
+      - name: Commit integrated builder
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "integrate interactive SaaS product builder"
+          git push origin HEAD:agent/product-builder-map
