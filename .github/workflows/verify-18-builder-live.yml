@@ -1,0 +1,72 @@
+name: Verify live 18-product builder
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/verify-18-builder-live.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify live Cloudflare release
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          ready=false
+          for attempt in $(seq 1 36); do
+            echo "Production verification attempt ${attempt}/36"
+            status=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' "${base}/" || true)
+            if [ "$status" = '200' ] && grep -q 'product-builder.js' /tmp/index.html && grep -q 'product-builder.css' /tmp/index.html; then
+              ready=true
+              break
+            fi
+            sleep 10
+          done
+          test "$ready" = 'true'
+
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/product-builder.js" -o /tmp/product-builder.js
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/product-builder.css" -o /tmp/product-builder.css
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/data/build-blueprints.json" -o /tmp/build-blueprints.json
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/data/ideas.json" -o /tmp/ideas.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          blue=json.loads(Path('/tmp/build-blueprints.json').read_text(encoding='utf-8'))
+          ideas=json.loads(Path('/tmp/ideas.json').read_text(encoding='utf-8'))
+          idea_ids={x['id'] for x in ideas['items']}
+          builder_ids={x['id'] for x in blue['blueprints']}
+          assert len(idea_ids) == 18, len(idea_ids)
+          assert idea_ids == builder_ids, (idea_ids-builder_ids, builder_ids-idea_ids)
+          assert {'minimum','balanced','pro'} <= set(blue['toolProfiles'])
+          for bp in blue['blueprints']:
+              assert len(bp['pages']) >= 6, bp['id']
+              assert len(bp['entities']) >= 6, bp['id']
+              assert bp['aiFeatures'], bp['id']
+              assert bp['securityFocus'], bp['id']
+          print('18/18 live product blueprints verified.')
+          PY
+
+          grep -q 'openProductBuilder' /tmp/product-builder.js
+          grep -q 'builder-section' /tmp/product-builder.css
+          tr -d '\r' < /tmp/index.headers | tr '[:upper:]' '[:lower:]' > /tmp/index.headers.lower
+          grep -q '^content-security-policy:' /tmp/index.headers.lower
+          grep -q "script-src 'self'" /tmp/index.headers.lower
+          grep -q "connect-src 'self'" /tmp/index.headers.lower
+          grep -q "frame-ancestors 'none'" /tmp/index.headers.lower
+          grep -q '^x-content-type-options: nosniff' /tmp/index.headers.lower
+
+          git_status=$(curl --connect-timeout 10 --max-time 30 -sS -o /tmp/git-head -w '%{http_code}' "${base}/.git/HEAD" || true)
+          if grep -q '^ref: refs/' /tmp/git-head 2>/dev/null; then
+            echo "Repository metadata leak detected with HTTP ${git_status}." >&2
+            exit 1
+          fi
+
+          echo 'Live 18-product builder release verified.'
