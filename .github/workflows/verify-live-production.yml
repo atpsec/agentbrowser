@@ -1,0 +1,89 @@
+name: Verify live production
+
+on:
+  push:
+    branches:
+      - agent/product-playbooks
+    paths:
+      - '.github/workflows/verify-live-production.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/verify-live-production.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Cloudflare and verify production
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          deployed=false
+
+          for attempt in $(seq 1 36); do
+            echo "Production verification attempt ${attempt}/36"
+            status=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 \
+              -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' "${base}/" || true)
+
+            if [ "$status" = '200' ] \
+              && grep -q 'PUSULA + KAZAN METODOLOJİSİ' /tmp/index.html \
+              && grep -q 'Her fikir artık doğrulamadan ilk müşteriye kadar' /tmp/index.html; then
+              deployed=true
+              break
+            fi
+            sleep 10
+          done
+
+          if [ "$deployed" != 'true' ]; then
+            echo 'Cloudflare did not serve the expected production version within six minutes.' >&2
+            sed -n '1,80p' /tmp/index.headers 2>/dev/null || true
+            exit 1
+          fi
+
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 \
+            -sS "${base}/data/product-journeys.json" -o /tmp/product-journeys.json
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 \
+            -sS "${base}/product-planner.js" -o /tmp/product-planner.js
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/product-journeys.json').read_text(encoding='utf-8'))
+          items = payload.get('items', [])
+          assert len(items) == 18, f'Expected 18 product journeys, got {len(items)}'
+          assert len({item['id'] for item in items}) == 18, 'Product journey ids are not unique'
+          assert set(payload['routes']) == {'service', 'saas', 'open', 'custom'}
+          assert set(payload['durations']) == {'weekend', '14days', '30days'}
+          assert set(payload['budgets']) == {'free', 'low', 'pro'}
+          PY
+
+          grep -q 'buildJourneySteps' /tmp/product-planner.js
+          grep -q 'buildPlanMarkdown' /tmp/product-planner.js
+
+          tr -d '\r' < /tmp/index.headers | tr '[:upper:]' '[:lower:]' > /tmp/index.headers.lower
+          grep -q '^content-security-policy:' /tmp/index.headers.lower
+          grep -q "default-src 'self'" /tmp/index.headers.lower
+          grep -q "script-src 'self'" /tmp/index.headers.lower
+          grep -q "connect-src 'self'" /tmp/index.headers.lower
+          grep -q "frame-ancestors 'none'" /tmp/index.headers.lower
+          grep -q "object-src 'none'" /tmp/index.headers.lower
+          grep -q '^x-content-type-options: nosniff' /tmp/index.headers.lower
+          grep -q '^x-frame-options: deny' /tmp/index.headers.lower
+          grep -q '^referrer-policy: strict-origin-when-cross-origin' /tmp/index.headers.lower
+          grep -q '^permissions-policy:' /tmp/index.headers.lower
+
+          git_probe_status=$(curl --connect-timeout 10 --max-time 30 -sS \
+            -o /tmp/git-head-probe -w '%{http_code}' "${base}/.git/HEAD" || true)
+          if grep -q '^ref: refs/' /tmp/git-head-probe 2>/dev/null; then
+            echo "Repository metadata leak detected with HTTP ${git_probe_status}." >&2
+            exit 1
+          fi
+
+          echo 'Live production content, assets, security headers and repository isolation verified.'
