@@ -34,6 +34,7 @@ jobs:
             'public/data/models.json',
             'public/data/ideas.json',
             'public/data/updates.json',
+            'public/data/playbooks.json',
             'public/manifest.webmanifest'
           ];
           for (const file of files) {
@@ -42,7 +43,7 @@ jobs:
           }
           NODE
 
-      - name: Validate local asset references and data shape
+      - name: Validate local assets, catalogs and product playbooks
         run: |
           python3 - <<'PY'
           import json
@@ -104,10 +105,53 @@ jobs:
               if len(ids) != len(set(ids)):
                   raise SystemExit(f'{filename} contains duplicate ids')
 
+          ideas = json.loads((root / 'data' / 'ideas.json').read_text(encoding='utf-8'))['items']
+          playbooks = json.loads((root / 'data' / 'playbooks.json').read_text(encoding='utf-8'))
+          idea_ids = {item['id'] for item in ideas}
+          playbook_ids = {item['id'] for item in playbooks['items']}
+          if idea_ids != playbook_ids:
+              raise SystemExit(f'Playbook coverage mismatch: ideas={sorted(idea_ids)} playbooks={sorted(playbook_ids)}')
+
+          required_playbook = {
+              'id', 'profile', 'recommendedRoute', 'passport', 'validationTargets',
+              'goSignals', 'stopSignals', 'mvp', 'stack', 'tests', 'launch',
+              'channels', 'marketing', 'sales', 'pricing', 'activation', 'metrics', 'pilot'
+          }
+          required_passport = {
+              'buyer', 'mvpTime', 'techDifficulty', 'salesDifficulty',
+              'dataSensitivity', 'revenue', 'firstChannel', 'promise'
+          }
+          for index, item in enumerate(playbooks['items']):
+              absent = required_playbook - set(item)
+              if absent:
+                  raise SystemExit(f'playbooks[{index}] missing {sorted(absent)}')
+              passport_absent = required_passport - set(item['passport'])
+              if passport_absent:
+                  raise SystemExit(f'playbooks[{index}].passport missing {sorted(passport_absent)}')
+              if item['profile'] not in playbooks['profiles']:
+                  raise SystemExit(f"Unknown profile {item['profile']} for {item['id']}")
+              if item['recommendedRoute'] not in playbooks['routes']:
+                  raise SystemExit(f"Unknown route {item['recommendedRoute']} for {item['id']}")
+              for key in ('must', 'later', 'avoid'):
+                  if not item['mvp'].get(key):
+                      raise SystemExit(f"{item['id']} has empty mvp.{key}")
+              if len(item['tests']) < 6 or len(item['channels']) < 3 or len(item['metrics']) < 4:
+                  raise SystemExit(f"{item['id']} needs richer tests/channels/metrics")
+
+          for route in ('service', 'saas', 'open-source'):
+              if route not in playbooks['routes']:
+                  raise SystemExit(f'Missing route {route}')
+          for duration in ('weekend', 'two-weeks', 'thirty-days'):
+              if duration not in playbooks['durations']:
+                  raise SystemExit(f'Missing duration {duration}')
+          for budget in ('free', 'low', 'professional'):
+              if budget not in playbooks['budgets']:
+                  raise SystemExit(f'Missing budget {budget}')
+
           wrangler = json.loads(Path('wrangler.jsonc').read_text(encoding='utf-8'))
           if wrangler.get('assets', {}).get('directory') != './public':
               raise SystemExit('Wrangler assets directory must be ./public')
-          print('Static structure, data shape and deployment scope are valid.')
+          print(f"Validated {len(ideas)} ideas and {len(playbooks['items'])} product playbooks.")
           PY
 
       - name: HTTP smoke test
@@ -118,7 +162,9 @@ jobs:
           sleep 2
           curl --fail --silent --show-error http://127.0.0.1:8080/ | grep --quiet 'AI PUSULA'
           curl --fail --silent --show-error http://127.0.0.1:8080/data/models.json >/tmp/models.json
+          curl --fail --silent --show-error http://127.0.0.1:8080/data/playbooks.json >/tmp/playbooks.json
           python3 -m json.tool /tmp/models.json >/dev/null
+          python3 -m json.tool /tmp/playbooks.json >/dev/null
 
       - name: Upload site preview
         uses: actions/upload-artifact@v4
