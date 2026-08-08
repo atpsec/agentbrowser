@@ -3,7 +3,7 @@
   "name": "AI Pusula",
   "short_name": "AI Pusula",
   "description": "Hazır araçları kullan, çalışan uygulamalar üret ve local-first güvenlik yaklaşımıyla ilerle.",
-  "start_url": "/",
+  "start_url": "/apps/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f6f1e8",
@@ -18,6 +18,9 @@
     {"name":"QR Oluşturucu","short_name":"QR","url":"/easy/qr/"},
     {"name":"PDF Araçları","short_name":"PDF","url":"/easy/pdf/"},
     {"name":"Fotoğraf Stüdyosu","short_name":"Foto Studio","url":"/easy/photo-studio/"},
-    {"name":"AI Pusula Yolculuk","short_name":"Yolculuk","url":"/journey/"}
+    {"name":"AI Pusula Yolculuk","short_name":"Yolculuk","url":"/journey/"},
+    {"name":"AI Pusula Çocuk","short_name":"Çocuk","url":"/kids/"},
+    {"name":"Production'a Geç","short_name":"Production","url":"/launch/"},
+    {"name":"Phishing Açıklayıcı","short_name":"Phishing","url":"/apps/?app=phishing-explainer"}
   ]
 }
