@@ -2,22 +2,20 @@
   "id": "/",
   "name": "AI Pusula",
   "short_name": "AI Pusula",
-  "description": "Yapay zekâyı öğren, güvenli ürün geliştir, hazır uygulamaları kullan ve AI Pusula Studio ile kendi aracını üret.",
+  "description": "Yapay zekâyı öğren, hazır uygulamaları kullan, kişisel yolculukta ilerle ve Studio ile kendi aracını üret.",
   "start_url": "/apps/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f6f1e8",
   "theme_color": "#f6f1e8",
-  "categories": ["productivity", "education", "utilities"],
-  "icons": [
-    {"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
-  ],
+  "categories": ["productivity", "education", "utilities", "photo"],
+  "icons": [{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}],
   "shortcuts": [
     {"name":"AI Pusula Studio","short_name":"Studio","url":"/studio/"},
+    {"name":"AI Pusula Yolculuk","short_name":"Yolculuk","url":"/journey/"},
+    {"name":"Kolay Fotoğraf Araçları","short_name":"Fotoğraf","url":"/easy/"},
+    {"name":"Production'a Geç","short_name":"Production","url":"/launch/"},
     {"name":"AI Pusula Çocuk","short_name":"Çocuk","url":"/kids/"},
-    {"name":"Phishing Açıklayıcı","short_name":"Phishing","url":"/apps/?app=phishing-explainer"},
-    {"name":"CVE Önceliklendirici","short_name":"CVE","url":"/apps/?app=cve-prioritizer"},
-    {"name":"PDF Quiz","short_name":"Quiz","url":"/apps/?app=pdf-quiz"},
-    {"name":"Çalışma Planı","short_name":"Plan","url":"/apps/?app=study-planner"}
+    {"name":"Phishing Açıklayıcı","short_name":"Phishing","url":"/apps/?app=phishing-explainer"}
   ]
 }

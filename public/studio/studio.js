@@ -1,3 +1,4 @@
+import './studio-plus.js';
 import {families,templates,blocks,concepts,recommend,buildProject,improvePrompt,securityAudit,learningCard} from './studio-engine.js';
 
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
