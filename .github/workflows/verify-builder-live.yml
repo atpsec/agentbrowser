@@ -1,0 +1,67 @@
+name: Verify live product builder
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/verify-builder-live.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Cloudflare and verify product builder
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          ready=false
+          for attempt in $(seq 1 36); do
+            echo "Production verification attempt ${attempt}/36"
+            status=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' "${base}/" || true)
+            if [ "$status" = '200' ] && grep -q 'product-builder.js' /tmp/index.html && grep -q 'product-builder.css' /tmp/index.html; then
+              ready=true
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" != 'true' ]; then
+            echo 'Expected product builder production version was not visible within six minutes.' >&2
+            exit 1
+          fi
+
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/product-builder.js" -o /tmp/product-builder.js
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/product-builder.css" -o /tmp/product-builder.css
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/data/build-blueprints.json" -o /tmp/build-blueprints.json
+
+          grep -q 'BUILDER_STORAGE' /tmp/product-builder.js
+          grep -q 'builder-section' /tmp/product-builder.css
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          payload=json.loads(Path('/tmp/build-blueprints.json').read_text(encoding='utf-8'))
+          bp=payload['blueprints'][0]
+          assert len(bp['stages']) == 14
+          assert len(bp['architecture']) >= 10
+          assert len(bp['database']['tables']) >= 10
+          assert {'minimum','balanced','professional'} <= set(payload['profiles'])
+          PY
+
+          tr -d '\r' < /tmp/index.headers | tr '[:upper:]' '[:lower:]' > /tmp/index.headers.lower
+          grep -q '^content-security-policy:' /tmp/index.headers.lower
+          grep -q "script-src 'self'" /tmp/index.headers.lower
+          grep -q "connect-src 'self'" /tmp/index.headers.lower
+          grep -q "frame-ancestors 'none'" /tmp/index.headers.lower
+          grep -q '^x-content-type-options: nosniff' /tmp/index.headers.lower
+
+          git_status=$(curl --connect-timeout 10 --max-time 30 -sS -o /tmp/git-head -w '%{http_code}' "${base}/.git/HEAD" || true)
+          if grep -q '^ref: refs/' /tmp/git-head 2>/dev/null; then
+            echo "Repository metadata leak detected with HTTP ${git_status}." >&2
+            exit 1
+          fi
+
+          echo 'Live product builder, blueprint data, security headers and repository isolation verified.'
