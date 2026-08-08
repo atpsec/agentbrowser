@@ -1,0 +1,2 @@
+pdf-lib 1.17.1 - MIT - https://github.com/Hopding/pdf-lib
+qrcode-generator 1.4.4 - MIT - https://github.com/kazuhikoarase/qrcode-generator
