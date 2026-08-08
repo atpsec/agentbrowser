@@ -33,6 +33,7 @@ jobs:
           set -euo pipefail
           node --check public/journey/journey.js
           node --check public/easy/easy.js
+          node --check public/easy/utility.js
           node --check public/launch/launch.js
           node --check public/studio/studio-plus.js
           node --check public/journey-easy-links.js
@@ -42,6 +43,7 @@ jobs:
           grep -q "connect-src 'none'" public/studio/studio-plus.js
           grep -q "'/journey/'" public/sw.js
           grep -q "'/easy/'" public/sw.js
+          grep -q "'/easy/utility.js'" public/sw.js
           grep -q "'/launch/'" public/sw.js
           grep -q '"url":"/journey/"' public/manifest.webmanifest
           grep -q '"url":"/easy/"' public/manifest.webmanifest
@@ -63,7 +65,7 @@ jobs:
           python3 -m http.server 8080 -d public >/tmp/journey-http.log 2>&1 &
           echo $! >/tmp/journey-http.pid
           for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/journey/ >/dev/null && break; sleep 1; done
-      - name: Exercise journey Studio photo tools and launch wizard
+      - name: Exercise journey Studio photo tools daily tools and launch wizard
         run: |
           node --input-type=module - <<'NODE'
           import { chromium } from 'playwright';
@@ -85,14 +87,24 @@ jobs:
           await page.locator('.task button').first().click();if(Number((await page.textContent('#progressText')).replace('%',''))<=0)throw new Error('Journey progress failed');
           let external=[];const listener=r=>{const u=new URL(r.url());if((u.protocol==='http:'||u.protocol==='https:')&&u.hostname!=='127.0.0.1')external.push(r.url())};page.on('request',listener);
           await page.goto('http://127.0.0.1:8080/easy/',{waitUntil:'networkidle'});external=[];
+          if(await page.locator('.tool').count()!==10)throw new Error('Expected 10 photo tools');
+          if(await page.locator('.utility').count()!==7)throw new Error('Expected 7 daily tools');
           const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZxHkAAAAASUVORK5CYII=','base64');
           await page.setInputFiles('#fileInput',{name:'test.png',mimeType:'image/png',buffer:png});await page.waitForFunction(()=>!document.querySelector('#applyButton').disabled);
-          for(const mode of ['restore','slim','focus','profile','compress','bw']){await page.click(`[data-mode="${mode}"]`);await page.click('#applyButton');const dims=await page.evaluate(()=>[document.querySelector('#resultCanvas').width,document.querySelector('#resultCanvas').height]);if(dims[0]<1||dims[1]<1)throw new Error(`${mode} canvas failed`)}
-          const photoPromise=page.waitForEvent('download');await page.click('#downloadButton');const photo=await photoPromise;if(!photo.suggestedFilename().endsWith('.jpg'))throw new Error('Photo download failed');if(external.length)throw new Error(`Easy external requests: ${external.join(',')}`);
+          for(const mode of ['restore','slim','focus','profile','compress','bw','removebg','upscale','scan','rotate']){await page.click(`[data-mode="${mode}"]`);await page.click('#applyButton');const dims=await page.evaluate(()=>[document.querySelector('#resultCanvas').width,document.querySelector('#resultCanvas').height]);if(dims[0]<1||dims[1]<1)throw new Error(`${mode} canvas failed`)}
+          await page.selectOption('#format','image/jpeg');const photoPromise=page.waitForEvent('download');await page.click('#downloadButton');const photo=await photoPromise;if(!photo.suggestedFilename().endsWith('.jpg'))throw new Error('Photo download failed');
+          if((await page.inputValue('#passwordOutput')).length!==20)throw new Error('Password tool failed');
+          await page.fill('#textInput','  a   b  \n\n\n c  ');await page.click('#cleanTextButton');if(await page.inputValue('#textOutput')!=='a b\n\nc')throw new Error('Text cleaner failed');
+          await page.fill('#slugInput','İyi Günler Dünya');await page.click('#slugButton');if(await page.inputValue('#slugOutput')!=='iyi-gunler-dunya')throw new Error('Slug tool failed');
+          await page.fill('#jsonInput','{"a":1}');await page.click('#jsonButton');if(!(await page.inputValue('#jsonOutput')).includes('  "a": 1'))throw new Error('JSON formatter failed');
+          await page.click('#vatButton');if(!(await page.textContent('#vatResult')).includes('1200.00'))throw new Error('VAT tool failed');
+          await page.click('#budgetButton');if(!(await page.textContent('#budgetResult')).includes('15000.00'))throw new Error('Budget tool failed');
+          await page.click('#unitButton');if(await page.inputValue('#unitOutput')!=='0.001')throw new Error('Unit converter failed');
+          if(external.length)throw new Error(`Easy external requests: ${external.join(',')}`);
           await page.goto('http://127.0.0.1:8080/launch/',{waitUntil:'networkidle'});external=[];await page.check('input[value="auth"]');await page.check('input[value="ai"]');await page.check('input[value="payment"]');await page.click('#planButton');const env=await page.textContent('#envPlan');if(!env.includes('AUTH_SECRET')||!env.includes('AI_API_KEY')||!env.includes('PAYMENT_WEBHOOK_SECRET'))throw new Error('Launch env plan failed');if(await page.locator('#gates .gate').count()<8)throw new Error('Launch gates failed');if(external.length)throw new Error(`Launch external requests: ${external.join(',')}`);
           const reg=await page.evaluate(async()=>{await navigator.serviceWorker.ready;return Boolean(await navigator.serviceWorker.getRegistration('/'))});if(!reg)throw new Error('Service worker missing');
           for(const route of ['/journey/','/easy/','/launch/']){await page.goto(`http://127.0.0.1:8080${route}`,{waitUntil:'networkidle'});await page.setViewportSize({width:390,height:844});const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);if(overflow>2)throw new Error(`${route} mobile overflow ${overflow}`)}
-          if(failures.length)throw new Error(failures.join('\n'));await browser.close();console.log('Journey, easy tools, Studio package and launch validation passed');
+          if(failures.length)throw new Error(failures.join('\n'));await browser.close();console.log('Journey, 17 Easy tools, Studio package and launch validation passed');
           NODE
       - name: Stop site
         if: always()
