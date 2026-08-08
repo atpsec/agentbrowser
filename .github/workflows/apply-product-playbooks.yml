@@ -1,78 +1,186 @@
 name: Apply product playbook package
 
-# The package is applied once on this same-repository branch. Workflow files are managed separately.
 on:
   push:
     branches:
       - agent/product-playbooks
     paths:
+      - '.ai-pusula-upload/**'
       - '.github/workflows/apply-product-playbooks.yml'
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: apply-product-playbooks
+  cancel-in-progress: false
+
 jobs:
   apply:
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.repository == 'atpsec/agentbrowser'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout product playbook branch
+      - name: Checkout staging branch
         uses: actions/checkout@v4
         with:
           ref: agent/product-playbooks
           fetch-depth: 0
 
-      - name: Restore verified product playbook package
-        id: restore
+      - name: Reconstruct and verify package
+        shell: bash
         run: |
-          if [ ! -d .patch ]; then
-            echo "applied=false" >> "$GITHUB_OUTPUT"
-            echo "Staging package already removed; nothing to apply."
-            exit 0
-          fi
+          set -euo pipefail
+          expected_sha='6bcc0b48058304c0c1ed7e62dc2ae4cad8fc976266e87a3b74f42a1ccd36f5c0'
+          for index in $(seq -w 0 13); do
+            test -f ".ai-pusula-upload/part-${index}"
+          done
+          test "$(wc -c < .ai-pusula-upload/part-13)" -eq 1336
+          for index in $(seq -w 0 12); do
+            test "$(wc -c < .ai-pusula-upload/part-${index})" -eq 6000
+          done
+          cat .ai-pusula-upload/part-* | base64 --decode > /tmp/product-playbooks.tar.gz
+          echo "${expected_sha}  /tmp/product-playbooks.tar.gz" | sha256sum --check --strict
 
+          tar -tzf /tmp/product-playbooks.tar.gz > /tmp/archive-files.txt
+          if grep -E '(^/|(^|/)\.\.(/|$))' /tmp/archive-files.txt; then
+            echo 'Unsafe archive path detected.' >&2
+            exit 1
+          fi
+          cat > /tmp/allowed-files.txt <<'EOF'
+          .github/workflows/validate.yml
+          PRODUCT_PLAYBOOK_SPEC.md
+          README.md
+          public/app.js
+          public/data/playbooks.json
+          public/index.html
+          public/styles.css
+          EOF
+          sort -u /tmp/archive-files.txt > /tmp/archive-files.sorted.txt
+          sort -u /tmp/allowed-files.txt > /tmp/allowed-files.sorted.txt
+          diff -u /tmp/allowed-files.sorted.txt /tmp/archive-files.sorted.txt
+          tar -xzf /tmp/product-playbooks.tar.gz -C .
+
+      - name: Security and data validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check public/app.js
           python3 - <<'PY'
-          import base64
-          import hashlib
+          import json
+          from html.parser import HTMLParser
           from pathlib import Path
 
-          parts = sorted(Path('.patch').glob('product-playbooks.part-*'))
-          if len(parts) != 14:
-              raise SystemExit(f'Expected 14 archive parts, found {len(parts)}')
+          root = Path('public')
+          files = [
+              root / 'data/apps.json',
+              root / 'data/models.json',
+              root / 'data/ideas.json',
+              root / 'data/updates.json',
+              root / 'data/playbooks.json',
+              root / 'manifest.webmanifest',
+          ]
+          for path in files:
+              json.loads(path.read_text(encoding='utf-8'))
 
-          expected_lengths = [6000] * 13 + [1336]
-          encoded_parts = []
-          for index, (path, expected_length) in enumerate(zip(parts, expected_lengths)):
-              text = path.read_text(encoding='utf-8').strip()
-              if index == 12 and len(text) == 6003 and text.endswith('Q=='):
-                  text = text[:-3]
-              if len(text) != expected_length:
-                  raise SystemExit(f'{path} has length {len(text)}; expected {expected_length}')
-              encoded_parts.append(text)
+          ideas = json.loads((root / 'data/ideas.json').read_text(encoding='utf-8'))['items']
+          playbooks = json.loads((root / 'data/playbooks.json').read_text(encoding='utf-8'))
+          idea_ids = {item['id'] for item in ideas}
+          playbook_ids = {item['id'] for item in playbooks['items']}
+          if len(ideas) != 18 or len(playbooks['items']) != 18 or idea_ids != playbook_ids:
+              raise SystemExit('Every one of the 18 ideas must have exactly one playbook.')
 
-          archive = base64.b64decode(''.join(encoded_parts), validate=True)
-          digest = hashlib.sha256(archive).hexdigest()
-          expected_digest = '6bcc0b48058304c0c1ed7e62dc2ae4cad8fc976266e87a3b74f42a1ccd36f5c0'
-          if digest != expected_digest:
-              raise SystemExit(f'Archive SHA-256 mismatch: {digest}')
-          Path('/tmp/product-playbooks.tar.gz').write_bytes(archive)
-          print(f'Archive verified: {digest}')
+          required = {
+              'id', 'profile', 'recommendedRoute', 'passport', 'validationTargets',
+              'goSignals', 'stopSignals', 'mvp', 'stack', 'tests', 'launch',
+              'channels', 'marketing', 'sales', 'pricing', 'activation', 'metrics', 'pilot'
+          }
+          for item in playbooks['items']:
+              missing = required - set(item)
+              if missing:
+                  raise SystemExit(f"{item.get('id', '?')} missing {sorted(missing)}")
+              if item['profile'] not in playbooks['profiles']:
+                  raise SystemExit(f"Unknown profile for {item['id']}")
+              if item['recommendedRoute'] not in playbooks['routes']:
+                  raise SystemExit(f"Unknown route for {item['id']}")
+              if len(item['tests']) < 6 or len(item['channels']) < 3 or len(item['metrics']) < 4:
+                  raise SystemExit(f"Insufficient security/go-to-market detail for {item['id']}")
+
+          class Parser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.ids = []
+                  self.links = []
+              def handle_starttag(self, tag, attrs):
+                  values = dict(attrs)
+                  if values.get('id'):
+                      self.ids.append(values['id'])
+                  for key in ('src', 'href'):
+                      if values.get(key):
+                          self.links.append(values[key])
+
+          parser = Parser()
+          parser.feed((root / 'index.html').read_text(encoding='utf-8'))
+          duplicates = sorted({item for item in parser.ids if parser.ids.count(item) > 1})
+          if duplicates:
+              raise SystemExit(f'Duplicate HTML ids: {duplicates}')
+          missing_assets = []
+          for link in parser.links:
+              if link.startswith(('#', 'http://', 'https://', 'mailto:', 'data:')):
+                  continue
+              target = root / link.split('#', 1)[0].split('?', 1)[0]
+              if not target.exists():
+                  missing_assets.append(str(target))
+          if missing_assets:
+              raise SystemExit(f'Missing local assets: {missing_assets}')
+
+          wrangler = json.loads(Path('wrangler.jsonc').read_text(encoding='utf-8'))
+          if wrangler.get('assets', {}).get('directory') != './public':
+              raise SystemExit('Cloudflare assets must remain scoped to ./public.')
           PY
 
-          tar -xzf /tmp/product-playbooks.tar.gz -C .
-          git checkout HEAD -- .github/workflows/validate.yml
-          rm -rf .patch
-          rm -f PRODUCT_PLAYBOOK_PROGRESS.md
-          echo "applied=true" >> "$GITHUB_OUTPUT"
+          grep -q 'PUSULA + KAZAN' public/index.html
+          grep -q 'journeyProgressPercent' public/index.html
+          grep -q 'Content-Security-Policy:' public/_headers
+          grep -q "frame-ancestors 'none'" public/_headers
+          grep -q "object-src 'none'" public/_headers
+          if grep -R -nE '(sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' \
+            public/app.js public/index.html public/styles.css public/data/playbooks.json README.md PRODUCT_PLAYBOOK_SPEC.md; then
+            echo 'Potential secret detected in changed files.' >&2
+            exit 1
+          fi
 
-      - name: Commit generated product playbook experience
-        if: steps.restore.outputs.applied == 'true'
+      - name: HTTP smoke test
+        shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
+          python3 -m http.server 8080 -d public >/tmp/ai-pusula-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid' EXIT
+          sleep 2
+          curl --fail --silent --show-error http://127.0.0.1:8080/ | grep --quiet 'AI PUSULA'
+          curl --fail --silent --show-error http://127.0.0.1:8080/data/playbooks.json >/tmp/playbooks.json
+          python3 -m json.tool /tmp/playbooks.json >/dev/null
+
+      - name: Commit verified product playbooks
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .ai-pusula-upload .patch
+          rm -f PRODUCT_PLAYBOOK_PROGRESS.md
+          rm -f .github/workflows/apply-product-playbooks.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m "add end-to-end product playbooks"
+          git diff --cached --check
+          test -n "$(git diff --cached --name-only)"
+          git commit -m 'add product build and go-to-market playbooks'
           git push origin HEAD:agent/product-playbooks
+
+      - name: Upload verified preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-pusula-product-playbooks-preview
+          path: public
+          if-no-files-found: error
+          retention-days: 7
