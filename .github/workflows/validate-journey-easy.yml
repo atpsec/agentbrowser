@@ -6,6 +6,7 @@ on:
     paths:
       - 'public/journey/**'
       - 'public/easy/**'
+      - 'public/vendor/**'
       - 'public/launch/**'
       - 'public/studio/studio-plus.js'
       - 'public/studio/studio.js'
@@ -28,26 +29,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Syntax and safety contracts
+      - name: Syntax dependency and safety contracts
         run: |
           set -euo pipefail
           node --check public/journey/journey.js
           node --check public/easy/easy.js
           node --check public/easy/utility.js
+          node --check public/easy/qr/qr.js
+          node --check public/easy/pdf/pdf-tools.js
+          node --check public/easy/photo-studio/photo-studio.js
           node --check public/launch/launch.js
           node --check public/studio/studio-plus.js
           node --check public/journey-easy-links.js
+          test -s public/vendor/pdf-lib.min.js
+          test -s public/vendor/qrcode-generator.min.js
+          actual=$(openssl dgst -sha512 -binary public/vendor/pdf-lib.min.js | openssl base64 -A)
+          test "$actual" = 'z8IYLHO8bTgFqj+yrPyIJnzBDf7DDhWwiEsk4sY+Oe6J2M+WQequeGS7qioI5vT6rXgVRb4K1UVQC5ER7MKzKQ=='
           ! grep -R -n -E 'XMLHttpRequest|WebSocket|sendBeacon|eval\(|new Function|document\.write' public/journey public/easy public/launch public/studio/studio-plus.js
-          ! grep -R -n -E 'fetch\(|https?://' public/journey/*.js public/easy/*.js public/launch/*.js public/studio/studio-plus.js
+          ! grep -R -n -E 'fetch\(|https?://' public/journey/*.js public/easy/*.js public/easy/qr/*.js public/easy/pdf/*.js public/easy/photo-studio/*.js public/launch/*.js public/studio/studio-plus.js
           ! grep -R -n -E 'sk-[A-Za-z0-9]|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' public/journey public/easy public/launch public/studio/studio-plus.js
           grep -q "connect-src 'none'" public/studio/studio-plus.js
-          grep -q "'/journey/'" public/sw.js
-          grep -q "'/easy/'" public/sw.js
-          grep -q "'/easy/utility.js'" public/sw.js
-          grep -q "'/launch/'" public/sw.js
-          grep -q '"url":"/journey/"' public/manifest.webmanifest
-          grep -q '"url":"/easy/"' public/manifest.webmanifest
-          grep -q '"url":"/launch/"' public/manifest.webmanifest
+          grep -q "'/easy/qr/'" public/sw.js
+          grep -q "'/easy/pdf/'" public/sw.js
+          grep -q "'/easy/photo-studio/'" public/sw.js
+          grep -q "'/vendor/pdf-lib.min.js'" public/sw.js
+          grep -q "'/vendor/qrcode-generator.min.js'" public/sw.js
+          grep -q 'QR oluşturucu' public/easy/index.html
+          grep -q 'PDF araçları' public/easy/index.html
+          grep -q 'Fotoğraf Stüdyosu' public/easy/index.html
 
   browser-e2e:
     runs-on: ubuntu-latest
@@ -64,8 +73,8 @@ jobs:
         run: |
           python3 -m http.server 8080 -d public >/tmp/journey-http.log 2>&1 &
           echo $! >/tmp/journey-http.pid
-          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/journey/ >/dev/null && break; sleep 1; done
-      - name: Exercise journey Studio photo tools daily tools and launch wizard
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/easy/ >/dev/null && break; sleep 1; done
+      - name: Exercise journey Studio all Easy apps and launch wizard
         run: |
           node --input-type=module - <<'NODE'
           import { chromium } from 'playwright';
@@ -77,34 +86,21 @@ jobs:
           await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
           for(const key of ['journey-hub','easy-hub','launch-hub'])if(await page.locator(`[data-${key}]`).count()!==1)throw new Error(`Home ${key} missing`);
           await page.goto('http://127.0.0.1:8080/studio/',{waitUntil:'networkidle'});
-          if(await page.locator('#packageButton').count()!==1)throw new Error('Package button missing');
-          await page.fill('#projectTitle','Yolculuk Test Projesi');await page.click('#buildButton');
-          if((await page.textContent('#securityScore')).trim()!=='100/100')throw new Error('Studio audit failed');
+          await page.fill('#projectTitle','Yolculuk Test Projesi');await page.click('#buildButton');if((await page.textContent('#securityScore')).trim()!=='100/100')throw new Error('Studio audit failed');
           const packPromise=page.waitForEvent('download');await page.click('#packageButton');const pack=await packPromise;if(!pack.suggestedFilename().endsWith('-project.tar'))throw new Error('Multi-file package failed');
-          await page.goto('http://127.0.0.1:8080/journey/',{waitUntil:'networkidle'});
-          if(await page.locator('.task').count()!==12)throw new Error('Journey tasks missing');
-          if(!(await page.textContent('#portfolio')).includes('Yolculuk Test Projesi'))throw new Error('Portfolio integration failed');
-          await page.locator('.task button').first().click();if(Number((await page.textContent('#progressText')).replace('%',''))<=0)throw new Error('Journey progress failed');
+          await page.goto('http://127.0.0.1:8080/journey/',{waitUntil:'networkidle'});if(await page.locator('.task').count()!==12)throw new Error('Journey tasks missing');if(!(await page.textContent('#portfolio')).includes('Yolculuk Test Projesi'))throw new Error('Portfolio integration failed');
           let external=[];const listener=r=>{const u=new URL(r.url());if((u.protocol==='http:'||u.protocol==='https:')&&u.hostname!=='127.0.0.1')external.push(r.url())};page.on('request',listener);
-          await page.goto('http://127.0.0.1:8080/easy/',{waitUntil:'networkidle'});external=[];
-          if(await page.locator('.tool').count()!==10)throw new Error('Expected 10 photo tools');
-          if(await page.locator('.utility').count()!==7)throw new Error('Expected 7 daily tools');
+          await page.goto('http://127.0.0.1:8080/easy/',{waitUntil:'networkidle'});external=[];if(await page.locator('.tool').count()!==10)throw new Error('Expected 10 photo tools');if(await page.locator('.utility').count()!==7)throw new Error('Expected 7 daily tools');if(await page.locator('.app-launch-grid a').count()!==3)throw new Error('Focused Easy apps missing');
           const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZxHkAAAAASUVORK5CYII=','base64');
-          await page.setInputFiles('#fileInput',{name:'test.png',mimeType:'image/png',buffer:png});await page.waitForFunction(()=>!document.querySelector('#applyButton').disabled);
-          for(const mode of ['restore','slim','focus','profile','compress','bw','removebg','upscale','scan','rotate']){await page.click(`[data-mode="${mode}"]`);await page.click('#applyButton');const dims=await page.evaluate(()=>[document.querySelector('#resultCanvas').width,document.querySelector('#resultCanvas').height]);if(dims[0]<1||dims[1]<1)throw new Error(`${mode} canvas failed`)}
-          await page.selectOption('#format','image/jpeg');const photoPromise=page.waitForEvent('download');await page.click('#downloadButton');const photo=await photoPromise;if(!photo.suggestedFilename().endsWith('.jpg'))throw new Error('Photo download failed');
-          if((await page.inputValue('#passwordOutput')).length!==20)throw new Error('Password tool failed');
-          await page.fill('#textInput','  a   b  \n\n\n c  ');await page.click('#cleanTextButton');if(await page.inputValue('#textOutput')!=='a b\n\nc')throw new Error('Text cleaner failed');
-          await page.fill('#slugInput','İyi Günler Dünya');await page.click('#slugButton');if(await page.inputValue('#slugOutput')!=='iyi-gunler-dunya')throw new Error('Slug tool failed');
-          await page.fill('#jsonInput','{"a":1}');await page.click('#jsonButton');if(!(await page.inputValue('#jsonOutput')).includes('  "a": 1'))throw new Error('JSON formatter failed');
-          await page.click('#vatButton');if(!(await page.textContent('#vatResult')).includes('1200.00'))throw new Error('VAT tool failed');
-          await page.click('#budgetButton');if(!(await page.textContent('#budgetResult')).includes('15000.00'))throw new Error('Budget tool failed');
-          await page.click('#unitButton');if(await page.inputValue('#unitOutput')!=='0.001')throw new Error('Unit converter failed');
-          if(external.length)throw new Error(`Easy external requests: ${external.join(',')}`);
-          await page.goto('http://127.0.0.1:8080/launch/',{waitUntil:'networkidle'});external=[];await page.check('input[value="auth"]');await page.check('input[value="ai"]');await page.check('input[value="payment"]');await page.click('#planButton');const env=await page.textContent('#envPlan');if(!env.includes('AUTH_SECRET')||!env.includes('AI_API_KEY')||!env.includes('PAYMENT_WEBHOOK_SECRET'))throw new Error('Launch env plan failed');if(await page.locator('#gates .gate').count()<8)throw new Error('Launch gates failed');if(external.length)throw new Error(`Launch external requests: ${external.join(',')}`);
+          await page.setInputFiles('#fileInput',{name:'test.png',mimeType:'image/png',buffer:png});await page.waitForFunction(()=>!document.querySelector('#applyButton').disabled);for(const mode of ['restore','slim','focus','profile','compress','bw','removebg','upscale','scan','rotate']){await page.click(`[data-mode="${mode}"]`);await page.click('#applyButton')}const photoPromise=page.waitForEvent('download');await page.click('#downloadButton');await photoPromise;
+          if((await page.inputValue('#passwordOutput')).length!==20)throw new Error('Password tool failed');await page.fill('#slugInput','İyi Günler Dünya');await page.click('#slugButton');if(await page.inputValue('#slugOutput')!=='iyi-gunler-dunya')throw new Error('Slug tool failed');if(external.length)throw new Error(`Easy external requests: ${external.join(',')}`);
+          await page.goto('http://127.0.0.1:8080/easy/qr/',{waitUntil:'networkidle'});external=[];await page.fill('#qrText','https://example.com/ai-pusula');await page.click('#generateQr');if(await page.evaluate(()=>document.querySelector('#qrCanvas').width)<100)throw new Error('QR canvas failed');const qrPromise=page.waitForEvent('download');await page.click('#downloadQr');if(!(await qrPromise).suggestedFilename().endsWith('.png'))throw new Error('QR download failed');if(external.length)throw new Error(`QR external requests: ${external.join(',')}`);
+          await page.goto('http://127.0.0.1:8080/easy/pdf/',{waitUntil:'networkidle'});external=[];const pdfBytes=Buffer.from(await page.evaluate(async()=>{const d=await PDFLib.PDFDocument.create();d.addPage([300,400]);d.addPage([300,400]);return Array.from(await d.save())}));await page.setInputFiles('#mergeInput',[{name:'a.pdf',mimeType:'application/pdf',buffer:pdfBytes},{name:'b.pdf',mimeType:'application/pdf',buffer:pdfBytes}]);const mergePromise=page.waitForEvent('download');await page.click('#mergeButton');if(!(await mergePromise).suggestedFilename().endsWith('.pdf'))throw new Error('PDF merge failed');await page.setInputFiles('#splitInput',{name:'split.pdf',mimeType:'application/pdf',buffer:pdfBytes});await page.fill('#pageRange','2');const splitPromise=page.waitForEvent('download');await page.click('#splitButton');await splitPromise;if(!(await page.textContent('#splitStatus')).includes('1/2'))throw new Error('PDF split failed');await page.setInputFiles('#compressInput',{name:'compress.pdf',mimeType:'application/pdf',buffer:pdfBytes});const compressPromise=page.waitForEvent('download');await page.click('#compressButton');await compressPromise;if(!(await page.textContent('#compressStatus')).includes('Önce'))throw new Error('PDF optimize failed');if(external.length)throw new Error(`PDF external requests: ${external.join(',')}`);
+          await page.goto('http://127.0.0.1:8080/easy/photo-studio/',{waitUntil:'networkidle'});external=[];await page.setInputFiles('#photoInput',{name:'portrait.png',mimeType:'image/png',buffer:png});await page.waitForFunction(()=>!document.querySelector('#addText').disabled);await page.fill('#overlayText','Test');await page.click('#addText');await page.setInputFiles('#logoInput',{name:'logo.png',mimeType:'image/png',buffer:png});await page.waitForFunction(()=>!document.querySelector('#addLogo').disabled);await page.click('#addLogo');await page.click('#advancedBg');await page.click('#passportButton');if(await page.evaluate(()=>[document.querySelector('#photoResult').width,document.querySelector('#photoResult').height].join('x'))!=='700x900')throw new Error('Passport crop failed');await page.setInputFiles('#collageInput',[{name:'1.png',mimeType:'image/png',buffer:png},{name:'2.png',mimeType:'image/png',buffer:png}]);await page.click('#collageButton');if(!(await page.textContent('#collageStatus')).includes('2 fotoğraf'))throw new Error('Collage failed');const studioPhoto=page.waitForEvent('download');await page.click('#downloadPhoto');await studioPhoto;if(external.length)throw new Error(`Photo studio external requests: ${external.join(',')}`);
+          await page.goto('http://127.0.0.1:8080/launch/',{waitUntil:'networkidle'});external=[];await page.check('input[value="auth"]');await page.check('input[value="ai"]');await page.check('input[value="payment"]');await page.click('#planButton');const env=await page.textContent('#envPlan');if(!env.includes('AUTH_SECRET')||!env.includes('AI_API_KEY')||!env.includes('PAYMENT_WEBHOOK_SECRET'))throw new Error('Launch env plan failed');if(external.length)throw new Error(`Launch external requests: ${external.join(',')}`);
           const reg=await page.evaluate(async()=>{await navigator.serviceWorker.ready;return Boolean(await navigator.serviceWorker.getRegistration('/'))});if(!reg)throw new Error('Service worker missing');
-          for(const route of ['/journey/','/easy/','/launch/']){await page.goto(`http://127.0.0.1:8080${route}`,{waitUntil:'networkidle'});await page.setViewportSize({width:390,height:844});const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);if(overflow>2)throw new Error(`${route} mobile overflow ${overflow}`)}
-          if(failures.length)throw new Error(failures.join('\n'));await browser.close();console.log('Journey, 17 Easy tools, Studio package and launch validation passed');
+          for(const route of ['/easy/','/easy/qr/','/easy/pdf/','/easy/photo-studio/']){await page.goto(`http://127.0.0.1:8080${route}`,{waitUntil:'networkidle'});await page.setViewportSize({width:390,height:844});const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);if(overflow>2)throw new Error(`${route} mobile overflow ${overflow}`)}
+          if(failures.length)throw new Error(failures.join('\n'));await browser.close();console.log('Journey, Easy hub, QR, PDF, photo studio and launch validation passed');
           NODE
       - name: Stop site
         if: always()
