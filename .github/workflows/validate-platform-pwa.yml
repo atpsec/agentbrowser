@@ -1,0 +1,124 @@
+name: Validate platform PWA
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/platform-pwa.*'
+      - 'public/sw.js'
+      - 'public/manifest.webmanifest'
+      - 'public/apps/**'
+      - 'public/product-builder.js'
+      - '.github/workflows/validate-platform-pwa.yml'
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - 'public/platform-pwa.*'
+      - 'public/sw.js'
+      - 'public/manifest.webmanifest'
+      - 'public/apps/**'
+      - 'public/product-builder.js'
+      - '.github/workflows/validate-platform-pwa.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and manifest contract
+        run: |
+          node --check public/platform-pwa.js
+          node --check public/sw.js
+          node --check public/apps/product-app.js
+          node - <<'NODE'
+          const fs=require('fs');
+          const m=JSON.parse(fs.readFileSync('public/manifest.webmanifest','utf8'));
+          if(m.display!=='standalone'||m.scope!=='/'||!m.start_url.startsWith('/apps')) throw new Error('PWA manifest contract failed');
+          if(!Array.isArray(m.shortcuts)||m.shortcuts.length<4) throw new Error('PWA shortcuts missing');
+          NODE
+      - name: Security boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -R -n -E 'XMLHttpRequest|WebSocket|sendBeacon|eval\(|new Function|document\.write' public/platform-pwa.js public/sw.js public/apps/product-app.js
+          ! grep -R -n -E 'sk-[A-Za-z0-9]|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' public/platform-pwa.js public/sw.js public/apps
+          grep -q "url.origin!==location.origin" public/sw.js
+          grep -q "url.pathname.startsWith('/api/')" public/sw.js
+          grep -q "globalThis.LanguageModel" public/apps/product-app.js
+          grep -q "araç çağırmayan" public/apps/product-app.js
+          test "$(grep -o 'fetch(' public/apps/product-app.js | wc -l)" -eq 1
+          grep -q "fetch('./product-engines.js'" public/apps/product-app.js
+
+  browser-platform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start site
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/platform-http.log 2>&1 &
+          echo $! >/tmp/platform-http.pid
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/apps/ >/dev/null && break; sleep 1; done
+      - name: Exercise platform UX, PWA and local AI
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true});
+          await context.addInitScript(()=>{
+            globalThis.LanguageModel={
+              availability:async()=> 'available',
+              create:async()=>({prompt:async()=> '1. Üç önemli bulgu\n2. Üç somut adım\n3. İnsan doğrulaması gerekir',destroy(){}})
+            };
+          });
+          const page=await context.newPage();
+          const failures=[];
+          page.on('pageerror',e=>failures.push(`pageerror:${e.message}`));
+          page.on('console',m=>{if(m.type()==='error')failures.push(`console:${m.text()}`)});
+          await page.goto('http://127.0.0.1:8080/apps/?app=phishing-explainer',{waitUntil:'networkidle'});
+          if(await page.locator('#catalogGrid .catalog-card').count()!==18) throw new Error('Expected 18 catalog apps');
+          await page.fill('#catalogSearch','quiz');
+          if(await page.locator('#catalogGrid .catalog-card').count()<1) throw new Error('Search failed');
+          await page.fill('#catalogSearch','');
+          await page.selectOption('#categoryFilter','security');
+          if(await page.locator('#catalogGrid .catalog-card').count()<3) throw new Error('Category filter failed');
+          await page.selectOption('#categoryFilter','all');
+          await page.click('#favoriteButton');
+          if(await page.getAttribute('#favoriteButton','aria-pressed')!=='true') throw new Error('Favorite state failed');
+          await page.check('#favoritesOnly');
+          if(await page.locator('#catalogGrid .catalog-card').count()!==1) throw new Error('Favorites filter failed');
+          await page.uncheck('#favoritesOnly');
+          await page.fill('#profileName','Test Kullanıcı');
+          await page.click('#sampleButton');
+          await page.locator('#result:not([hidden])').waitFor();
+          if(Number(await page.textContent('#usageCount'))<1) throw new Error('Usage profile failed');
+          await page.click('#aiEnhanceButton');
+          await page.waitForFunction(()=>document.querySelector('#aiOutput')?.textContent?.includes('Üç önemli bulgu'));
+          const downloadPromise=page.waitForEvent('download');
+          await page.click('#downloadButton');
+          const download=await downloadPromise;
+          if(!download.suggestedFilename().endsWith('-offline.html')) throw new Error('Offline download failed');
+          const reg=await page.evaluate(async()=>{await navigator.serviceWorker.ready;return Boolean(navigator.serviceWorker.controller||await navigator.serviceWorker.getRegistration('/'))});
+          if(!reg) throw new Error('Service worker registration failed');
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Mobile overflow ${overflow}`);
+          if(failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log('Platform PWA browser validation passed');
+          NODE
+      - name: Stop site
+        if: always()
+        run: kill "$(cat /tmp/platform-http.pid)" || true
