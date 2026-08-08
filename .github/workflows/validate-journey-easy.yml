@@ -83,7 +83,7 @@ jobs:
           if(await page.locator('.task').count()!==12)throw new Error('Journey tasks missing');
           if(!(await page.textContent('#portfolio')).includes('Yolculuk Test Projesi'))throw new Error('Portfolio integration failed');
           await page.locator('.task button').first().click();if(Number((await page.textContent('#progressText')).replace('%',''))<=0)throw new Error('Journey progress failed');
-          let external=[];const listener=r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())};page.on('request',listener);
+          let external=[];const listener=r=>{const u=new URL(r.url());if((u.protocol==='http:'||u.protocol==='https:')&&u.hostname!=='127.0.0.1')external.push(r.url())};page.on('request',listener);
           await page.goto('http://127.0.0.1:8080/easy/',{waitUntil:'networkidle'});external=[];
           const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZxHkAAAAASUVORK5CYII=','base64');
           await page.setInputFiles('#fileInput',{name:'test.png',mimeType:'image/png',buffer:png});await page.waitForFunction(()=>!document.querySelector('#applyButton').disabled);
