@@ -1,0 +1,56 @@
+name: Build commercial sales packs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'commercial/**'
+      - 'mobile/products.json'
+      - '.github/workflows/build-commercial-sales-pack.yml'
+  push:
+    branches: [main, 'feature/commercial-sales-factory']
+    paths:
+      - 'commercial/**'
+      - 'mobile/products.json'
+      - '.github/workflows/build-commercial-sales-pack.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-packs:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [ai-pusula-tools, photofix, pdf-toolbox, qr-maker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate sales package
+        env:
+          COMMERCIAL_PRODUCT: ${{ matrix.product }}
+        run: node commercial/scripts/build-sales-pack.mjs
+      - name: Validate no fabricated metrics or secrets
+        env:
+          PRODUCT: ${{ matrix.product }}
+        run: |
+          set -euo pipefail
+          dir="commercial/dist/$PRODUCT"
+          test -s "$dir/STORE_LISTING.md"
+          test -s "$dir/APPSUMO.md"
+          test -s "$dir/FLIPPA.md"
+          test -s "$dir/TRUSTMRR.md"
+          test -s "$dir/DATA_ROOM_CHECKLIST.md"
+          grep -q 'TBD_VERIFIED' "$dir/FLIPPA.md"
+          grep -q 'NOT IMPLEMENTED' "$dir/APPSUMO.md"
+          ! grep -R -n -E 'sk-(proj-)?[A-Za-z0-9_-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' "$dir"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sales-pack-${{ matrix.product }}
+          path: commercial/dist/${{ matrix.product }}/
+          if-no-files-found: error
+          retention-days: 30
