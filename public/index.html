@@ -184,7 +184,13 @@
         <span class="section-number">04</span>
         <p class="kicker">ÜRÜN VE HİZMET FİKİRLERİ</p>
         <h2>AI fikri değil, insan problemi seç.</h2>
-        <p class="section-intro">İyi ürün “çok akıllı” olduğu için değil, belirli bir kişinin sıkıcı bir işini kolaylaştırdığı için kullanılır.</p>
+        <p class="section-intro">İyi ürün “çok akıllı” olduğu için değil, belirli bir kişinin sıkıcı bir işini kolaylaştırdığı için kullanılır. Her fikir artık doğrulamadan ilk müşteriye kadar kişisel bir yol haritası açar.</p>
+      </div>
+
+      <div class="planner-preview" aria-label="Ürün yolculuğu özeti">
+        <article><span>01</span><b>İNŞA ET</b><p>Problemi doğrula → teklifini yaz → küçük MVP yap → güvenli test et → canlıya al.</p></article>
+        <article><span>02</span><b>KAZAN</b><p>İlk müşterileri bul → doğru kanalda pazarlama yap → demo, pilot ve satış akışını kur.</p></article>
+        <article><span>03</span><b>BÜYÜT</b><p>İlk değeri hızlandır → müşteriyi takip et → kullanım, dönüşüm ve kaybı ölç.</p></article>
       </div>
 
       <div class="idea-toolbar">
@@ -212,10 +218,15 @@
       <div class="section-heading split-heading">
         <div>
           <span class="section-number">05</span>
-          <p class="kicker">PUSULA METODOLOJİSİ</p>
-          <h2>Fikirden ilk kullanıcıya altı küçük adım.</h2>
+          <p class="kicker">PUSULA + KAZAN METODOLOJİSİ</p>
+          <h2>Ürünü kur, müşteriyi bul, sonucu ölç.</h2>
         </div>
-        <p id="methodContext">Bir fikir kartında “PUSULA ile geliştir” dersen bu bölüm o fikre göre örnek verir.</p>
+        <p id="methodContext">Bir fikir seçtiğinde PUSULA ürünün nasıl kurulacağını, KAZAN ise ilk müşterinin nasıl bulunup tutulacağını o fikre göre anlatır.</p>
+      </div>
+
+      <div class="method-track-switcher" id="methodTrackSwitcher" role="tablist" aria-label="Metodoloji yolu">
+        <button type="button" role="tab" aria-selected="true" data-method-track="pusula"><b>PUSULA</b><span>Fikirden çalışan ürüne</span></button>
+        <button type="button" role="tab" aria-selected="false" data-method-track="kazan"><b>KAZAN</b><span>Çalışan üründen müşteriye</span></button>
       </div>
 
       <div class="method-layout">
@@ -289,7 +300,7 @@
         <label><input type="checkbox" data-progress="apps"><span>Ana uygulamalar ve kullanım alanları</span></label>
         <label><input type="checkbox" data-progress="models"><span>Model türleri ve karşılaştırma</span></label>
         <label><input type="checkbox" data-progress="ideas"><span>Ürün ve hizmet fikirleri</span></label>
-        <label><input type="checkbox" data-progress="method"><span>PUSULA ürün geliştirme yöntemi</span></label>
+        <label><input type="checkbox" data-progress="method"><span>PUSULA + KAZAN ürün ve müşteri yöntemi</span></label>
         <label><input type="checkbox" data-progress="security"><span>Agent Security kontrol kapıları</span></label>
       </div>
     </div>
@@ -330,9 +341,9 @@
   </div>
 </dialog>
 
-<dialog class="dialog" id="ideaDialog" aria-labelledby="ideaTitle">
-  <div class="dialog-shell detail-shell">
-    <div class="dialog-head"><div><span class="kicker">ÜRÜN FİKRİ</span><h2 id="ideaTitle">Fikir</h2></div><button class="icon-button" data-close-dialog="ideaDialog" aria-label="Kapat">×</button></div>
+<dialog class="dialog journey-dialog" id="ideaDialog" aria-labelledby="ideaTitle">
+  <div class="dialog-shell journey-shell">
+    <div class="dialog-head"><div><span class="kicker">ÜRÜN YOL HARİTASI</span><h2 id="ideaTitle">Fikir</h2></div><button class="icon-button" data-close-dialog="ideaDialog" aria-label="Kapat">×</button></div>
     <div id="ideaContent"></div>
   </div>
 </dialog>

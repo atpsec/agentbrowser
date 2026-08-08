@@ -1,9 +1,12 @@
+import { methodTracks, buildJourneySteps, buildPlanMarkdown } from './product-planner.js';
+
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
 const STORAGE = {
   progress: 'ai-pusula-progress-v2',
-  route: 'ai-pusula-route-v1'
+  route: 'ai-pusula-route-v1',
+  productPlans: 'ai-pusula-product-plans-v1'
 };
 
 const state = {
@@ -11,6 +14,7 @@ const state = {
   models: [],
   ideas: [],
   updates: [],
+  journeys: { routes: {}, durations: {}, budgets: {}, categories: {}, items: [] },
   appCategory: 'all',
   appSearch: '',
   appFreeOnly: false,
@@ -22,7 +26,11 @@ const state = {
   ideaDifficulty: 'all',
   ideaLimit: 6,
   selectedIdea: null,
+  methodTrack: 'pusula',
   methodStep: 0,
+  journeyIdea: null,
+  journeyPlan: null,
+  journeyStep: 0,
   wizardStep: 0,
   wizardComplete: false,
   wizardRecommendation: null
@@ -78,51 +86,6 @@ const conceptData = {
     technical: 'Agent; model, araçlar, durum/hafıza ve bir kontrol döngüsünden oluşur. Otonomi arttıkça prompt injection, aşırı yetki, maliyet ve geri döndürülemez işlem riski de artar.'
   }
 };
-
-const methodData = [
-  {
-    letter: 'P',
-    title: 'Problemi seç',
-    child: '“AI ile ne yapabilirim?” diye değil, “İnsanların hangi sıkıcı işini kolaylaştırabilirim?” diye başla.',
-    question: 'Kullanıcı bugün hangi işi yaparken zaman kaybediyor veya hata yapıyor?',
-    example: idea => idea ? idea.problem : 'Örnek: Güvenlik analisti yüzlerce CVE arasından önemli olanları seçmekte zorlanıyor.'
-  },
-  {
-    letter: 'U',
-    title: 'Kullanıcıyı anla',
-    child: 'Herkes için ürün yapma. Önce tek bir kullanıcı grubunu ve onun günlük işini seç.',
-    question: 'Bu işi kim yapıyor, bugün nasıl çözüyor ve en çok nerede zorlanıyor?',
-    example: idea => idea ? idea.user : 'Örnek: DevSecOps ekibi, her sabah tarama raporlarını elle inceliyor.'
-  },
-  {
-    letter: 'S',
-    title: 'Sonucu tanımla',
-    child: 'Başarıyı ölçülebilir bir cümleye çevir. “Daha iyi olsun” yerine ne kadar zaman veya hata azalacağını söyle.',
-    question: 'Ürün çalışırsa hangi sayı değişecek?',
-    example: idea => idea ? idea.metric : 'Örnek: 30 dakikalık ilk incelemeyi 8 dakikaya düşürmek.'
-  },
-  {
-    letter: 'U',
-    title: 'Uygun model ve aracı seç',
-    child: 'En büyük modeli değil, görevi yeterince iyi ve güvenli yapan en basit sistemi seç.',
-    question: 'Sadece metin mi gerekiyor; dosya, web, kod, görsel veya yerel çalışma da gerekli mi?',
-    example: idea => idea ? idea.starter : 'Örnek: JSON tarama çıktısı + küçük metin modeli + insan onaylı rapor.'
-  },
-  {
-    letter: 'L',
-    title: 'Limitleri ve güvenliği test et',
-    child: 'Ürün sadece doğru örneklerde değil, kötü veri, eksik bilgi ve kötü niyetli talimatta da denenmeli.',
-    question: 'Yanlış cevap, veri sızıntısı, yüksek maliyet veya yetkisiz işlem nasıl engellenecek?',
-    example: idea => idea ? idea.risk : 'Örnek: Model “güvenli” dese bile deployment otomatik başlamaz; insan onayı gerekir.'
-  },
-  {
-    letter: 'A',
-    title: 'Az kullanıcıyla başlat',
-    child: 'Önce üç gerçek kullanıcı. Hataları gör, düzelt, sonra on kişiye çık. Büyük lansman en son gelir.',
-    question: 'İlk hafta ürünü kimler deneyecek ve hangi geri bildirimi toplayacaksın?',
-    example: idea => idea ? `İlk pilot: 3 ${idea.user.toLocaleLowerCase('tr-TR')} kullanıcısıyla 10 gerçek görev.` : 'Örnek: Üç analist, bir hafta boyunca yalnızca öneri modunda dener.'
-  }
-];
 
 const policyData = {
   'repo-read': {
@@ -253,16 +216,18 @@ async function fetchJson(path) {
 }
 
 async function loadData() {
-  const [apps, models, ideas, updates] = await Promise.all([
+  const [apps, models, ideas, updates, journeys] = await Promise.all([
     fetchJson('./data/apps.json'),
     fetchJson('./data/models.json'),
     fetchJson('./data/ideas.json'),
-    fetchJson('./data/updates.json')
+    fetchJson('./data/updates.json'),
+    fetchJson('./data/product-journeys.json')
   ]);
   state.apps = apps.items;
   state.models = models.items;
   state.ideas = ideas.items;
   state.updates = updates.items;
+  state.journeys = journeys;
 }
 
 function renderConcept(key) {
@@ -523,6 +488,78 @@ function openModelComparison() {
   openDialog($('#compareDialog'));
 }
 
+function journeyForIdea(id) {
+  return state.journeys.items.find(item => item.id === id) || null;
+}
+
+function categoryForIdea(idea) {
+  return idea ? state.journeys.categories[idea.category] || null : null;
+}
+
+function defaultJourneyPlan(idea) {
+  const route = idea.category === 'software' ? 'open' : ['education', 'content'].includes(idea.category) ? 'saas' : 'service';
+  const duration = idea.difficulty === 'easy' ? '14days' : '30days';
+  const budget = idea.difficulty === 'advanced' ? 'pro' : idea.difficulty === 'medium' ? 'low' : 'free';
+  return { route, duration, budget, step: 0, completed: {} };
+}
+
+function readProductPlans() {
+  return readJson(STORAGE.productPlans, {});
+}
+
+function journeyPlanFor(idea) {
+  const saved = readProductPlans()[idea.id] || {};
+  const defaults = defaultJourneyPlan(idea);
+  return {
+    ...defaults,
+    ...saved,
+    completed: { ...defaults.completed, ...(saved.completed || {}) }
+  };
+}
+
+function persistJourneyPlan() {
+  if (!state.journeyIdea || !state.journeyPlan) return;
+  const plans = readProductPlans();
+  plans[state.journeyIdea.id] = {
+    ...state.journeyPlan,
+    step: state.journeyStep,
+    updatedAt: new Date().toISOString()
+  };
+  writeJson(STORAGE.productPlans, plans);
+}
+
+function journeyContext(idea = state.journeyIdea) {
+  if (!idea) return null;
+  const journey = journeyForIdea(idea.id);
+  const category = categoryForIdea(idea);
+  if (!journey || !category) return null;
+  return { idea, journey, category };
+}
+
+function buildCurrentJourneySteps(idea = state.journeyIdea, plan = state.journeyPlan) {
+  const context = journeyContext(idea);
+  if (!context || !plan) return [];
+  return buildJourneySteps({
+    ...context,
+    route: plan.route,
+    duration: plan.duration,
+    budget: plan.budget,
+    config: state.journeys
+  });
+}
+
+function journeyCompletion(idea) {
+  const journey = journeyForIdea(idea.id);
+  const category = categoryForIdea(idea);
+  if (!journey || !category) return { done: 0, total: 0, percent: 0 };
+  const plan = journeyPlanFor(idea);
+  const steps = buildJourneySteps({ idea, journey, category, route: plan.route, duration: plan.duration, budget: plan.budget, config: state.journeys });
+  const tasks = steps.flatMap(step => step.tasks);
+  const done = tasks.filter(item => plan.completed[item.id]).length;
+  const total = tasks.length;
+  return { done, total, percent: total ? Math.round((done / total) * 100) : 0 };
+}
+
 function filteredIdeas() {
   return state.ideas.filter(idea => {
     const categoryMatch = state.ideaCategory === 'all' || idea.category === state.ideaCategory;
@@ -532,12 +569,16 @@ function filteredIdeas() {
 }
 
 function ideaCard(idea, index) {
+  const journey = journeyForIdea(idea.id);
+  const progress = journeyCompletion(idea);
   return `<article class="idea-card">
     <div class="card-top"><span class="idea-number">${String(index + 1).padStart(2, '0')}</span><span class="difficulty ${escapeHtml(idea.difficulty)}">${escapeHtml(difficultyLabels[idea.difficulty])}</span></div>
     <h3>${escapeHtml(idea.title)}</h3>
     <p>${escapeHtml(idea.summary)}</p>
+    ${journey ? `<div class="idea-passport"><span><b>MVP</b>${escapeHtml(journey.mvpTime)}</span><span><b>Müşteri</b>${escapeHtml(journey.customerType)}</span><span><b>Satış</b>${escapeHtml(journey.salesDifficulty)}</span></div>` : ''}
     <div class="tag-list"><span>${escapeHtml(categoryLabels[idea.category])}</span>${idea.tools.slice(0, 3).map(tool => `<span>${escapeHtml(tool)}</span>`).join('')}</div>
-    <div class="card-actions"><button type="button" data-idea-detail="${escapeHtml(idea.id)}">Fikri aç</button><button type="button" data-idea-build="${escapeHtml(idea.id)}">PUSULA ile geliştir →</button></div>
+    ${progress.total ? `<div class="idea-plan-progress"><span>Yol haritası</span><b>${progress.percent}%</b><i><u style="width:${progress.percent}%"></u></i></div>` : ''}
+    <div class="card-actions"><button type="button" data-idea-detail="${escapeHtml(idea.id)}">Hızlı bak</button><button type="button" data-product-plan="${escapeHtml(idea.id)}">Yol haritasını aç →</button></div>
   </article>`;
 }
 
@@ -550,57 +591,207 @@ function renderIdeas() {
   $('#showMoreIdeas').hidden = ideas.length <= state.ideaLimit;
 }
 
-function ideaDetailRows(idea) {
+function ideaDetailRows(idea, journey) {
   const rows = [
     ['Problem', idea.problem],
     ['Kullanıcı', idea.user],
-    ['Girdi', idea.input],
+    ['Temel vaat', journey?.promise],
+    ['MVP süresi', journey?.mvpTime],
+    ['Gelir modeli', journey?.businessModels?.join(' · ')],
+    ['İlk müşteri kanalı', journey?.firstChannel],
     ['AI ne yapar?', idea.aiAction],
-    ['Çıktı', idea.output],
     ['İlk prototip', idea.starter],
-    ['Ücretsiz denenir mi?', idea.freePrototype],
     ['En önemli risk', idea.risk],
     ['Başarı ölçüsü', idea.metric]
-  ];
+  ].filter(([, value]) => value);
   return rows.map(([label, value]) => `<div class="idea-detail-row"><b>${escapeHtml(label)}</b><span>${escapeHtml(value)}</span></div>`).join('');
 }
 
 function openIdeaDetail(id) {
   const idea = state.ideas.find(item => item.id === id);
+  const journey = journeyForIdea(id);
   if (!idea) return;
+  $('#detailKicker').textContent = `${categoryLabels[idea.category]} / ÜRÜN FİKRİ`;
+  $('#detailTitle').textContent = idea.title;
+  $('#detailContent').innerHTML = `<p class="child-copy">${escapeHtml(idea.summary)}</p><div class="idea-detail-list">${ideaDetailRows(idea, journey)}</div><div class="dialog-actions"><button class="text-button" type="button" data-idea-build="${escapeHtml(idea.id)}">PUSULA + KAZAN’a taşı</button><button class="dark-button" type="button" data-product-plan="${escapeHtml(idea.id)}">Tam yol haritasını aç →</button></div>`;
+  openDialog($('#detailDialog'));
+}
+
+function renderChoiceGroup(label, type, options, selected) {
+  return `<div class="journey-choice-group"><span>${escapeHtml(label)}</span><div>${Object.entries(options).map(([key, value]) => `<button type="button" data-plan-choice="${escapeHtml(type)}" data-plan-value="${escapeHtml(key)}" class="${key === selected ? 'is-active' : ''}" aria-pressed="${key === selected}">${escapeHtml(value.label)}</button>`).join('')}</div></div>`;
+}
+
+function renderJourneySection(block) {
+  return `<section class="journey-block ${escapeHtml(block.tone || '')}"><h4>${escapeHtml(block.title)}</h4>${block.intro ? `<p>${escapeHtml(block.intro)}</p>` : ''}<ul>${block.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></section>`;
+}
+
+function renderJourneyStepList(steps, completed) {
+  return steps.map((step, index) => {
+    const done = step.tasks.filter(task => completed[task.id]).length;
+    const percent = step.tasks.length ? Math.round((done / step.tasks.length) * 100) : 0;
+    return `<button type="button" data-journey-step="${index}" class="${index === state.journeyStep ? 'is-active' : ''}" aria-current="${index === state.journeyStep ? 'step' : 'false'}"><span>${escapeHtml(step.number)}</span><div><b>${escapeHtml(step.title)}</b><small>${escapeHtml(step.phase)} · ${percent}%</small></div><i><u style="width:${percent}%"></u></i></button>`;
+  }).join('');
+}
+
+function renderProductJourney(preserveScroll = false) {
+  const dialog = $('#ideaDialog');
+  const previousScroll = preserveScroll ? dialog.scrollTop : 0;
+  const context = journeyContext();
+  if (!context || !state.journeyPlan) return;
+  const { idea, journey, category } = context;
+  const steps = buildCurrentJourneySteps();
+  state.journeyStep = Math.max(0, Math.min(state.journeyStep, steps.length - 1));
+  state.journeyPlan.step = state.journeyStep;
+  const step = steps[state.journeyStep];
+  const completed = state.journeyPlan.completed;
+  const allTasks = steps.flatMap(item => item.tasks);
+  const done = allTasks.filter(item => completed[item.id]).length;
+  const total = allTasks.length;
+  const percent = total ? Math.round((done / total) * 100) : 0;
+  const firstIncomplete = step.tasks.find(item => !completed[item.id]);
+  const today = firstIncomplete ? firstIncomplete.text : 'Bu adım tamamlandı. Sonraki adıma geç veya planını dışa aktar.';
+
   $('#ideaTitle').textContent = idea.title;
-  $('#ideaContent').innerHTML = `<p class="child-copy">${escapeHtml(idea.summary)}</p><div class="idea-detail-list">${ideaDetailRows(idea)}</div><div class="dialog-actions"><span class="difficulty ${escapeHtml(idea.difficulty)}">${escapeHtml(difficultyLabels[idea.difficulty])}</span><button class="dark-button" type="button" data-idea-build="${escapeHtml(idea.id)}">PUSULA ile geliştir</button></div>`;
+  $('#ideaContent').innerHTML = `
+    <div class="journey-overview">
+      <div class="journey-overview-copy"><span class="kicker">${escapeHtml(categoryLabels[idea.category])} · ${escapeHtml(category.customerMotion)}</span><p>${escapeHtml(journey.promise)}</p></div>
+      <div class="journey-overall"><span>TOPLAM İLERLEME</span><strong>${percent}%</strong><i><u style="width:${percent}%"></u></i><small>${done} / ${total} görev</small></div>
+    </div>
+    <div class="journey-passport-grid">
+      <div><span>HEDEF MÜŞTERİ</span><b>${escapeHtml(journey.customerType)}</b></div>
+      <div><span>MVP SÜRESİ</span><b>${escapeHtml(journey.mvpTime)}</b></div>
+      <div><span>SATIŞ ZORLUĞU</span><b>${escapeHtml(journey.salesDifficulty)}</b></div>
+      <div><span>VERİ HASSASİYETİ</span><b>${escapeHtml(journey.dataSensitivity)}</b></div>
+    </div>
+    <div class="journey-config" aria-label="Plan ayarları">
+      ${renderChoiceGroup('Başlangıç rotası', 'route', state.journeys.routes, state.journeyPlan.route)}
+      ${renderChoiceGroup('Hedef süre', 'duration', state.journeys.durations, state.journeyPlan.duration)}
+      ${renderChoiceGroup('Bütçe', 'budget', state.journeys.budgets, state.journeyPlan.budget)}
+    </div>
+    <div class="journey-workspace">
+      <nav class="journey-steps" aria-label="Ürün yol haritası adımları">${renderJourneyStepList(steps, completed)}</nav>
+      <article class="journey-panel" aria-live="polite">
+        <div class="journey-panel-head"><div><span>${escapeHtml(step.phase)} · ADIM ${escapeHtml(step.number)}</span><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.summary)}</p></div><b>${Math.round((state.journeyStep / (steps.length - 1)) * 100)}%</b></div>
+        <div class="today-card"><span>BUGÜNKÜ TEK GÖREV</span><strong>${escapeHtml(today)}</strong></div>
+        <div class="journey-sections">${step.sections.map(renderJourneySection).join('')}</div>
+        <div class="journey-checklist"><div class="journey-checklist-head"><h4>Bu adımın checklist’i</h4><span>${step.tasks.filter(item => completed[item.id]).length} / ${step.tasks.length}</span></div>${step.tasks.map(item => `<label><input type="checkbox" data-plan-task="${escapeHtml(item.id)}" ${completed[item.id] ? 'checked' : ''}><span>${escapeHtml(item.text)}</span></label>`).join('')}</div>
+        <div class="journey-nav"><button class="text-button" type="button" data-plan-nav="prev" ${state.journeyStep === 0 ? 'disabled' : ''}>← Önceki</button><button class="dark-button" type="button" data-plan-nav="next">${state.journeyStep === steps.length - 1 ? 'Başa dön' : 'Sonraki adım →'}</button></div>
+      </article>
+    </div>
+    <div class="journey-actions"><div><button class="text-button" type="button" data-plan-method="pusula">PUSULA’ya taşı</button><button class="text-button" type="button" data-plan-method="kazan">KAZAN’a taşı</button></div><div><button class="text-button" type="button" data-plan-copy>Markdown kopyala</button><button class="text-button" type="button" data-plan-download>Planı indir</button><button class="text-button danger-text" type="button" data-plan-reset>İlerlemeyi sıfırla</button></div></div>`;
+  requestAnimationFrame(() => {
+    if (preserveScroll) dialog.scrollTop = previousScroll;
+    const nav = $('.journey-steps', dialog);
+    const active = $('.journey-steps .is-active', dialog);
+    if (nav && active && nav.scrollWidth > nav.clientWidth) {
+      nav.scrollLeft = Math.max(0, active.offsetLeft - (nav.clientWidth - active.clientWidth) / 2);
+    }
+  });
+}
+
+function openProductJourney(id) {
+  const idea = state.ideas.find(item => item.id === id);
+  const journey = journeyForIdea(id);
+  if (!idea || !journey) {
+    showToast('Bu fikir için yol haritası henüz hazır değil.');
+    return;
+  }
+  state.journeyIdea = idea;
+  state.journeyPlan = journeyPlanFor(idea);
+  state.journeyStep = Number(state.journeyPlan.step) || 0;
+  state.selectedIdea = idea;
+  renderProductJourney();
+  closeDialog($('#detailDialog'));
   openDialog($('#ideaDialog'));
 }
 
-function selectIdeaForMethod(id) {
+function selectIdeaForMethod(id, track = 'pusula') {
   const idea = state.ideas.find(item => item.id === id);
   if (!idea) return;
   state.selectedIdea = idea;
+  state.methodTrack = track in methodTracks ? track : 'pusula';
   state.methodStep = 0;
-  $('#methodContext').textContent = `Seçilen fikir: ${idea.title}. Aşağıdaki örnekler bu fikre göre değişti.`;
+  $('#methodContext').textContent = `Seçilen fikir: ${idea.title}. ${state.methodTrack === 'pusula' ? 'Ürün kurma' : 'Müşteri kazanma'} örnekleri bu fikre göre değişti.`;
+  renderMethodTrackSwitcher();
+  renderMethodTrackSwitcher();
   renderMethodSteps();
   renderMethodPanel();
   closeDialog($('#ideaDialog'));
+  closeDialog($('#detailDialog'));
   $('#method').scrollIntoView({ behavior: 'smooth' });
-  showToast('Fikir PUSULA çalışma alanına aktarıldı.');
+  showToast(`Fikir ${state.methodTrack === 'pusula' ? 'PUSULA' : 'KAZAN'} çalışma alanına aktarıldı.`);
+}
+
+function renderMethodTrackSwitcher() {
+  $$('#methodTrackSwitcher [data-method-track]').forEach(button => {
+    const active = button.dataset.methodTrack === state.methodTrack;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-selected', String(active));
+  });
 }
 
 function renderMethodSteps() {
-  $('#methodSteps').innerHTML = methodData.map((step, index) => `<li><button type="button" data-method-step="${index}" aria-current="${index === state.methodStep ? 'step' : 'false'}"><b>${escapeHtml(step.letter)}</b><span>${escapeHtml(step.title)}</span></button></li>`).join('');
+  const steps = methodTracks[state.methodTrack];
+  state.methodStep = Math.max(0, Math.min(state.methodStep, steps.length - 1));
+  $('#methodSteps').innerHTML = steps.map((step, index) => `<li><button type="button" data-method-step="${index}" aria-current="${index === state.methodStep ? 'step' : 'false'}"><b>${escapeHtml(step.letter)}</b><span>${escapeHtml(step.title)}</span></button></li>`).join('');
 }
 
 function renderMethodPanel() {
-  const step = methodData[state.methodStep];
+  const steps = methodTracks[state.methodTrack];
+  const step = steps[state.methodStep];
   const idea = state.selectedIdea;
+  const context = idea ? { idea, journey: journeyForIdea(idea.id), category: categoryForIdea(idea) } : { idea: null, journey: null, category: null };
   $('#methodPanel').innerHTML = `
     <span class="method-letter" aria-hidden="true">${escapeHtml(step.letter)}</span>
-    ${idea ? `<p class="kicker">SEÇİLEN FİKİR · ${escapeHtml(idea.title)}</p>` : '<p class="kicker">GENEL ÖRNEK</p>'}
+    ${idea ? `<p class="kicker">SEÇİLEN FİKİR · ${escapeHtml(idea.title)} · ${state.methodTrack.toLocaleUpperCase('tr-TR')}</p>` : `<p class="kicker">${state.methodTrack.toLocaleUpperCase('tr-TR')} · GENEL ÖRNEK</p>`}
     <h3>${escapeHtml(step.title)}</h3>
     <p class="child-copy">${escapeHtml(step.child)}</p>
     <div class="method-question"><b>Kendine sor:</b><br>${escapeHtml(step.question)}</div>
-    <div class="method-example"><b>Bu fikre uygulanışı:</b><p>${escapeHtml(step.example(idea))}</p></div>
-    <div class="method-nav"><button class="text-button" type="button" data-method-nav="prev" ${state.methodStep === 0 ? 'disabled' : ''}>← Önceki</button><button class="dark-button" type="button" data-method-nav="next">${state.methodStep === methodData.length - 1 ? 'Başa dön' : 'Sonraki adım →'}</button></div>`;
+    <div class="method-example"><b>Bu fikre uygulanışı:</b><p>${escapeHtml(step.example(context))}</p></div>
+    ${idea ? `<button class="text-button" type="button" data-product-plan="${escapeHtml(idea.id)}">Tam ürün yol haritasını aç →</button>` : ''}
+    <div class="method-nav"><button class="text-button" type="button" data-method-nav="prev" ${state.methodStep === 0 ? 'disabled' : ''}>← Önceki</button><button class="dark-button" type="button" data-method-nav="next">${state.methodStep === steps.length - 1 ? 'Başa dön' : 'Sonraki adım →'}</button></div>`;
+}
+
+async function copyText(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.append(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  textarea.remove();
+}
+
+function currentPlanMarkdown() {
+  const context = journeyContext();
+  if (!context || !state.journeyPlan) return '';
+  return buildPlanMarkdown({
+    ...context,
+    route: state.journeyPlan.route,
+    duration: state.journeyPlan.duration,
+    budget: state.journeyPlan.budget,
+    config: state.journeys,
+    completed: state.journeyPlan.completed
+  });
+}
+
+function downloadCurrentPlan() {
+  if (!state.journeyIdea) return;
+  const markdown = currentPlanMarkdown();
+  const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${state.journeyIdea.id}-urun-yol-haritasi.md`;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 function renderPolicy(action) {
@@ -769,15 +960,88 @@ function wireEvents() {
   });
   $('#ideaGrid').addEventListener('click', event => {
     const detail = event.target.closest('[data-idea-detail]');
-    const build = event.target.closest('[data-idea-build]');
+    const plan = event.target.closest('[data-product-plan]');
     if (detail) openIdeaDetail(detail.dataset.ideaDetail);
+    if (plan) openProductJourney(plan.dataset.productPlan);
+  });
+  $('#detailContent').addEventListener('click', event => {
+    const plan = event.target.closest('[data-product-plan]');
+    const build = event.target.closest('[data-idea-build]');
+    if (plan) openProductJourney(plan.dataset.productPlan);
     if (build) selectIdeaForMethod(build.dataset.ideaBuild);
   });
-  $('#ideaContent').addEventListener('click', event => {
-    const button = event.target.closest('[data-idea-build]');
-    if (button) selectIdeaForMethod(button.dataset.ideaBuild);
+  $('#ideaContent').addEventListener('click', async event => {
+    const stepButton = event.target.closest('[data-journey-step]');
+    if (stepButton) {
+      state.journeyStep = Number(stepButton.dataset.journeyStep);
+      persistJourneyPlan();
+      renderProductJourney(true);
+      return;
+    }
+    const choice = event.target.closest('[data-plan-choice]');
+    if (choice) {
+      state.journeyPlan[choice.dataset.planChoice] = choice.dataset.planValue;
+      persistJourneyPlan();
+      renderProductJourney(true);
+      return;
+    }
+    const navigation = event.target.closest('[data-plan-nav]');
+    if (navigation && !navigation.disabled) {
+      const steps = buildCurrentJourneySteps();
+      state.journeyStep = navigation.dataset.planNav === 'prev' ? Math.max(0, state.journeyStep - 1) : state.journeyStep === steps.length - 1 ? 0 : state.journeyStep + 1;
+      persistJourneyPlan();
+      renderProductJourney(true);
+      return;
+    }
+    const method = event.target.closest('[data-plan-method]');
+    if (method && state.journeyIdea) {
+      selectIdeaForMethod(state.journeyIdea.id, method.dataset.planMethod);
+      return;
+    }
+    if (event.target.closest('[data-plan-copy]')) {
+      try {
+        await copyText(currentPlanMarkdown());
+        showToast('Ürün yol haritası Markdown olarak kopyalandı.');
+      } catch {
+        showToast('Kopyalama izni verilmedi. Planı indirmeyi dene.');
+      }
+      return;
+    }
+    if (event.target.closest('[data-plan-download]')) {
+      downloadCurrentPlan();
+      showToast('Ürün yol haritası indirildi.');
+      return;
+    }
+    if (event.target.closest('[data-plan-reset]')) {
+      if (!state.journeyIdea || !window.confirm('Bu ürün için yerel ilerleme sıfırlansın mı?')) return;
+      const plans = readProductPlans();
+      delete plans[state.journeyIdea.id];
+      writeJson(STORAGE.productPlans, plans);
+      state.journeyPlan = defaultJourneyPlan(state.journeyIdea);
+      state.journeyStep = 0;
+      renderProductJourney();
+      renderIdeas();
+      showToast('Bu ürünün ilerlemesi sıfırlandı.');
+    }
+  });
+  $('#ideaContent').addEventListener('change', event => {
+    const checkbox = event.target.closest('[data-plan-task]');
+    if (!checkbox || !state.journeyPlan) return;
+    state.journeyPlan.completed[checkbox.dataset.planTask] = checkbox.checked;
+    persistJourneyPlan();
+    renderProductJourney(true);
+    renderIdeas();
   });
 
+  $('#methodTrackSwitcher').addEventListener('click', event => {
+    const button = event.target.closest('[data-method-track]');
+    if (!button) return;
+    state.methodTrack = button.dataset.methodTrack;
+    state.methodStep = 0;
+    renderMethodTrackSwitcher();
+    renderMethodSteps();
+    renderMethodPanel();
+  });
   $('#methodSteps').addEventListener('click', event => {
     const button = event.target.closest('[data-method-step]');
     if (!button) return;
@@ -786,10 +1050,16 @@ function wireEvents() {
     renderMethodPanel();
   });
   $('#methodPanel').addEventListener('click', event => {
+    const plan = event.target.closest('[data-product-plan]');
+    if (plan) {
+      openProductJourney(plan.dataset.productPlan);
+      return;
+    }
     const button = event.target.closest('[data-method-nav]');
     if (!button || button.disabled) return;
+    const steps = methodTracks[state.methodTrack];
     if (button.dataset.methodNav === 'prev') state.methodStep = Math.max(0, state.methodStep - 1);
-    else state.methodStep = state.methodStep === methodData.length - 1 ? 0 : state.methodStep + 1;
+    else state.methodStep = state.methodStep === steps.length - 1 ? 0 : state.methodStep + 1;
     renderMethodSteps();
     renderMethodPanel();
   });
