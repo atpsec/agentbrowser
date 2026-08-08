@@ -1,0 +1,87 @@
+name: Verify all live products
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-all-live-products.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for Cloudflare production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          ready=false
+          for attempt in $(seq 1 36); do
+            echo "Production verification ${attempt}/36"
+            status=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS -D /tmp/headers -o /tmp/index.html -w '%{http_code}' "${base}/" || true)
+            curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/apps/product-engines.js" -o /tmp/engines.js || true
+            curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/apps/product-app.js" -o /tmp/product-app.js || true
+            if [ "$status" = '200' ] && grep -q "social-calendar" /tmp/engines.js && grep -q "downloadOffline" /tmp/product-app.js; then ready=true; break; fi
+            sleep 10
+          done
+          test "$ready" = 'true'
+          curl --fail -sS "${base}/apps/" -o /tmp/apps.html
+          curl --fail -sS "${base}/product-live-links.js" -o /tmp/live-links.js
+          grep -q 'HEMEN KULLAN' /tmp/apps.html
+          grep -q 'data-live-product' /tmp/live-links.js
+          test "$(grep -o "id:'" /tmp/engines.js | wc -l)" -ge 18
+          tr -d '\r' < /tmp/headers | tr '[:upper:]' '[:lower:]' > /tmp/headers.lower
+          grep -q '^content-security-policy:' /tmp/headers.lower
+          grep -q "script-src 'self'" /tmp/headers.lower
+          grep -q "style-src 'self'" /tmp/headers.lower
+          grep -q "connect-src 'self'" /tmp/headers.lower
+          grep -q "frame-ancestors 'none'" /tmp/headers.lower
+          git_status=$(curl --connect-timeout 10 --max-time 30 -sS -o /tmp/git-head -w '%{http_code}' "${base}/.git/HEAD" || true)
+          if grep -q '^ref: refs/' /tmp/git-head 2>/dev/null; then echo "Repository metadata leak: ${git_status}" >&2; exit 1; fi
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Exercise all live products and offline download
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const base='https://agentbrowser.tpberg3tp.workers.dev';
+          const products=['phishing-explainer','cve-prioritizer','soc-triage','policy-assistant','pr-test-helper','dependency-risk','docs-assistant','release-notes','pdf-quiz','study-planner','child-explainer','proposal-helper','support-router','meeting-decisions','knowledge-assistant','video-brief','podcast-notes','social-calendar'];
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1440,height:1000},acceptDownloads:true});
+          const failures=[];
+          page.on('pageerror',e=>failures.push(`pageerror: ${e.message}`));
+          page.on('console',m=>{if(m.type()==='error') failures.push(`console: ${m.text()}`)});
+          await page.goto(base,{waitUntil:'networkidle',timeout:45000});
+          const more=page.locator('#showMoreIdeas');
+          while(await more.count() && await more.isVisible()) await more.click();
+          if(await page.locator('[data-live-product]').count()!==18) throw new Error('Expected 18 live product links on production');
+          await page.goto(`${base}/apps/?app=phishing-explainer`,{waitUntil:'networkidle',timeout:45000});
+          for(const id of products){
+            await page.selectOption('#productSelect',id);
+            await page.click('#sampleButton');
+            await page.locator('#result:not([hidden])').waitFor();
+            if(!(await page.locator('#resultLabel').textContent())?.trim()) throw new Error(`Missing result: ${id}`);
+          }
+          const downloadPromise=page.waitForEvent('download');
+          await page.click('#downloadButton');
+          const download=await downloadPromise;
+          if(!download.suggestedFilename().endsWith('-offline.html')) throw new Error('Offline download failed');
+          const path=await download.path();
+          const fs=await import('node:fs/promises');
+          const html=await fs.readFile(path,'utf8');
+          for(const term of ['OFFLINE / LOCAL-ONLY',"default-src 'none'",'runProduct']) if(!html.includes(term)) throw new Error(`Offline HTML missing ${term}`);
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Mobile overflow ${overflow}px`);
+          if(failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log('Production: 18/18 products, offline download, mobile and console checks passed.');
+          NODE
