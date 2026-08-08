@@ -92,8 +92,8 @@ jobs:
           const manifest=await page.evaluate(async()=>await (await fetch('/manifest.webmanifest')).json());
           if(!manifest.start_url.startsWith('/apps')) throw new Error('PWA start_url compatibility failed');
           if(!manifest.shortcuts.some(x=>x.url==='/kids/')) throw new Error('Kids shortcut missing');
-          const rootExternal=external.filter(u=>!u.includes('accounts.google.com'));
-          if(rootExternal.length) throw new Error('Unexpected external requests: '+rootExternal.join(','));
+          const unexpected=external.filter(u=>!u.startsWith('https://cdn.jsdelivr.net/'));
+          if(unexpected.length) throw new Error('Unexpected external requests: '+unexpected.join(','));
           if(errors.length) throw new Error('Browser errors: '+errors.join(' | '));
           await browser.close();
           console.log('Production productization + security flows PASS');
