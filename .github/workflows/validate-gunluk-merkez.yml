@@ -34,7 +34,7 @@ jobs:
       - name: Static and security checks
         run: |
           node --check public/gunluk/app.js
-          grep -q "ai-pusula-v18" public/sw.js
+          grep -q "ai-pusula-v19" public/sw.js
           grep -q "'/gunluk/'" public/sw.js
           grep -q '"url":"/gunluk/"' public/manifest.webmanifest
           grep -q '/gunluk/' public/sitemap.xml
