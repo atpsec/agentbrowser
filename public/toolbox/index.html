@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="AI Pusula Her Şey Kutusu: günlük yaşam, para, mutfak, seyahat, iş, öğrenci, metin, dosya, gizlilik ve hesaplama için local-first mikro araçlar.">
+  <meta name="theme-color" content="#f6f1e8">
+  <title>Her Şey Kutusu — AI Pusula</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/toolbox/toolbox.css">
+  <link rel="stylesheet" href="/toolbox/toolbox-guards.css">
+</head>
+<body>
+<a class="skip" href="#main">İçeriğe geç</a>
+<header class="topbar">
+  <a class="brand" href="/">↗ AI PUSULA</a>
+  <nav aria-label="Hızlı menü"><a href="/easy/">Kolay Araçlar</a><a href="/demo/">Demo</a><a href="/account/">Hesabım</a></nav>
+</header>
+<main id="main">
+  <section class="hero shell">
+    <div>
+      <p class="eyebrow">LOCAL-FIRST · GÜNLÜK HAYAT</p>
+      <h1>Her gün lazım olan küçük işler için <em>tek kutu.</em></h1>
+      <p class="lead">Hesapla, dönüştür, liste yap, takip et, metni temizle, dosyanı doğrula. Çoğu araç tamamen cihazında çalışır; hesap veya API anahtarı istemez.</p>
+    </div>
+    <aside class="privacy-card"><strong>Gizlilik varsayılanı</strong><ul><li>Harici analytics yok</li><li>Dosya/metin upload edilmez</li><li>Şifreler crypto API ile cihazda üretilir</li><li>Kayıtlar yalnız localStorage alanında tutulur</li></ul></aside>
+  </section>
+
+  <section class="finder shell" aria-label="Araç bul">
+    <label for="search">Ne yapmak istiyorsun?</label>
+    <input id="search" type="search" autocomplete="off" placeholder="Örn: hesabı böl, valiz hazırla, kelime say, güçlü şifre üret…">
+    <div class="finder-meta"><strong id="resultCount">0 araç</strong><button id="clearData" type="button">Toolbox yerel verilerini temizle</button></div>
+    <div id="categories" class="categories" role="group" aria-label="Kategori filtreleri"></div>
+  </section>
+
+  <section class="content shell">
+    <div id="toolGrid" class="tool-grid" aria-live="polite"></div>
+    <article id="workspace" class="workspace" hidden aria-live="polite">
+      <header class="workspace-head"><div><p id="toolCategory" class="eyebrow"></p><h2 id="toolTitle"></h2><p id="toolDesc"></p></div><button id="closeTool" type="button" aria-label="Aracı kapat">Kapat</button></header>
+      <div id="toolNotice" class="notice" hidden></div>
+      <div id="toolBody" class="tool-body"></div>
+      <div id="toolOutput" class="output" hidden></div>
+    </article>
+  </section>
+</main>
+<footer class="footer shell"><p>AI Pusula Her Şey Kutusu · Hassas veriyi gereksiz yere sunucuya göndermeyen yardımcı araçlar.</p><a href="/">Ana sayfa</a></footer>
+<script type="module" src="/toolbox/toolbox.js"></script>
+<script type="module" src="/toolbox/toolbox-calculators.js"></script>
+</body>
+</html>

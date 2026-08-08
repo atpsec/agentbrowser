@@ -1,0 +1,11 @@
+const body=document.querySelector('#toolBody');const output=document.querySelector('#toolOutput');const title=document.querySelector('#toolTitle');
+const specs={
+  'Yol yakıt maliyeti':{labels:['Mesafe (km)','Tüketim (L/100 km)','Yakıt fiyatı'],run:v=>v[0]/100*v[1]*v[2],suffix:'tahmini toplam'},
+  'Toplantı süre maliyeti':{labels:['Kişi sayısı','Süre (saat)','Kişi başı saatlik maliyet'],run:v=>v[0]*v[1]*v[2],suffix:'tahmini toplantı maliyeti'},
+  'Oran/orantı':{labels:['a','b','c'],run:v=>v[0]===0?null:v[2]*v[1]/v[0],suffix:'x (a/b = c/x)'},
+  'Geçmek için kaç almalıyım?':{labels:['Mevcut ortalama','Mevcut ağırlık %','Hedef ortalama'],run:v=>{const remain=1-v[1]/100;return remain<=0?null:(v[2]-v[0]*(v[1]/100))/remain},suffix:'kalan bölümde gereken ortalama'}
+};
+function field(label){const w=document.createElement('div');w.className='field';const l=document.createElement('label');l.textContent=label;const i=document.createElement('input');i.type='number';i.step='any';w.append(l,i);return{w,i}}
+function show(text){output.textContent=text;output.hidden=false}
+function render(){const spec=specs[title.textContent];if(!spec||body.dataset.specialFor===title.textContent)return;body.dataset.specialFor=title.textContent;const fields=spec.labels.map(field);const actions=document.createElement('div');actions.className='actions';const button=document.createElement('button');button.type='button';button.textContent='Hesapla';button.addEventListener('click',()=>{const vals=fields.map(f=>Number(String(f.i.value).replace(',','.')));if(vals.some(v=>!Number.isFinite(v)))return show('Geçerli sayılar gir.');const result=spec.run(vals);if(result===null||!Number.isFinite(result))return show('Bu değerlerle hesap yapılamaz.');show(`${spec.suffix}: ${new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2}).format(result)}`)});actions.append(button);body.replaceChildren(...fields.map(f=>f.w),actions)}
+new MutationObserver(render).observe(body,{childList:true});new MutationObserver(render).observe(title,{childList:true,characterData:true,subtree:true});render();
