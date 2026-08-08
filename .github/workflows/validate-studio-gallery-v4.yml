@@ -28,11 +28,14 @@ jobs:
       - name: Static security checks
         run: |
           node --check public/studio/template-previews.js
+          node --check public/studio/preview-runtime-v4.js
           node --check public/studio/studio.js
           grep -q 'template-gallery-v4.css' public/studio/index.html
+          grep -q "import './preview-runtime-v4.js'" public/studio/studio.js
           grep -q "ai-pusula-v17" public/sw.js
           grep -q "'/studio/template-gallery-v4.css'" public/sw.js
-          ! grep -n -E 'fetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|document\.write|https?://' public/studio/template-previews.js
+          grep -q "'/studio/preview-runtime-v4.js'" public/sw.js
+          ! grep -n -E 'fetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|document\.write|https?://' public/studio/template-previews.js public/studio/preview-runtime-v4.js
       - name: Install Chromium
         run: |
           npm install --no-save playwright
