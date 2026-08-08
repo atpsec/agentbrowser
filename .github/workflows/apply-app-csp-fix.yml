@@ -1,64 +1,60 @@
-name: Apply app CSP fix
+name: Validate CSP inline styles
 
 on:
   pull_request:
     branches:
       - main
-    paths:
-      - '.github/workflows/apply-app-csp-fix.yml'
+  push:
+    branches:
+      - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply:
+  validate-csp-style-boundary:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          ref: ${{ github.head_ref }}
-      - name: Replace remaining inline styles without weakening CSP
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check public/app.js
+          node --input-type=module --check < public/product-builder.js
+          node --check public/product-builder-core.js
+          node --check public/ai-build-assistant.js
+      - name: Reject JavaScript-created inline styles
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
-          app_path=Path('public/app.js')
-          app=app_path.read_text(encoding='utf-8')
-
-          old1='<i><u style="width:${progress.percent}%"></u></i>'
-          new1='<i><progress class="csp-progress" max="100" value="${progress.percent}" aria-label="${progress.percent}% tamamlandı"></progress></i>'
-          assert app.count(old1)==1, app.count(old1)
-          app=app.replace(old1,new1)
-
-          old2='<i><u style="width:${percent}%"></u></i>'
-          new2='<i><progress class="csp-progress" max="100" value="${percent}" aria-label="${percent}% tamamlandı"></progress></i>'
-          assert app.count(old2)==2, app.count(old2)
-          app=app.replace(old2,new2)
-
-          old3="  textarea.style.position = 'fixed';\n  textarea.style.opacity = '0';"
-          new3="  textarea.className = 'clipboard-fallback';"
-          assert app.count(old3)==1, app.count(old3)
-          app=app.replace(old3,new3)
-
-          assert 'style="width:' not in app
-          assert '.style.' not in app
-          app_path.write_text(app,encoding='utf-8')
-
-          css_path=Path('public/styles.css')
-          css=css_path.read_text(encoding='utf-8')
-          addition='\n.csp-progress{display:block;width:100%;height:100%;min-height:6px;border:0;appearance:none;background:transparent}.csp-progress::-webkit-progress-bar{background:transparent}.csp-progress::-webkit-progress-value{background:currentColor}.csp-progress::-moz-progress-bar{background:currentColor}.clipboard-fallback{position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none;width:1px;height:1px}\n'
-          if '.clipboard-fallback{' not in css:
-              css_path.write_text(css+addition,encoding='utf-8')
+          failures=[]
+          for path in sorted(Path('public').glob('*.js')):
+              text=path.read_text(encoding='utf-8')
+              if 'style="' in text or "style='" in text:
+                  failures.append(f'{path}: inline style attribute string')
+              if '.style.' in text:
+                  failures.append(f'{path}: direct element.style mutation')
+          if failures:
+              raise SystemExit('\n'.join(failures))
+          app=Path('public/app.js').read_text(encoding='utf-8')
+          core=Path('public/product-builder-core.js').read_text(encoding='utf-8')
+          css=Path('public/styles.css').read_text(encoding='utf-8')
+          builder_css=Path('public/product-builder.css').read_text(encoding='utf-8')
+          headers=Path('public/_headers').read_text(encoding='utf-8')
+          assert 'csp-progress' in app
+          assert 'clipboard-fallback' in app
+          assert 'builder-card-progress' in core
+          assert '.csp-progress' in css and '.clipboard-fallback' in css
+          assert '.builder-card-progress' in builder_css
+          assert "style-src 'self'" in headers
+          assert "'unsafe-inline'" not in headers
+          print('No JavaScript-created inline styles; strict style-src self remains enforced.')
           PY
-          node --check public/app.js
-          ! grep -q 'style="width:' public/app.js
-          ! grep -q '\.style\.' public/app.js
-          grep -q 'csp-progress' public/styles.css
-          grep -q 'clipboard-fallback' public/styles.css
-      - name: Commit application CSP fix
+      - name: Common secret scan
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/app.js public/styles.css
-          git commit -m 'Remove remaining inline styles blocked by CSP'
-          git push origin HEAD:${{ github.head_ref }}
+          if grep -RInE '(sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' public --exclude='*.svg'; then
+            echo 'Potential secret found.' >&2
+            exit 1
+          fi
