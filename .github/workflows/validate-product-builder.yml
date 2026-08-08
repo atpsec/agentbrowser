@@ -1,0 +1,87 @@
+name: Validate product builder
+
+on:
+  push:
+    branches:
+      - agent/product-builder-map
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-builder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript and JSON syntax
+        run: |
+          node --check public/product-builder.js
+          node -e "JSON.parse(require('fs').readFileSync('public/data/build-blueprints.json','utf8')); console.log('blueprints json ok')"
+      - name: Validate product blueprint coverage
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('public/data/build-blueprints.json').read_text(encoding='utf-8'))
+          assert data['version'] == 1
+          assert len(data['blueprints']) >= 1
+          bp = data['blueprints'][0]
+          assert bp['id'] == 'language-learning-saas'
+          assert len(bp['stages']) == 14, len(bp['stages'])
+          assert len(bp['architecture']) >= 10
+          assert len(bp['tables']) >= 10
+          assert {'minimum','balanced','pro'} == set(data['toolProfiles'])
+          required_stage = {'id','number','title','owner','tools','goal','tasks','done'}
+          ids = set()
+          for stage in bp['stages']:
+              assert required_stage <= set(stage)
+              assert stage['id'] not in ids
+              ids.add(stage['id'])
+              assert stage['tasks'] and stage['done'] and stage['tools']
+              for tool in stage['tools']:
+                  assert tool in data['tools'], (stage['id'], tool)
+          for node in bp['architecture']:
+              assert node['tool'] in data['tools']
+          for key, tool in data['tools'].items():
+              assert tool['official'].startswith('https://'), key
+          print('14 stages, architecture, tables and tool references verified.')
+          PY
+      - name: Security boundary checks
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          js = Path('public/product-builder.js').read_text(encoding='utf-8')
+          html = Path('public/index.html').read_text(encoding='utf-8')
+          headers = Path('public/_headers').read_text(encoding='utf-8')
+          wrangler = Path('wrangler.jsonc').read_text(encoding='utf-8')
+          forbidden = ['eval(', 'new Function(', 'document.write(', ' onerror=', 'innerHTML = location', 'localStorage.setItem(\"token\"']
+          for value in forbidden:
+              assert value not in js, value
+          assert 'product-builder.css' in html
+          assert 'product-builder.js' in html
+          assert "script-src 'self'" in headers
+          assert "connect-src 'self'" in headers
+          assert "frame-ancestors 'none'" in headers
+          assert "object-src 'none'" in headers
+          assert '"directory": "./public"' in wrangler
+          print('CSP, script boundaries and deployment scope verified.')
+          PY
+          if grep -RInE '(sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' public --exclude='*.svg'; then
+            echo 'Potential secret found.' >&2
+            exit 1
+          fi
+      - name: HTTP smoke test
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/builder-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid' EXIT
+          sleep 2
+          curl --fail --silent http://127.0.0.1:8080/ | grep --quiet 'product-builder.js'
+          curl --fail --silent http://127.0.0.1:8080/data/build-blueprints.json | grep --quiet 'language-learning-saas'
+          curl --fail --silent http://127.0.0.1:8080/product-builder.js | grep --quiet 'initProductBuilder'
