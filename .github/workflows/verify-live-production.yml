@@ -13,12 +13,17 @@ on:
       - '.github/workflows/verify-live-production.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-live:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout verification branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/product-playbooks
+
       - name: Wait for Cloudflare and verify production
         shell: bash
         run: |
@@ -86,4 +91,28 @@ jobs:
             exit 1
           fi
 
+          cp /tmp/index.headers.lower /tmp/verified-headers.txt
           echo 'Live production content, assets, security headers and repository isolation verified.'
+
+      - name: Record successful production verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          verified_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          cat > LIVE_PRODUCTION_VERIFIED.md <<EOF
+          # Live production verification
+
+          - Status: PASS
+          - Verified at: ${verified_at}
+          - Production commit: 02ce96e99b0263f4c709e0d190ae54ed4afc97dc
+          - URL: https://agentbrowser.tpberg3tp.workers.dev
+          - Product journeys: 18
+          - Routes: service, SaaS, open source, custom enterprise
+          - Security headers: CSP, nosniff, DENY framing, referrer policy, permissions policy
+          - Repository metadata leak probe: PASS
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add LIVE_PRODUCTION_VERIFIED.md
+          git commit -m 'record successful live production verification'
+          git push origin HEAD:agent/product-playbooks
