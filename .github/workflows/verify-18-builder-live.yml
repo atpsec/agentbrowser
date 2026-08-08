@@ -55,7 +55,7 @@ jobs:
           print('18/18 live product blueprints verified.')
           PY
 
-          grep -q 'openProductBuilder' /tmp/product-builder.js
+          grep -q 'BUILDER_STORAGE' /tmp/product-builder.js
           grep -q 'builder-section' /tmp/product-builder.css
           tr -d '\r' < /tmp/index.headers | tr '[:upper:]' '[:lower:]' > /tmp/index.headers.lower
           grep -q '^content-security-policy:' /tmp/index.headers.lower
