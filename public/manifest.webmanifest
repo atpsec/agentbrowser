@@ -15,6 +15,7 @@
     {"name":"Oluştur","short_name":"Oluştur","url":"/studio/?mode=simple"},
     {"name":"Öğren","short_name":"Öğren","url":"/learn/"},
     {"name":"Hesabım","short_name":"Hesabım","url":"/account/"},
+    {"name":"Günlük Merkez","short_name":"Günlük","url":"/gunluk/"},
     {"name":"PDF Araçları","short_name":"PDF","url":"/easy/pdf/"},
     {"name":"Fotoğraf Stüdyosu","short_name":"Foto","url":"/easy/photo-studio/"},
     {"name":"QR Oluşturucu","short_name":"QR","url":"/easy/qr/"}
