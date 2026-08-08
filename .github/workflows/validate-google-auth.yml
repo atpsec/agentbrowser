@@ -13,7 +13,7 @@ on:
       - 'docs/google-auth-v1.md'
       - '.github/workflows/validate-google-auth.yml'
   push:
-    branches: [main, 'feature/google-auth-v1']
+    branches: [main, 'feature/google-auth-no-session-secret']
 
 permissions:
   contents: read
@@ -34,6 +34,7 @@ jobs:
           node --check public/account/account.js
           grep -q '"main": "./src/worker.js"' wrangler.jsonc
           grep -q '"run_worker_first": \["/api/auth/\*"\]' wrangler.jsonc
+          grep -q '265960154359-tkobbesdv88ujlnfimdild31vk5pgv2c.apps.googleusercontent.com' wrangler.jsonc
           grep -q "__Host-aip_session" src/worker.js
           grep -q 'HttpOnly' src/worker.js
           grep -q 'SameSite=Lax' src/worker.js
@@ -42,14 +43,17 @@ jobs:
           grep -q "payload.email_verified!==true" src/worker.js
           grep -q "RSASSA-PKCS1-v1_5" src/worker.js
           grep -q "www.googleapis.com/oauth2/v3/certs" src/worker.js
+          grep -q "await verifyGoogle(token,env.GOOGLE_CLIENT_ID)" src/worker.js
+          ! grep -q 'SESSION_SECRET' src/worker.js wrangler.jsonc
           grep -q "use_fedcm_for_button:true" public/login/login.js
           grep -q "https://accounts.google.com/gsi/client" public/_headers
           ! grep -R -n -E 'GOOGLE_CLIENT_SECRET|client_secret|AIza[0-9A-Za-z_-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY' src public/login public/account docs/google-auth-v1.md
           ! grep -R -n -E 'localStorage.*credential|localStorage.*token|sessionStorage.*credential|sessionStorage.*token' public/login public/account
-      - name: Exercise fail-closed auth API
+      - name: Exercise auth API boundaries
         run: |
           node --input-type=module <<'NODE'
           import worker from './src/worker.js';
+          globalThis.caches={default:{match:async()=>null,put:async()=>{}}};
           const assets={fetch:()=>new Response('asset')};
           let r=await worker.fetch(new Request('https://example.test/api/auth/config'),{ASSETS:assets});
           if(!r.ok) throw new Error('config failed');
@@ -57,12 +61,12 @@ jobs:
           if(d.googleEnabled!==false||d.googleClientId!==null||!d.csrf) throw new Error('disabled config must fail closed');
           let cookie=r.headers.get('set-cookie')||'';
           if(!cookie.includes('__Host-aip_csrf=')||!cookie.includes('Secure')||!cookie.includes('SameSite=Lax')||cookie.includes('HttpOnly')) throw new Error('CSRF cookie contract failed');
-          r=await worker.fetch(new Request('https://example.test/api/auth/config'),{ASSETS:assets,GOOGLE_CLIENT_ID:'test.apps.googleusercontent.com',SESSION_SECRET:'unit-test-secret-not-production'});
+          r=await worker.fetch(new Request('https://example.test/api/auth/config'),{ASSETS:assets,GOOGLE_CLIENT_ID:'test.apps.googleusercontent.com'});
           d=await r.json();
           if(d.googleEnabled!==true||d.googleClientId!=='test.apps.googleusercontent.com') throw new Error('enabled config failed');
-          r=await worker.fetch(new Request('https://example.test/api/auth/session'),{ASSETS:assets,SESSION_SECRET:'unit-test-secret-not-production'});
+          r=await worker.fetch(new Request('https://example.test/api/auth/session'),{ASSETS:assets,GOOGLE_CLIENT_ID:'test.apps.googleusercontent.com'});
           if(r.status!==401) throw new Error('anonymous session must be 401');
-          r=await worker.fetch(new Request('https://example.test/api/auth/google',{method:'POST',headers:{origin:'https://example.test','content-type':'application/json','x-csrf-token':'wrong'},body:'{"credential":"x"}'}),{ASSETS:assets,GOOGLE_CLIENT_ID:'test.apps.googleusercontent.com',SESSION_SECRET:'unit-test-secret-not-production'});
+          r=await worker.fetch(new Request('https://example.test/api/auth/google',{method:'POST',headers:{origin:'https://example.test','content-type':'application/json','x-csrf-token':'wrong'},body:'{"credential":"x"}'}),{ASSETS:assets,GOOGLE_CLIENT_ID:'test.apps.googleusercontent.com'});
           if(r.status!==403) throw new Error('bad csrf must be blocked before token verification');
-          console.log('Google auth fail-closed API contracts PASS');
+          console.log('Google auth API contracts PASS');
           NODE
