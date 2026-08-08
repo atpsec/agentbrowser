@@ -2,7 +2,7 @@
   "id": "/",
   "name": "AI Pusula",
   "short_name": "AI Pusula",
-  "description": "Yapay zekâyı öğren, doğru aracı seç, güvenli ürün geliştir, 18 canlı aracı ve AI Pusula Çocuk'u kullan.",
+  "description": "Yapay zekâyı öğren, güvenli ürün geliştir, hazır uygulamaları kullan ve AI Pusula Studio ile kendi aracını üret.",
   "start_url": "/apps/",
   "scope": "/",
   "display": "standalone",
@@ -10,14 +10,10 @@
   "theme_color": "#f6f1e8",
   "categories": ["productivity", "education", "utilities"],
   "icons": [
-    {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    {"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
   ],
   "shortcuts": [
+    {"name":"AI Pusula Studio","short_name":"Studio","url":"/studio/"},
     {"name":"AI Pusula Çocuk","short_name":"Çocuk","url":"/kids/"},
     {"name":"Phishing Açıklayıcı","short_name":"Phishing","url":"/apps/?app=phishing-explainer"},
     {"name":"CVE Önceliklendirici","short_name":"CVE","url":"/apps/?app=cve-prioritizer"},
