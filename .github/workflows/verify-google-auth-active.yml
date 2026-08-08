@@ -1,0 +1,49 @@
+name: Verify Google auth active
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for production deployment
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          for i in $(seq 1 30); do
+            cfg=$(curl -fsS "$base/api/auth/config" || true)
+            if printf '%s' "$cfg" | grep -q '265960154359-tkobbesdv88ujlnfimdild31vk5pgv2c.apps.googleusercontent.com'; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'Timed out waiting for Google auth activation' >&2
+          exit 1
+      - name: Verify live auth boundaries
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          curl -fsS -D /tmp/cfg.headers "$base/api/auth/config" -o /tmp/cfg.json
+          node - <<'NODE'
+          const fs=require('fs');const c=JSON.parse(fs.readFileSync('/tmp/cfg.json','utf8'));
+          if(c.googleEnabled!==true)throw new Error('googleEnabled is not true');
+          if(c.googleClientId!=='265960154359-tkobbesdv88ujlnfimdild31vk5pgv2c.apps.googleusercontent.com')throw new Error('client id mismatch');
+          if(!c.csrf)throw new Error('csrf missing');
+          NODE
+          grep -i -q '__Host-aip_csrf=' /tmp/cfg.headers
+          grep -i -q 'Secure' /tmp/cfg.headers
+          code=$(curl -sS -o /tmp/session.json -w '%{http_code}' "$base/api/auth/session")
+          test "$code" = '401'
+          code=$(curl -sS -o /tmp/google.json -w '%{http_code}' -X POST "$base/api/auth/google" -H 'Origin: https://agentbrowser.tpberg3tp.workers.dev' -H 'Content-Type: application/json' -H 'X-CSRF-Token: wrong' --data '{"credential":"x"}')
+          test "$code" = '403'
+          curl -fsSI "$base/login/" >/tmp/login.headers
+          grep -i -q 'cross-origin-opener-policy: same-origin-allow-popups' /tmp/login.headers
+          grep -i -q "content-security-policy:.*https://accounts.google.com/gsi/client" /tmp/login.headers
+          grep -i -q "content-security-policy:.*frame-ancestors 'none'" /tmp/login.headers
+          echo 'Google auth production activation PASS'
