@@ -95,6 +95,7 @@ jobs:
           page.on('request',r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())});
           await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
           if(await page.locator('[data-kids-hub]').count()!==1) throw new Error('Home kids entry missing');
+          external.length=0;
           await page.goto('http://127.0.0.1:8080/kids/',{waitUntil:'networkidle'});
           if(await page.locator('.module').count()!==13) throw new Error('Expected 13 kids modules');
           await page.click('#learnRun'); if(!(await page.textContent('#learnOut')).includes('Kara delik')) throw new Error('Learn failed');
