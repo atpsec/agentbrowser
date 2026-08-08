@@ -1,0 +1,85 @@
+name: Build mobile Android apps
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - 'public/easy/**'
+      - 'public/vendor/**'
+      - '.github/workflows/build-mobile-android.yml'
+  push:
+    branches: [main, 'feature/mobile-factory']
+    paths:
+      - 'mobile/**'
+      - 'public/easy/**'
+      - 'public/vendor/**'
+      - '.github/workflows/build-mobile-android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate mobile factory
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run validate
+          for product in ai-pusula-tools photofix pdf-toolbox qr-maker; do
+            MOBILE_PRODUCT="$product" npm run prepare:web
+            MOBILE_PRODUCT="$product" npm run configure
+            test -f www/index.html
+            test -f .selected-product.json
+            ! grep -R -n -E 'sk-[A-Za-z0-9]|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' . --exclude-dir=node_modules --exclude=package-lock.json
+          done
+
+  android-debug:
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [ai-pusula-tools, photofix, pdf-toolbox, qr-maker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install Capacitor dependencies
+        working-directory: mobile
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Generate native Android project
+        working-directory: mobile
+        env:
+          MOBILE_PRODUCT: ${{ matrix.product }}
+        run: npm run android:prepare
+      - name: Build debug APK
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Verify APK
+        working-directory: mobile
+        env:
+          MOBILE_PRODUCT: ${{ matrix.product }}
+        run: |
+          set -euo pipefail
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          node -e "const p=require('./.selected-product.json'); if(p.id!==process.env.MOBILE_PRODUCT) process.exit(1); console.log(p.appName,p.appId)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ matrix.product }}-debug
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
