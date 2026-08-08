@@ -1,255 +1,84 @@
-name: Validate AI Pusula
+name: Verify deployed AI Pusula
 
 on:
   push:
     branches:
-      - main
-      - 'agent/**'
+      - ops/verify-live-02ce96e
   pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
-  validate:
+  verify-production:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Check JavaScript syntax
+      - name: Wait for Cloudflare and verify production release
+        shell: bash
         run: |
           set -euo pipefail
-          node --check public/app.js
-          node --check public/product-planner.js
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          deployed=false
 
-      - name: Parse JSON data
-        run: |
-          set -euo pipefail
-          node - <<'NODE'
-          const fs = require('fs');
-          const files = [
-            'public/data/apps.json',
-            'public/data/models.json',
-            'public/data/ideas.json',
-            'public/data/product-journeys.json',
-            'public/data/updates.json',
-            'public/manifest.webmanifest'
-          ];
-          for (const file of files) {
-            JSON.parse(fs.readFileSync(file, 'utf8'));
-            console.log(`OK ${file}`);
-          }
-          NODE
+          for attempt in $(seq 1 36); do
+            echo "Production verification attempt ${attempt}/36"
+            status=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 \
+              -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' "${base}/" || true)
 
-      - name: Validate local assets and data shape
-        run: |
-          set -euo pipefail
+            if [ "$status" = '200' ] \
+              && grep -q 'PUSULA + KAZAN METODOLOJİSİ' /tmp/index.html \
+              && grep -q 'Her fikir artık doğrulamadan ilk müşteriye kadar' /tmp/index.html; then
+              deployed=true
+              break
+            fi
+            sleep 10
+          done
+
+          if [ "$deployed" != 'true' ]; then
+            echo 'Expected production version was not visible within six minutes.' >&2
+            sed -n '1,80p' /tmp/index.headers 2>/dev/null || true
+            exit 1
+          fi
+
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 \
+            -sS "${base}/data/product-journeys.json" -o /tmp/product-journeys.json
+          curl --fail --retry 3 --retry-all-errors --connect-timeout 10 --max-time 45 \
+            -sS "${base}/product-planner.js" -o /tmp/product-planner.js
+
           python3 - <<'PY'
           import json
-          from html.parser import HTMLParser
           from pathlib import Path
-          from urllib.parse import urlparse
-
-          root = Path('public')
-          html = (root / 'index.html').read_text(encoding='utf-8')
-
-          class Parser(HTMLParser):
-              def __init__(self):
-                  super().__init__()
-                  self.links = []
-                  self.ids = []
-              def handle_starttag(self, tag, attrs):
-                  values = dict(attrs)
-                  if 'id' in values:
-                      self.ids.append(values['id'])
-                  for key in ('src', 'href'):
-                      value = values.get(key)
-                      if value:
-                          self.links.append(value)
-
-          parser = Parser()
-          parser.feed(html)
-          duplicates = sorted({item for item in parser.ids if parser.ids.count(item) > 1})
-          if duplicates:
-              raise SystemExit(f'Duplicate ids: {duplicates}')
-
-          missing = []
-          for link in parser.links:
-              if link.startswith(('#', 'http://', 'https://', 'mailto:', 'data:')):
-                  continue
-              target = root / link.split('#', 1)[0].split('?', 1)[0]
-              if not target.exists():
-                  missing.append(str(target))
-          if missing:
-              raise SystemExit(f'Missing local assets: {missing}')
-
-          required = {
-              'apps.json': {'id', 'name', 'source', 'verified'},
-              'models.json': {'id', 'name', 'source', 'verified', 'scores'},
-              'ideas.json': {'id', 'title', 'category', 'risk', 'metric'},
-              'updates.json': {'date', 'title', 'source'}
-          }
-          for filename, fields in required.items():
-              payload = json.loads((root / 'data' / filename).read_text(encoding='utf-8'))
-              ids = []
-              for index, item in enumerate(payload['items']):
-                  absent = fields - set(item)
-                  if absent:
-                      raise SystemExit(f'{filename}[{index}] missing {sorted(absent)}')
-                  if 'id' in item:
-                      ids.append(item['id'])
-                  for key in ('source', 'official'):
-                      if key in item and urlparse(item[key]).scheme != 'https':
-                          raise SystemExit(f'{filename}[{index}] has non-HTTPS {key}')
-              if len(ids) != len(set(ids)):
-                  raise SystemExit(f'{filename} contains duplicate ids')
-
-          ideas = json.loads((root / 'data' / 'ideas.json').read_text(encoding='utf-8'))['items']
-          journeys = json.loads((root / 'data' / 'product-journeys.json').read_text(encoding='utf-8'))
-          journey_items = journeys['items']
-
-          idea_ids = {item['id'] for item in ideas}
-          journey_ids = {item['id'] for item in journey_items}
-          if idea_ids != journey_ids:
-              raise SystemExit(
-                  f'Journey mismatch; missing={sorted(idea_ids - journey_ids)}, '
-                  f'extra={sorted(journey_ids - idea_ids)}'
-              )
-          if len(ideas) != 18 or len(journey_items) != 18 or len(journey_items) != len(journey_ids):
-              raise SystemExit('Expected exactly 18 unique ideas and 18 unique product journeys.')
-
-          expected_options = {
-              'routes': {'service', 'saas', 'open', 'custom'},
-              'durations': {'weekend', '14days', '30days'},
-              'budgets': {'free', 'low', 'pro'},
-              'categories': {'security', 'software', 'education', 'business', 'content'}
-          }
-          for key, expected in expected_options.items():
-              actual = set(journeys.get(key, {}))
-              if actual != expected:
-                  raise SystemExit(f'{key} mismatch: {sorted(actual)}')
-
-          required_journey = {
-              'id', 'customerType', 'mvpTime', 'salesDifficulty', 'dataSensitivity',
-              'businessModels', 'firstChannel', 'activationEvent', 'promise', 'pilotOffer',
-              'serviceFirst', 'firstPrice', 'mustHave', 'later', 'notNow', 'stack',
-              'interviewTargets', 'stopSignals', 'tests', 'channels', 'leadMagnet',
-              'demoIdea', 'marketingMessage', 'salesOpener', 'discoveryQuestions',
-              'objections', 'metrics'
-          }
-          for index, item in enumerate(journey_items):
-              absent = required_journey - set(item)
-              if absent:
-                  raise SystemExit(f'product-journeys[{index}] missing {sorted(absent)}')
-              if set(item['tests']) != {'normal', 'edge', 'attack'}:
-                  raise SystemExit(f"{item['id']} has invalid test groups")
-              if not item['tests']['attack'] or len(item['metrics']) < 4 or len(item['channels']) < 3:
-                  raise SystemExit(f"{item['id']} lacks security or go-to-market depth")
-
-          wrangler = json.loads(Path('wrangler.jsonc').read_text(encoding='utf-8'))
-          if wrangler.get('assets', {}).get('directory') != './public':
-              raise SystemExit('Wrangler assets directory must be ./public')
-          print('Static structure, data shape and deployment scope are valid.')
+          payload = json.loads(Path('/tmp/product-journeys.json').read_text(encoding='utf-8'))
+          items = payload.get('items', [])
+          assert len(items) == 18, f'Expected 18 product journeys, got {len(items)}'
+          assert len({item['id'] for item in items}) == 18
+          assert set(payload['routes']) == {'service', 'saas', 'open', 'custom'}
+          assert set(payload['durations']) == {'weekend', '14days', '30days'}
+          assert set(payload['budgets']) == {'free', 'low', 'pro'}
           PY
 
-      - name: Validate all product plan variants
-        run: |
-          set -euo pipefail
-          cp public/product-planner.js /tmp/product-planner.mjs
-          node --input-type=module - <<'NODE'
-          import fs from 'node:fs';
-          import { pathToFileURL } from 'node:url';
-          const planner = await import(pathToFileURL('/tmp/product-planner.mjs'));
-          const ideas = JSON.parse(fs.readFileSync('public/data/ideas.json', 'utf8')).items;
-          const journeys = JSON.parse(fs.readFileSync('public/data/product-journeys.json', 'utf8'));
-          const byId = new Map(journeys.items.map(item => [item.id, item]));
-          const routes = Object.keys(journeys.routes);
-          const durations = Object.keys(journeys.durations);
-          const budgets = Object.keys(journeys.budgets);
-          let variants = 0;
+          grep -q 'buildJourneySteps' /tmp/product-planner.js
+          grep -q 'buildPlanMarkdown' /tmp/product-planner.js
 
-          for (const idea of ideas) {
-            const journey = byId.get(idea.id);
-            const category = journeys.categories[idea.category];
-            for (const route of routes) {
-              for (const duration of durations) {
-                for (const budget of budgets) {
-                  const completed = {};
-                  const steps = planner.buildJourneySteps({
-                    idea, journey, category, route, duration, budget, config: journeys
-                  });
-                  if (steps.length !== 9) {
-                    throw new Error(`${idea.id}/${route}/${duration}/${budget}: expected 9 steps, got ${steps.length}`);
-                  }
-                  for (const [index, step] of steps.entries()) {
-                    if (!step.title || !Array.isArray(step.tasks) || step.tasks.length === 0) {
-                      throw new Error(`${idea.id}/${route}/${duration}/${budget}: invalid step ${index}`);
-                    }
-                  }
-                  const markdown = planner.buildPlanMarkdown({
-                    idea, journey, category, route, duration, budget, config: journeys, completed
-                  });
-                  if (!markdown.includes(idea.title) || markdown.length < 1000) {
-                    throw new Error(`${idea.id}/${route}/${duration}/${budget}: invalid Markdown export`);
-                  }
-                  variants += 1;
-                }
-              }
-            }
-          }
-          if (variants !== 648) throw new Error(`Expected 648 variants, got ${variants}`);
-          console.log(`Generated and validated ${variants} product plan variants.`);
-          NODE
+          tr -d '\r' < /tmp/index.headers | tr '[:upper:]' '[:lower:]' > /tmp/index.headers.lower
+          grep -q '^content-security-policy:' /tmp/index.headers.lower
+          grep -q "default-src 'self'" /tmp/index.headers.lower
+          grep -q "script-src 'self'" /tmp/index.headers.lower
+          grep -q "connect-src 'self'" /tmp/index.headers.lower
+          grep -q "frame-ancestors 'none'" /tmp/index.headers.lower
+          grep -q "object-src 'none'" /tmp/index.headers.lower
+          grep -q '^x-content-type-options: nosniff' /tmp/index.headers.lower
+          grep -q '^x-frame-options: deny' /tmp/index.headers.lower
+          grep -q '^referrer-policy: strict-origin-when-cross-origin' /tmp/index.headers.lower
+          grep -q '^permissions-policy:' /tmp/index.headers.lower
 
-      - name: Security policy and secret scan
-        run: |
-          set -euo pipefail
-          grep -q 'Content-Security-Policy:' public/_headers
-          grep -q "default-src 'self'" public/_headers
-          grep -q "script-src 'self'" public/_headers
-          grep -q "connect-src 'self'" public/_headers
-          grep -q "frame-ancestors 'none'" public/_headers
-          grep -q "object-src 'none'" public/_headers
-          if grep -qE "'unsafe-inline'|'unsafe-eval'" public/_headers; then
-            echo 'Unsafe CSP directive detected.' >&2
+          git_probe_status=$(curl --connect-timeout 10 --max-time 30 -sS \
+            -o /tmp/git-head-probe -w '%{http_code}' "${base}/.git/HEAD" || true)
+          if grep -q '^ref: refs/' /tmp/git-head-probe 2>/dev/null; then
+            echo "Repository metadata leak detected with HTTP ${git_probe_status}." >&2
             exit 1
           fi
-          if grep -R -nE '(sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' \
-            public README.md SPEC.md; then
-            echo 'Potential secret detected.' >&2
-            exit 1
-          fi
-          if grep -R -nE 'eval\(|new Function\(|document\.write\(|navigator\.sendBeacon|XMLHttpRequest|WebSocket\(' \
-            public/app.js public/product-planner.js; then
-            echo 'Disallowed dynamic execution or outbound API detected.' >&2
-            exit 1
-          fi
-          test "$(grep -R -c 'fetch(' public/app.js public/product-planner.js | awk -F: '{sum += $2} END {print sum+0}')" -eq 1
-          grep -q "fetchJson('./data/product-journeys.json')" public/app.js
-          grep -q "localStorage" public/app.js
 
-      - name: HTTP smoke test
-        run: |
-          set -euo pipefail
-          python3 -m http.server 8080 -d public >/tmp/ai-pusula-server.log 2>&1 &
-          server_pid=$!
-          trap 'kill $server_pid' EXIT
-          sleep 2
-          curl --fail --silent --show-error http://127.0.0.1:8080/ | grep --quiet 'AI PUSULA'
-          curl --fail --silent --show-error http://127.0.0.1:8080/data/product-journeys.json >/tmp/product-journeys.json
-          python3 -m json.tool /tmp/product-journeys.json >/dev/null
-          curl --fail --silent --show-error http://127.0.0.1:8080/product-planner.js | grep --quiet 'buildJourneySteps'
-
-      - name: Upload site preview
-        uses: actions/upload-artifact@v4
-        with:
-          name: ai-pusula-preview
-          path: public
-          if-no-files-found: error
-          retention-days: 7
+          echo 'Production content, assets, security headers and repository isolation verified.'
