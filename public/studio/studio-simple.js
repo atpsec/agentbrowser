@@ -7,6 +7,7 @@ const familyLabel=id=>families.find(f=>f.id===id)?.label||id;
 const params=new URLSearchParams(location.search);
 let mode=params.get('mode')==='advanced'?'advanced':'simple';
 let selected=null;
+let previewHome=null;
 
 const familyHints={
   web:['site','web','portfoy','cv','landing','menu','etkinlik','sayfa','katalog','kampanya'],
@@ -40,9 +41,14 @@ function setNav(){
   const nav=$('.topbar nav');if(nav){nav.className='studio-experience-nav';nav.innerHTML='<a href="/use/">Kullan</a><a href="/studio/?mode=simple" aria-current="page">Oluştur</a><a href="/learn/">Öğren</a><a href="/account/">Hesabım</a>'}
   const brand=$('.topbar .brand');if(brand)brand.href='/';
 }
-function modeUrl(next){const url=new URL(location.href);url.searchParams.set('mode',next);return url.pathname+url.search+url.hash}
+function placePreview(next){
+  const preview=$('#preview');if(!preview)return;
+  if(next==='simple')$('#simplePreviewWrap')?.append(preview);
+  else previewHome?.append(preview);
+}
 function setMode(next,{push=true}={}){
   mode=next;document.body.classList.toggle('studio-simple-mode',next==='simple');document.body.classList.toggle('studio-advanced-mode',next==='advanced');
+  placePreview(next);
   $$('[data-studio-mode]').forEach(b=>b.classList.toggle('is-active',b.dataset.studioMode===next));
   if(push){const url=new URL(location.href);url.searchParams.set('mode',next);history.replaceState({},'',url)}
 }
@@ -50,7 +56,6 @@ function progress(step){
   const labels=['Fikir','Oluştur','Test et','Kullan'];
   $$('.experience-progress span').forEach((el,i)=>{el.classList.toggle('is-done',i<step);el.classList.toggle('is-active',i===step);el.textContent=labels[i]});
 }
-function staticButton(text,attrs={}){const b=document.createElement('button');b.type='button';b.textContent=text;Object.assign(b.dataset,attrs);return b}
 
 function renderRecommendations(raw){
   const box=$('#simpleRecommendations');box.replaceChildren();const picks=recommend(raw);
@@ -76,8 +81,7 @@ function applyToEngine(){
   const purpose=$('#simpleOutcome').value.trim()||`${title} için çalışan küçük bir uygulama oluştur.`;
   $('#projectTitle').value=title;$('#audience').value=audience;$('#purpose').value=purpose;
   const radio=$(`input[name="family"][value="${selected?.family||'tool'}"]`);if(radio){radio.checked=true;radio.dispatchEvent(new Event('change',{bubbles:true}))}
-  progress(2);$('#buildButton').click();
-  window.setTimeout(showReady,80);
+  progress(2);$('#buildButton').click();window.setTimeout(showReady,80);
 }
 function showReady(){
   const ready=$('#simpleReady');ready.hidden=false;
@@ -117,7 +121,7 @@ function buildSimpleUI(){
       </article>
     </div>`;
   hero?.after(section);
-  const preview=$('#preview');if(preview)$('#simplePreviewWrap').append(preview);
+  const preview=$('#preview');if(preview)previewHome=preview.parentElement;
   const advancedBar=document.createElement('div');advancedBar.className='mode-bar-advanced';advancedBar.innerHTML='<div class="experience-mode-switch" aria-label="Studio modu"><button type="button" data-studio-mode="simple">Basit mod</button><button type="button" data-studio-mode="advanced">Gelişmiş mod</button></div>';$('.hero')?.before(advancedBar);
 }
 
