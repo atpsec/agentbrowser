@@ -1,0 +1,71 @@
+name: E2E product builder
+
+on:
+  push:
+    branches:
+      - agent/product-builder-map
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright for test runner
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Run local site
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/ai-pusula-builder.log 2>&1 &
+          echo $! > /tmp/server.pid
+          sleep 2
+      - name: Verify interactive builder
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+          const failures = [];
+          page.on('pageerror', error => failures.push(`pageerror: ${error.message}`));
+          page.on('console', message => { if (message.type() === 'error') failures.push(`console: ${message.text()}`); });
+          await page.goto('http://127.0.0.1:8080/', { waitUntil: 'networkidle' });
+          await page.locator('#product-builder').waitFor({ state: 'visible' });
+          await page.locator('[data-builder-open]').click();
+          await page.locator('#builderDialog[open]').waitFor();
+          const title = await page.locator('#builderMain h2').first().textContent();
+          if (!title?.includes('Dil Öğrenme')) throw new Error(`Unexpected builder title: ${title}`);
+          if (await page.locator('[data-arch-node]').count() < 10) throw new Error('Expected at least 10 architecture nodes');
+          await page.locator('[data-builder-tab="stages"]').click();
+          if (await page.locator('[data-builder-stage]').count() !== 14) throw new Error('Expected exactly 14 build stages');
+          const before = await page.locator('.builder-progress-card strong').textContent();
+          await page.locator('[data-builder-task]').first().check();
+          const after = await page.locator('.builder-progress-card strong').textContent();
+          if (before === after) throw new Error('Progress did not update after task completion');
+          await page.locator('#builderProfile').selectOption('pro');
+          await page.locator('[data-builder-tab="tools"]').click();
+          if (await page.locator('.builder-tool-card').count() < 8) throw new Error('Professional tool profile is incomplete');
+          await page.locator('[data-builder-tab="database"]').click();
+          if (await page.locator('[data-db-table]').count() < 10) throw new Error('Database explorer is incomplete');
+          await page.reload({ waitUntil: 'networkidle' });
+          await page.locator('[data-builder-open]').click();
+          await page.locator('[data-builder-tab="stages"]').click();
+          if (!(await page.locator('[data-builder-task]').first().isChecked())) throw new Error('Task progress did not persist');
+          await page.setViewportSize({ width: 390, height: 844 });
+          const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+          if (overflow > 2) throw new Error(`Mobile horizontal overflow: ${overflow}px`);
+          if (failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log('Interactive builder browser smoke test passed.');
+          NODE
+      - name: Stop server
+        if: always()
+        run: kill $(cat /tmp/server.pid) 2>/dev/null || true

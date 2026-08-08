@@ -1,0 +1,198 @@
+{
+  "version": 1,
+  "verified": "2026-08-08",
+  "toolProfiles": {
+    "minimum": {
+      "label": "Minimum çaba",
+      "summary": "Tek kişinin en az entegrasyonla profesyonel MVP çıkarması için.",
+      "tools": ["nextjs", "supabase", "gemini", "stripe", "resend", "posthog", "cloudflare"]
+    },
+    "balanced": {
+      "label": "Dengeli profesyonel",
+      "summary": "Kontrol, güvenlik ve geliştirme kolaylığı arasında denge.",
+      "tools": ["nextjs", "clerk", "supabase", "openai", "stripe", "resend", "posthog", "sentry", "cloudflare", "github-actions"]
+    },
+    "pro": {
+      "label": "Profesyonel ölçek",
+      "summary": "Yetki ayrımı, gözlemlenebilirlik ve operasyon katmanı daha güçlü.",
+      "tools": ["nextjs", "clerk", "supabase", "openai", "stripe", "resend", "posthog", "sentry", "cloudflare", "github-actions", "r2"]
+    }
+  },
+  "tools": {
+    "nextjs": {
+      "name": "Next.js",
+      "slug": "nextdotjs",
+      "kind": "Frontend + full-stack web",
+      "ai": "AI kodlama araçlarıyla çok verimli çalışır; kendisi bir AI ürünü değildir.",
+      "why": "Kullanıcı arayüzü, routing, server actions ve web uygulaması iskeleti için.",
+      "official": "https://nextjs.org/docs"
+    },
+    "supabase": {
+      "name": "Supabase",
+      "slug": "supabase",
+      "kind": "PostgreSQL + Auth + Storage",
+      "ai": "AI özelliği değil; AI uygulamasının veri ve kullanıcı altyapısını taşır.",
+      "why": "Veritabanı, kullanıcı hesabı, Row Level Security ve dosya saklama için tek servis.",
+      "official": "https://supabase.com/docs"
+    },
+    "clerk": {
+      "name": "Clerk",
+      "slug": "clerk",
+      "kind": "Authentication",
+      "ai": "AI değildir; kullanıcı girişini ve yetkilendirme katmanını hızlandırır.",
+      "why": "Kayıt, giriş, session, sosyal giriş ve rol/organizasyon yönetimi için.",
+      "official": "https://clerk.com/docs"
+    },
+    "openai": {
+      "name": "OpenAI API",
+      "slug": "openai",
+      "kind": "AI model API",
+      "ai": "Doğrudan yapay zekâ katmanıdır.",
+      "why": "Kişisel ders, hata açıklaması, konuşma pratiği ve structured output için.",
+      "official": "https://platform.openai.com/docs"
+    },
+    "gemini": {
+      "name": "Gemini API",
+      "slug": "googlegemini",
+      "kind": "AI model API",
+      "ai": "Doğrudan yapay zekâ katmanıdır.",
+      "why": "Metin, görsel ve multimodal eğitim özellikleri için ekonomik başlangıç seçeneklerinden biri.",
+      "official": "https://ai.google.dev/gemini-api/docs"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "slug": "stripe",
+      "kind": "Ödeme + abonelik",
+      "ai": "AI değildir; SaaS gelir modelini ve abonelik durumunu yönetir.",
+      "why": "Checkout, abonelik, fatura, webhook ve iptal akışları için.",
+      "official": "https://docs.stripe.com/billing/subscriptions/overview"
+    },
+    "resend": {
+      "name": "Resend",
+      "slug": "resend",
+      "kind": "Transactional email",
+      "ai": "AI değildir; doğrulama, hoş geldin ve ürün e-postalarını gönderir.",
+      "why": "Şifre, doğrulama, onboarding ve bildirim e-postaları için.",
+      "official": "https://resend.com/docs"
+    },
+    "posthog": {
+      "name": "PostHog",
+      "slug": "posthog",
+      "kind": "Product analytics",
+      "ai": "AI değildir; kullanıcı davranışını ölçer.",
+      "why": "Aktivasyon, funnel, retention ve feature usage ölçümü için.",
+      "official": "https://posthog.com/docs"
+    },
+    "sentry": {
+      "name": "Sentry",
+      "slug": "sentry",
+      "kind": "Error monitoring",
+      "ai": "AI değildir; production hatalarını ve performans sorunlarını görünür yapar.",
+      "why": "Frontend/backend hata takibi, performans ve release izleme için.",
+      "official": "https://docs.sentry.io/"
+    },
+    "cloudflare": {
+      "name": "Cloudflare Workers",
+      "slug": "cloudflare",
+      "kind": "Hosting + edge backend",
+      "ai": "AI değildir; uygulamanın global yayın ve API katmanını çalıştırabilir.",
+      "why": "Statik asset, serverless API, rate limit ve edge dağıtım için.",
+      "official": "https://developers.cloudflare.com/workers/"
+    },
+    "github-actions": {
+      "name": "GitHub Actions",
+      "slug": "githubactions",
+      "kind": "CI/CD",
+      "ai": "AI değildir; AI tarafından üretilen kodu test ve güvenlik kapılarından geçirir.",
+      "why": "Test, lint, dependency scan ve kontrollü deployment için.",
+      "official": "https://docs.github.com/actions"
+    },
+    "r2": {
+      "name": "Cloudflare R2",
+      "slug": "cloudflare",
+      "kind": "Object storage",
+      "ai": "AI değildir; ses dosyası ve büyük assetleri saklar.",
+      "why": "Kullanıcı ses kayıtları veya ders medyası gibi nesneler için.",
+      "official": "https://developers.cloudflare.com/r2/"
+    },
+    "figma": {
+      "name": "Figma",
+      "slug": "figma",
+      "kind": "UX/UI tasarım",
+      "ai": "AI destekli özellikler kullanabilir; temel görevi ürün tasarımıdır.",
+      "why": "Wireframe, kullanıcı akışı ve tasarım sistemi için.",
+      "official": "https://help.figma.com/"
+    },
+    "cursor": {
+      "name": "Cursor",
+      "slug": "cursor",
+      "kind": "AI kodlama ortamı",
+      "ai": "Doğrudan AI destekli geliştirme aracıdır.",
+      "why": "Dosyalar arası kod üretme, refactor ve hata düzeltme için.",
+      "official": "https://docs.cursor.com/"
+    }
+  },
+  "blueprints": [
+    {
+      "id": "language-learning-saas",
+      "title": "Duolingo benzeri AI Dil Öğrenme SaaS",
+      "subtitle": "Kullanıcı hesabı, dersler, ilerleme, AI öğretmen, abonelik ve admin paneli olan gerçek ürün.",
+      "difficulty": "Orta",
+      "target": "Web SaaS · bireysel kullanıcı",
+      "outcome": "Kullanıcı kayıt olur, seviyesini seçer, ders çözer, AI açıklaması alır, ilerlemesini görür ve ücretli plana geçebilir.",
+      "roles": ["Öğrenci", "İçerik yöneticisi", "Sistem yöneticisi"],
+      "pages": ["Landing page", "Kayıt", "Giriş", "Onboarding", "Dashboard", "Ders", "Soru", "Sonuç", "İlerleme", "Abonelik", "Profil", "Ayarlar", "Admin paneli"],
+      "features": ["Kayıt ve giriş", "Seviye seçimi", "Ders kataloğu", "Soru çözme", "Puan", "Streak", "Hata tekrarları", "AI açıklama", "Kişisel ders", "Abonelik", "Bildirim", "Admin içerik yönetimi"],
+      "aiFeatures": ["Yanlış cevabı çocuk diliyle açıklama", "Kullanıcı seviyesine göre yeni soru üretme", "Kişisel çalışma planı", "Konuşma pratiği için rol oyunu", "Ders zorluğunu adapte etme"],
+      "tables": [
+        {"name":"profiles","purpose":"Kullanıcı profili ve tercihleri","fields":["id","user_id","display_name","native_language","learning_language","level","created_at"],"sensitive":"Orta"},
+        {"name":"courses","purpose":"Dil ve kurs tanımları","fields":["id","title","language","level","is_published"],"sensitive":"Düşük"},
+        {"name":"lessons","purpose":"Kurs içindeki dersler","fields":["id","course_id","title","order_no","content_json"],"sensitive":"Düşük"},
+        {"name":"questions","purpose":"Ders soruları ve cevap anahtarı","fields":["id","lesson_id","type","prompt","answer_json","difficulty"],"sensitive":"Düşük"},
+        {"name":"attempts","purpose":"Kullanıcının soru denemeleri","fields":["id","user_id","question_id","answer","is_correct","score","created_at"],"sensitive":"Orta"},
+        {"name":"user_progress","purpose":"Ders ve kurs ilerlemesi","fields":["user_id","lesson_id","status","score","attempt_count","last_attempt_at"],"sensitive":"Orta"},
+        {"name":"streaks","purpose":"Günlük çalışma serisi","fields":["user_id","current_streak","longest_streak","last_active_date"],"sensitive":"Düşük"},
+        {"name":"subscriptions","purpose":"Uygulama içi yetki için ödeme aynası","fields":["user_id","provider_customer_id","plan","status","current_period_end"],"sensitive":"Yüksek"},
+        {"name":"ai_usage","purpose":"AI maliyet ve kota takibi","fields":["user_id","feature","model","input_units","output_units","created_at"],"sensitive":"Orta"},
+        {"name":"audit_logs","purpose":"Kritik yönetim işlemleri","fields":["id","actor_id","action","resource_type","resource_id","created_at"],"sensitive":"Yüksek"}
+      ],
+      "architecture": [
+        {"id":"ui","label":"FRONTEND","tool":"nextjs","summary":"Kullanıcının gördüğü web uygulaması.","checks":["Responsive", "Loading state", "Form validation", "Accessible navigation"]},
+        {"id":"auth","label":"AUTH","tool":"supabase","alternatives":["clerk"],"summary":"Kayıt, giriş, session ve kullanıcı kimliği.","checks":["Email verification", "Password reset", "Session expiry", "Role checks"]},
+        {"id":"api","label":"BACKEND / API","tool":"cloudflare","summary":"İş kuralları, AI çağrıları ve güvenli server-side işlemler.","checks":["Input validation", "Authorization", "Rate limit", "Structured errors"]},
+        {"id":"db","label":"DATABASE","tool":"supabase","summary":"Kurs, ilerleme, abonelik aynası ve deneme verileri.","checks":["RLS", "Indexes", "Migrations", "Backup plan"]},
+        {"id":"ai","label":"AI TEACHER","tool":"gemini","alternatives":["openai"],"summary":"Kişisel açıklama, soru üretme ve çalışma planı.","checks":["Structured output", "Prompt injection boundary", "Usage quota", "Fallback"]},
+        {"id":"pay","label":"PAYMENT","tool":"stripe","summary":"Ücretli plan ve abonelik yaşam döngüsü.","checks":["Webhook signature", "Idempotency", "Cancel flow", "Failed payment"]},
+        {"id":"mail","label":"EMAIL","tool":"resend","summary":"Hoş geldin, doğrulama ve ürün bildirimleri.","checks":["Verified domain", "Unsubscribe where required", "No secret in client"]},
+        {"id":"analytics","label":"ANALYTICS","tool":"posthog","summary":"Aktivasyon ve retention ölçümü.","checks":["No unnecessary PII", "Consent decision", "Key events"]},
+        {"id":"monitor","label":"MONITORING","tool":"sentry","summary":"Production hata ve performans takibi.","checks":["PII scrubbing", "Release tagging", "Alert threshold"]},
+        {"id":"cicd","label":"CI / CD","tool":"github-actions","summary":"Kodun test edilmeden production'a gitmesini engeller.","checks":["Lint", "Tests", "Dependency scan", "Protected production step"]}
+      ],
+      "connections": [
+        ["ui","auth"],["ui","api"],["api","db"],["api","ai"],["api","pay"],["api","mail"],["ui","analytics"],["api","monitor"],["cicd","ui"],["cicd","api"]
+      ],
+      "stages": [
+        {"id":"scope","number":"01","title":"Ürün kapsamını kilitle","owner":"Ürün","tools":["figma"],"goal":"İlk sürümde kimin hangi işi yapacağını netleştir.","tasks":["Öğrenci personasını yaz","İlk kullanıcı yolculuğunu çiz","MVP'de olacak 6–8 özelliği seç","İlk sürümde olmayacak özellikleri yaz"],"done":["Tek bir hedef kullanıcı tanımlı","İlk değer anı tanımlı","MVP özellikleri 8'i geçmiyor"]},
+        {"id":"ux","number":"02","title":"Ekranları ve akışı tasarla","owner":"UX / Frontend","tools":["figma"],"goal":"Kod yazmadan ekranların sırasını ve durumlarını gör.","tasks":["Kayıt → onboarding → dashboard akışını çiz","Ders ve sonuç ekranı wireframe'i oluştur","Loading, empty ve error state'leri çiz","Mobil görünümü ayrıca kontrol et"],"done":["Ana ekranlar wireframe olarak hazır","Hata ve loading durumları unutulmamış","Mobil akış görülebiliyor"]},
+        {"id":"foundation","number":"03","title":"Proje iskeletini kur","owner":"Frontend","tools":["nextjs","cursor","github-actions"],"goal":"Çalışan, test edilebilir ve GitHub'da izlenen uygulama iskeleti.","tasks":["Next.js uygulamasını oluştur","Environment dosyası şablonunu ekle","Lint ve temel test komutlarını kur","GitHub Actions doğrulamasını ekle"],"done":["Local uygulama açılıyor","Secret değerler repoda değil","PR üzerinde otomatik kontrol çalışıyor"]},
+        {"id":"auth","number":"04","title":"Kullanıcı girişini tamamla","owner":"Auth","tools":["supabase","clerk","cursor"],"goal":"Kullanıcı güvenli biçimde kayıt olup kendi hesabına erişsin.","tasks":["Email kayıt ve giriş","E-posta doğrulama","Şifre sıfırlama","Çıkış ve session kontrolü","Student/Admin rol sınırı"],"done":["Kayıt ve giriş çalışıyor","Şifre sıfırlama çalışıyor","Normal kullanıcı admin alanına giremiyor","Session server tarafında doğrulanıyor"]},
+        {"id":"database","number":"05","title":"Veritabanını kur","owner":"Backend / Data","tools":["supabase","cursor"],"goal":"Ders ve kullanıcı ilerlemesi güvenli şemada saklansın.","tasks":["Tabloları migration ile oluştur","Foreign key ilişkilerini ekle","RLS politikalarını yaz","Önemli sorgular için index ekle","Test kullanıcılarıyla yetki testi yap"],"done":["Migration tekrar çalıştırılabiliyor","Kullanıcı başka kullanıcının ilerlemesini okuyamıyor","Admin içerik işlemi ayrılmış"]},
+        {"id":"frontend","number":"06","title":"Gerçek frontend'i geliştir","owner":"Frontend","tools":["nextjs","cursor"],"goal":"Wireframe'i çalışan, erişilebilir arayüze dönüştür.","tasks":["Dashboard","Ders ekranı","Soru bileşenleri","Sonuç ve ilerleme","Profil ve ayarlar","Abonelik ekranı"],"done":["Mobil ve desktop çalışıyor","Form validation var","Loading/error/empty state var","Keyboard ile ana akış kullanılabiliyor"]},
+        {"id":"backend","number":"07","title":"Backend ve iş kurallarını kur","owner":"Backend","tools":["cloudflare","supabase","cursor"],"goal":"Skor, ilerleme, kota ve yetki kuralları client'tan bağımsız çalışsın.","tasks":["Cevap gönderme endpoint'i","Skor hesaplama","İlerleme güncelleme","AI kullanım kotası","Admin içerik işlemleri","Rate limit"],"done":["Client skor uyduramıyor","Her mutasyonda kullanıcı yetkisi kontrol ediliyor","Hatalar yapılandırılmış dönüyor"]},
+        {"id":"ai","number":"08","title":"AI öğretmeni ekle","owner":"AI / Backend","tools":["gemini","openai","cursor"],"goal":"AI değer üretsin ama kritik veriyi ve bütçeyi kontrolsüz kullanmasın.","tasks":["Yanlış cevap açıklama prompt'u","Structured JSON output","Kullanıcı seviyesini server-side bağlama","Prompt injection testleri","Kullanıcı başı kota","Timeout ve fallback"],"done":["Model cevabı şemaya uyuyor","Prompt kullanıcı rolünü değiştiremiyor","Kota aşımında çağrı duruyor","Model hata verirse uygulama çökmeden devam ediyor"]},
+        {"id":"billing","number":"09","title":"Aboneliği ve ödeme akışını bağla","owner":"Billing","tools":["stripe","cursor"],"goal":"Ödeme durumu güvenilir biçimde ürün yetkisine dönüşsün.","tasks":["Product/Price oluştur","Checkout Session","Webhook endpoint","Webhook imza doğrulama","Subscription durumunu DB'ye yansıt","İptal ve başarısız ödeme akışı"],"done":["Ödeme sonrası premium erişim açılıyor","İptalde dönem sonu davranışı doğru","Webhook tekrar gelirse çift işlem olmuyor"]},
+        {"id":"email","number":"10","title":"E-posta ve bildirimleri kur","owner":"Lifecycle","tools":["resend"],"goal":"Kullanıcı doğru anda geri çağrı ve işlem e-postası alsın.","tasks":["Hoş geldin","Ders hatırlatma","Streak hatırlatma","Abonelik e-postaları","Domain doğrulama"],"done":["Production domaininden mail gidiyor","Secret sadece server'da","Kullanıcı gereksiz mail almıyor"]},
+        {"id":"observability","number":"11","title":"Analytics ve hata takibini ekle","owner":"Operations","tools":["posthog","sentry"],"goal":"Ürünün çalışıp çalışmadığını tahmin etmek yerine ölç.","tasks":["signup_completed event","first_lesson_completed event","subscription_started event","AI feature used event","Error tracking","PII scrubbing"],"done":["Aktivasyon hunisi görülebiliyor","Production hataları alarm üretiyor","Gereksiz kişisel veri analytics'e gitmiyor"]},
+        {"id":"security","number":"12","title":"Güvenlik kapılarını geç","owner":"Security","tools":["github-actions","cloudflare"],"goal":"Canlıya çıkmadan önce kötü ve hatalı girdilerle sistemi zorla.","tasks":["Authorization testleri","RLS testleri","XSS/input validation","Rate-limit testi","Prompt injection testi","Secret scan","Dependency scan","Webhook replay testi"],"done":["Yüksek riskli açık yok","Secret scan temiz","Başka kullanıcı verisine erişilemiyor","AI kritik işlem yapamıyor"]},
+        {"id":"deploy","number":"13","title":"Staging ve production'a çık","owner":"DevOps","tools":["cloudflare","github-actions","sentry"],"goal":"Tek tıkla değil, geri alınabilir ve doğrulanabilir release yap.","tasks":["Staging environment","Production env vars","Domain + HTTPS","Migration plan","Smoke test","Rollback prosedürü","Health/error alarmı"],"done":["Staging ve production ayrılmış","Rollback yöntemi denenmiş","Canlı smoke test geçiyor","Repo iç dosyaları yayınlanmıyor"]},
+        {"id":"growth","number":"14","title":"İlk kullanıcıyı aktive et ve ölç","owner":"Growth","tools":["posthog","resend"],"goal":"Kullanıcıyı mümkün olduğunca hızlı ilk başarılı derse ulaştır.","tasks":["İlk ders onboarding'i","Aktivasyon metriği","D1/D3/D7 retention","Paywall noktası","İlk 10 kullanıcı görüşmesi"],"done":["İlk değer anı ölçülüyor","Kullanıcı kaybı görülebiliyor","İlk 10 kullanıcının geri bildirimi kayıtlı"]}
+      ],
+      "aiTaskTemplates": {
+        "auth": "Next.js uygulamamda seçtiğim auth sağlayıcısını kullanarak e-posta kayıt, giriş, çıkış, doğrulama ve şifre sıfırlama akışını kur. Student ve admin rollerini ayır. Authorization kontrolünü yalnızca client tarafına bırakma. Secret değerleri kaynak koda yazma. Loading, validation ve güvenli hata mesajları ekle. Sonunda oluşturduğun dosyaları, test komutlarını ve güvenlik kontrol listesini ver.",
+        "database": "Dil öğrenme SaaS için profiles, courses, lessons, questions, attempts, user_progress, streaks, subscriptions, ai_usage ve audit_logs tablolarını migration olarak tasarla. Kullanıcının yalnızca kendi progress/attempt kayıtlarına erişebilmesini sağlayan RLS politikaları ekle. Admin içerik tablolarını yönetebilsin. Index ve foreign key önerilerini ekle ve yetki test senaryolarını yaz.",
+        "ai": "Yanlış cevabı öğrencinin seviyesine göre açıklayan server-side AI endpoint tasarla. Girdi şemasını doğrula, structured JSON output kullan, kullanıcıdan gelen metni sistem talimatı sayma, prompt injection denemelerini etkisizleştir, timeout/kota/fallback ekle. API key client'a gitmesin. Normal, edge ve saldırı testlerini yaz.",
+        "billing": "Stripe subscription Checkout ve webhook akışını server-side kur. Webhook imzasını doğrula, olayları idempotent işle, subscription durumunu veritabanına yansıt ve premium yetkiyi yalnızca güvenilir server-side kayda göre aç. İptal ve başarısız ödeme testlerini ekle."
+      }
+    }
+  ]
+}
