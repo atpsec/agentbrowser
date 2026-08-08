@@ -1,0 +1,72 @@
+name: Verify AI Pusula Studio live
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/verify-studio-live.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for Cloudflare production assets
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          for i in $(seq 1 30); do
+            if curl -fsS "$base/studio/studio-engine.js" -o /tmp/engine.js && grep -q '100' /tmp/engine.js && curl -fsS "$base/studio/" -o /tmp/studio.html && grep -q 'AI Pusula Studio' /tmp/studio.html; then exit 0; fi
+            sleep 5
+          done
+          exit 1
+      - name: Verify headers and assets
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          curl -fsSI "$base/studio/" -o /tmp/h
+          grep -qi "content-security-policy:.*script-src 'self'" /tmp/h
+          grep -qi "content-security-policy:.*connect-src 'self'" /tmp/h
+          curl -fsS "$base/studio/studio.js" -o /tmp/studio.js
+          curl -fsS "$base/studio/styles.css" -o /tmp/studio.css
+          curl -fsS "$base/sw.js" -o /tmp/sw.js
+          curl -fsS "$base/manifest.webmanifest" -o /tmp/manifest.json
+          grep -q "'/studio/'" /tmp/sw.js
+          grep -q '"url":"/studio/"' /tmp/manifest.json
+          ! curl -fsS "$base/.git/HEAD" | grep -q 'ref: refs/'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Exercise live Studio
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const base='https://agentbrowser.tpberg3tp.workers.dev';
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true});
+          const page=await context.newPage();const errors=[];const external=[];
+          page.on('pageerror',e=>errors.push(`page:${e.message}`));
+          page.on('console',m=>{if(m.type()==='error')errors.push(`console:${m.text()}`)});
+          await page.goto(base+'/',{waitUntil:'networkidle'});
+          if(await page.locator('[data-studio-hub]').count()!==1)throw new Error('home Studio entry missing');
+          await page.goto(base+'/studio/',{waitUntil:'networkidle'});
+          page.on('request',r=>{const u=new URL(r.url());if(u.origin!==base)external.push(r.url())});
+          if(await page.locator('.template-card').count()!==100)throw new Error('100 templates missing');
+          for(const family of ['web','tool','game','quiz','dashboard','content','automation','assistant']){
+            await page.check(`input[name="family"][value="${family}"]`);await page.fill('#projectTitle',`Live ${family}`);await page.click('#buildButton');
+            if((await page.textContent('#securityScore')).trim()!=='100/100')throw new Error(`${family} audit`);
+          }
+          await page.check('#blockGrid input[value="auth"]');await page.check('#blockGrid input[value="ai"]');await page.click('#buildButton');
+          if(await page.locator('#architecture .architecture-item').count()<2)throw new Error('architecture guidance');
+          await page.click('.prompt-mode[data-mode="pro"]');if(!String(await page.textContent('#promptOutput')).includes('Kabul kriteri'))throw new Error('prompt lab');
+          const dl=page.waitForEvent('download');await page.click('#downloadButton');if(!(await dl).suggestedFilename().endsWith('-offline.html'))throw new Error('download');
+          const reg=await page.evaluate(async()=>{await navigator.serviceWorker.ready;return Boolean(await navigator.serviceWorker.getRegistration('/'))});if(!reg)throw new Error('service worker');
+          await page.setViewportSize({width:390,height:844});const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);if(overflow>2)throw new Error(`mobile overflow ${overflow}`);
+          if(external.length)throw new Error(`external ${external.join(',')}`);if(errors.length)throw new Error(errors.join('\n'));
+          await browser.close();console.log('Live Studio verification passed');
+          NODE
