@@ -1,9 +1,9 @@
 name: Apply CSP progress fix
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/csp-builder-progress
+      - main
     paths:
       - '.github/workflows/apply-csp-progress-fix.yml'
 
@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/csp-builder-progress
+          ref: ${{ github.head_ref }}
       - name: Replace inline progress style without weakening CSP
         run: |
           python3 - <<'PY'
@@ -62,4 +62,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add public/product-builder-core.js public/product-builder.css .github/workflows/validate-product-builder.yml
           git commit -m 'Fix builder progress CSP violation'
-          git push origin HEAD:fix/csp-builder-progress
+          git push origin HEAD:${{ github.head_ref }}
