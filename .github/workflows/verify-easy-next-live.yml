@@ -1,0 +1,62 @@
+name: Verify Easy next apps live
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for production assets
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          for i in $(seq 1 36); do
+            if curl -fsS "$base/easy/qr/qr.js" -o /tmp/qr.js && \
+               curl -fsS "$base/easy/pdf/pdf-tools.js" -o /tmp/pdf.js && \
+               curl -fsS "$base/easy/photo-studio/photo-studio.js" -o /tmp/photo.js && \
+               curl -fsS "$base/vendor/pdf-lib.min.js" -o /tmp/pdf-lib.js && \
+               curl -fsS "$base/vendor/qrcode-generator.min.js" -o /tmp/qr-lib.js && \
+               grep -q 'function payload' /tmp/qr.js && \
+               grep -q 'parseRange' /tmp/pdf.js && \
+               grep -q 'sampleBackground' /tmp/photo.js && \
+               test -s /tmp/pdf-lib.js && test -s /tmp/qr-lib.js; then exit 0; fi
+            sleep 5
+          done
+          exit 1
+      - name: Verify production CSP and repository isolation
+        run: |
+          set -euo pipefail
+          for route in easy/qr/ easy/pdf/ easy/photo-studio/; do
+            h=$(curl -fsSI "https://agentbrowser.tpberg3tp.workers.dev/$route" | tr -d '\r')
+            echo "$h" | grep -qi "content-security-policy:.*script-src 'self'"
+            echo "$h" | grep -qi "content-security-policy:.*connect-src 'self'"
+          done
+          curl -fsS https://agentbrowser.tpberg3tp.workers.dev/.git/HEAD -o /tmp/git-head-response
+          ! grep -Eq '^ref: refs/heads/|^[0-9a-f]{40}$' /tmp/git-head-response
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Exercise live QR PDF and photo studio
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const base='https://agentbrowser.tpberg3tp.workers.dev';
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true});
+          const page=await context.newPage();const errors=[];let external=[];
+          page.on('pageerror',e=>errors.push(`pageerror:${e.message}`));page.on('console',m=>{if(m.type()==='error')errors.push(`console:${m.text()}`)});
+          page.on('request',r=>{const u=new URL(r.url());if((u.protocol==='http:'||u.protocol==='https:')&&u.origin!==base)external.push(r.url())});
+          const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZxHkAAAAASUVORK5CYII=','base64');
+          await page.goto(base+'/easy/',{waitUntil:'networkidle'});external=[];if(await page.locator('.app-launch-grid a').count()!==3)throw new Error('Easy focused launch cards missing');
+          await page.goto(base+'/easy/qr/',{waitUntil:'networkidle'});external=[];await page.fill('#qrText','https://example.com/ai-pusula');await page.click('#generateQr');if(await page.evaluate(()=>document.querySelector('#qrCanvas').width)<100)throw new Error('QR canvas failed');const qd=page.waitForEvent('download');await page.click('#downloadQr');if(!(await qd).suggestedFilename().endsWith('.png'))throw new Error('QR download failed');if(external.length)throw new Error('QR external requests: '+external.join(','));
+          await page.goto(base+'/easy/pdf/',{waitUntil:'networkidle'});external=[];const pdfBytes=Buffer.from(await page.evaluate(async()=>{const d=await PDFLib.PDFDocument.create();d.addPage([300,400]);d.addPage([300,400]);return Array.from(await d.save())}));await page.setInputFiles('#mergeInput',[{name:'a.pdf',mimeType:'application/pdf',buffer:pdfBytes},{name:'b.pdf',mimeType:'application/pdf',buffer:pdfBytes}]);const md=page.waitForEvent('download');await page.click('#mergeButton');await md;if(!(await page.textContent('#mergeStatus')).includes('4 sayfa'))throw new Error('PDF merge status');await page.setInputFiles('#splitInput',{name:'split.pdf',mimeType:'application/pdf',buffer:pdfBytes});await page.fill('#pageRange','2');const sd=page.waitForEvent('download');await page.click('#splitButton');await sd;if(!(await page.textContent('#splitStatus')).includes('1/2'))throw new Error('PDF split failed');await page.setInputFiles('#compressInput',{name:'optimize.pdf',mimeType:'application/pdf',buffer:pdfBytes});const od=page.waitForEvent('download');await page.click('#compressButton');await od;if(!(await page.textContent('#compressStatus')).includes('Önce'))throw new Error('PDF optimize failed');if(external.length)throw new Error('PDF external requests: '+external.join(','));
+          await page.goto(base+'/easy/photo-studio/',{waitUntil:'networkidle'});external=[];await page.setInputFiles('#photoInput',{name:'p.png',mimeType:'image/png',buffer:png});await page.waitForFunction(()=>!document.querySelector('#addText').disabled);await page.fill('#overlayText','Canlı');await page.click('#addText');await page.setInputFiles('#logoInput',{name:'logo.png',mimeType:'image/png',buffer:png});await page.waitForFunction(()=>!document.querySelector('#addLogo').disabled);await page.click('#addLogo');await page.click('#advancedBg');await page.click('#passportButton');if(await page.evaluate(()=>`${document.querySelector('#photoResult').width}x${document.querySelector('#photoResult').height}`)!=='700x900')throw new Error('Passport crop failed');await page.setInputFiles('#collageInput',[{name:'1.png',mimeType:'image/png',buffer:png},{name:'2.png',mimeType:'image/png',buffer:png}]);await page.click('#collageButton');await page.waitForFunction(()=>document.querySelector('#collageStatus').textContent.includes('2 fotoğraf'));const pd=page.waitForEvent('download');await page.click('#downloadPhoto');if(!(await pd).suggestedFilename().endsWith('.png'))throw new Error('Photo studio download failed');if(external.length)throw new Error('Photo studio external requests: '+external.join(','));
+          for(const route of ['/easy/','/easy/qr/','/easy/pdf/','/easy/photo-studio/']){await page.setViewportSize({width:390,height:844});await page.goto(base+route,{waitUntil:'networkidle'});if(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)>2)throw new Error(route+' mobile overflow')}
+          if(errors.length)throw new Error(errors.join('\n'));await browser.close();console.log('Live Easy next apps verification passed');
+          NODE
