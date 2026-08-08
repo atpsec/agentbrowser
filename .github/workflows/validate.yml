@@ -24,11 +24,13 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
+          set -euo pipefail
           node --check public/app.js
           node --check public/product-planner.js
 
       - name: Parse JSON data
         run: |
+          set -euo pipefail
           node - <<'NODE'
           const fs = require('fs');
           const files = [
@@ -47,6 +49,7 @@ jobs:
 
       - name: Validate local assets and data shape
         run: |
+          set -euo pipefail
           python3 - <<'PY'
           import json
           from html.parser import HTMLParser
@@ -118,8 +121,8 @@ jobs:
                   f'Journey mismatch; missing={sorted(idea_ids - journey_ids)}, '
                   f'extra={sorted(journey_ids - idea_ids)}'
               )
-          if len(journey_items) != len(journey_ids):
-              raise SystemExit('product-journeys.json contains duplicate ids')
+          if len(ideas) != 18 or len(journey_items) != 18 or len(journey_items) != len(journey_ids):
+              raise SystemExit('Expected exactly 18 unique ideas and 18 unique product journeys.')
 
           expected_options = {
               'routes': {'service', 'saas', 'open', 'custom'},
@@ -146,6 +149,8 @@ jobs:
                   raise SystemExit(f'product-journeys[{index}] missing {sorted(absent)}')
               if set(item['tests']) != {'normal', 'edge', 'attack'}:
                   raise SystemExit(f"{item['id']} has invalid test groups")
+              if not item['tests']['attack'] or len(item['metrics']) < 4 or len(item['channels']) < 3:
+                  raise SystemExit(f"{item['id']} lacks security or go-to-market depth")
 
           wrangler = json.loads(Path('wrangler.jsonc').read_text(encoding='utf-8'))
           if wrangler.get('assets', {}).get('directory') != './public':
@@ -153,8 +158,9 @@ jobs:
           print('Static structure, data shape and deployment scope are valid.')
           PY
 
-      - name: Validate product plan generation
+      - name: Validate all product plan variants
         run: |
+          set -euo pipefail
           cp public/product-planner.js /tmp/product-planner.mjs
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
@@ -163,48 +169,74 @@ jobs:
           const ideas = JSON.parse(fs.readFileSync('public/data/ideas.json', 'utf8')).items;
           const journeys = JSON.parse(fs.readFileSync('public/data/product-journeys.json', 'utf8'));
           const byId = new Map(journeys.items.map(item => [item.id, item]));
-          const choices = {
-            route: 'service', duration: '14days', budget: 'low', completed: {}
-          };
+          const routes = Object.keys(journeys.routes);
+          const durations = Object.keys(journeys.durations);
+          const budgets = Object.keys(journeys.budgets);
+          let variants = 0;
+
           for (const idea of ideas) {
             const journey = byId.get(idea.id);
             const category = journeys.categories[idea.category];
-            const steps = planner.buildJourneySteps({
-              idea,
-              journey,
-              category,
-              route: choices.route,
-              duration: choices.duration,
-              budget: choices.budget,
-              config: journeys
-            });
-            if (steps.length !== 9) {
-              throw new Error(`${idea.id}: expected 9 steps, got ${steps.length}`);
-            }
-            for (const [index, step] of steps.entries()) {
-              if (!step.title || !Array.isArray(step.tasks) || step.tasks.length === 0) {
-                throw new Error(`${idea.id}: invalid step ${index}`);
+            for (const route of routes) {
+              for (const duration of durations) {
+                for (const budget of budgets) {
+                  const completed = {};
+                  const steps = planner.buildJourneySteps({
+                    idea, journey, category, route, duration, budget, config: journeys
+                  });
+                  if (steps.length !== 9) {
+                    throw new Error(`${idea.id}/${route}/${duration}/${budget}: expected 9 steps, got ${steps.length}`);
+                  }
+                  for (const [index, step] of steps.entries()) {
+                    if (!step.title || !Array.isArray(step.tasks) || step.tasks.length === 0) {
+                      throw new Error(`${idea.id}/${route}/${duration}/${budget}: invalid step ${index}`);
+                    }
+                  }
+                  const markdown = planner.buildPlanMarkdown({
+                    idea, journey, category, route, duration, budget, config: journeys, completed
+                  });
+                  if (!markdown.includes(idea.title) || markdown.length < 1000) {
+                    throw new Error(`${idea.id}/${route}/${duration}/${budget}: invalid Markdown export`);
+                  }
+                  variants += 1;
+                }
               }
             }
-            const markdown = planner.buildPlanMarkdown({
-              idea,
-              journey,
-              category,
-              route: choices.route,
-              duration: choices.duration,
-              budget: choices.budget,
-              config: journeys,
-              completed: choices.completed
-            });
-            if (!markdown.includes(idea.title) || markdown.length < 1000) {
-              throw new Error(`${idea.id}: invalid Markdown export`);
-            }
           }
-          console.log(`Generated and validated ${ideas.length} product plans.`);
+          if (variants !== 648) throw new Error(`Expected 648 variants, got ${variants}`);
+          console.log(`Generated and validated ${variants} product plan variants.`);
           NODE
+
+      - name: Security policy and secret scan
+        run: |
+          set -euo pipefail
+          grep -q 'Content-Security-Policy:' public/_headers
+          grep -q "default-src 'self'" public/_headers
+          grep -q "script-src 'self'" public/_headers
+          grep -q "connect-src 'self'" public/_headers
+          grep -q "frame-ancestors 'none'" public/_headers
+          grep -q "object-src 'none'" public/_headers
+          if grep -qE "'unsafe-inline'|'unsafe-eval'" public/_headers; then
+            echo 'Unsafe CSP directive detected.' >&2
+            exit 1
+          fi
+          if grep -R -nE '(sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' \
+            public README.md SPEC.md; then
+            echo 'Potential secret detected.' >&2
+            exit 1
+          fi
+          if grep -R -nE 'eval\(|new Function\(|document\.write\(|navigator\.sendBeacon|XMLHttpRequest|WebSocket\(' \
+            public/app.js public/product-planner.js; then
+            echo 'Disallowed dynamic execution or outbound API detected.' >&2
+            exit 1
+          fi
+          test "$(grep -R -c 'fetch(' public/app.js public/product-planner.js | awk -F: '{sum += $2} END {print sum+0}')" -eq 1
+          grep -q "fetchJson('./data/product-journeys.json')" public/app.js
+          grep -q "localStorage" public/app.js
 
       - name: HTTP smoke test
         run: |
+          set -euo pipefail
           python3 -m http.server 8080 -d public >/tmp/ai-pusula-server.log 2>&1 &
           server_pid=$!
           trap 'kill $server_pid' EXIT
