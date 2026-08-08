@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Şüpheli e-postalardaki phishing işaretlerini tarayıcı içinde açıklayan eğitim aracı.">
+  <title>Phishing E-postası Açıklayıcı · AI Pusula</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../">AI PUSULA / LAB</a>
+    <span>PHISHING E-POSTASI AÇIKLAYICI</span>
+    <a href="../../#ideas">← Ürün fikirlerine dön</a>
+  </header>
+
+  <main>
+    <section class="hero shell">
+      <div>
+        <p class="kicker">LOCAL-ONLY · EĞİTİM + İLK İNCELEME</p>
+        <h1>Bu e-posta neden <em>şüpheli</em> olabilir?</h1>
+        <p class="lead">Mesajı yapıştır. Araç “zararlı” deyip geçmez; hangi kırmızı bayrağı gördüğünü, neden önemli olduğunu ve güvenli sonraki adımı açıklar.</p>
+      </div>
+      <aside class="privacy-note">
+        <b>Gizlilik sınırı</b>
+        <p>Analiz bu tarayıcıda çalışır. Metin bir API'ye gönderilmez ve sunucuda saklanmaz.</p>
+        <small>Yine de gerçek secret, parola veya hassas kişisel veriyi gereksiz yere yapıştırma.</small>
+      </aside>
+    </section>
+
+    <section class="workbench shell">
+      <form id="analysisForm" class="input-panel">
+        <div class="panel-title"><span>01</span><h2>E-postayı incele</h2></div>
+        <label>Görünen gönderen <input id="sender" name="sender" type="text" autocomplete="off" placeholder="Örn. Microsoft Security <security@example.com>"></label>
+        <label>Konu <input id="subject" name="subject" type="text" autocomplete="off" placeholder="Örn. ACİL: Hesabınız kapanacak"></label>
+        <label class="raw-label">E-posta metni veya ham kaynak <textarea id="rawEmail" name="rawEmail" rows="17" spellcheck="false" placeholder="From:, Reply-To:, Authentication-Results:, Subject: başlıklarını ve mesaj gövdesini birlikte yapıştırabilirsin."></textarea></label>
+        <div class="form-actions">
+          <button class="primary" type="submit">Analiz et →</button>
+          <button id="resetForm" type="button">Temizle</button>
+        </div>
+        <div class="sample-row" aria-label="Örnek mesajlar">
+          <span>ÖRNEKLER</span>
+          <button type="button" data-sample="credential">Hesap doğrulama</button>
+          <button type="button" data-sample="invoice">Fatura dolandırıcılığı</button>
+          <button type="button" data-sample="benign">Normal duyuru</button>
+        </div>
+      </form>
+
+      <aside class="explain-panel">
+        <div class="panel-title"><span>NASIL BAKAR?</span></div>
+        <ol>
+          <li><b>Kim gönderiyor?</b><span>From, Reply-To ve Return-Path alanlarını karşılaştırır.</span></li>
+          <li><b>Teknik kimlik tutuyor mu?</b><span>Varsa SPF, DKIM ve DMARC sonuçlarını okur.</span></li>
+          <li><b>Dil baskı kuruyor mu?</b><span>Aciliyet, korkutma, parola ve ödeme taleplerini işaretler.</span></li>
+          <li><b>Link ve ek riskli mi?</b><span>Kısa link, IP adresi, punycode ve riskli uzantıları açıklar.</span></li>
+          <li><b>Ne yapmalısın?</b><span>Tıklamadan doğrulama ve bildirme adımlarını verir.</span></li>
+        </ol>
+        <p class="caveat">Bu bir antispam gateway veya kesin zararlı yazılım kararı değildir. Amaç, insanın kanıtı görmesini sağlamaktır.</p>
+      </aside>
+    </section>
+
+    <section id="results" class="results shell" hidden aria-live="polite">
+      <div class="result-hero">
+        <div class="score-block">
+          <span id="riskLabel" data-level="çok düşük">RİSK</span>
+          <strong><span id="scoreValue">0</span><small>/100</small></strong>
+          <progress id="scoreMeter" max="100" value="0">0</progress>
+        </div>
+        <div>
+          <p class="kicker">AÇIKLANABİLİR SONUÇ</p>
+          <h2 id="verdict">Sonuç</h2>
+          <p>Skor, bulunan işaretlerin ağırlıklı toplamıdır. Tek bir işaret kesin kanıt sayılmaz.</p>
+          <button id="copyReport" type="button">Raporu kopyala</button>
+        </div>
+      </div>
+
+      <div class="result-grid">
+        <section>
+          <div class="panel-title"><span>02</span><h2>Neden şüpheli?</h2></div>
+          <div id="findings" class="finding-list"></div>
+        </section>
+        <aside>
+          <section class="mini-panel">
+            <h3>Olumlu sinyaller</h3>
+            <ul id="positives"></ul>
+          </section>
+          <section class="mini-panel">
+            <h3>Bağlantılar</h3>
+            <ul id="links"></ul>
+            <p>Bağlantılar bilinçli olarak tıklanabilir yapılmaz.</p>
+          </section>
+          <section class="mini-panel action-panel">
+            <h3>Güvenli sonraki adım</h3>
+            <ol>
+              <li>Linke veya eke tıklama.</li>
+              <li>Göndereni ayrı, bildiğin bir kanaldan doğrula.</li>
+              <li>Kurumsal ortamda phishing bildirimi yap.</li>
+              <li>Bilgi girdiysen parolayı güvenilir kanaldan değiştir.</li>
+            </ol>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section class="learn shell">
+      <div class="panel-title"><span>03</span><h2>10 yaşındaki biri için phishing</h2></div>
+      <div class="learn-grid">
+        <article><b>1</b><h3>Kılık değiştirme</h3><p>Birisi öğretmeninmiş gibi giyinip senden okul kartını isterse önce gerçekten öğretmen mi diye bakarsın. Phishing de internette bunu yapar.</p></article>
+        <article><b>2</b><h3>Acele ettirme</h3><p>“Hemen yap, yoksa hesabın kapanır” sözü düşünme süreni azaltmak ister. Gerçek kurumlar önemli işlemleri doğrulaman için güvenli yollar sunar.</p></article>
+        <article><b>3</b><h3>Yanlış kapı</h3><p>Link güzel görünebilir ama seni başka bir adrese götürebilir. Bu araç hedef alan adını metin olarak gösterir; kendisi linki açmaz.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer shell">
+    <strong>AI PUSULA / PHISHING LAB</strong>
+    <p>Yerel analiz · Harici model yok · Otomatik karar yok · Eğitim ve ilk inceleme için.</p>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
