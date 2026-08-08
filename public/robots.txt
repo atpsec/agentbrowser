@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Sitemap: https://agentbrowser.tpberg3tp.workers.dev/sitemap.xml

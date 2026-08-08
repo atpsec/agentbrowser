@@ -8,6 +8,7 @@ on:
       - 'public/product-live-links.js'
       - 'public/live-links.css'
       - 'public/product-builder.js'
+      - 'public/productization.js'
       - '.github/workflows/validate-live-products.yml'
   push:
     branches: [main, 'feature/**']
@@ -16,6 +17,7 @@ on:
       - 'public/product-live-links.js'
       - 'public/live-links.css'
       - 'public/product-builder.js'
+      - 'public/productization.js'
       - '.github/workflows/validate-live-products.yml'
 
 permissions:
@@ -86,6 +88,7 @@ jobs:
           page.on('pageerror', e => failures.push(`pageerror: ${e.message}`));
           page.on('console', m => { if (m.type()==='error') failures.push(`console: ${m.text()}`); });
           await page.goto('http://127.0.0.1:8080/', { waitUntil: 'networkidle' });
+          await page.getByRole('button',{name:'Gelişmiş AI rehberini aç'}).click();
           const more=page.locator('#showMoreIdeas');
           while(await more.count() && await more.isVisible()) await more.click();
           const liveLinks = page.locator('[data-live-product]');
