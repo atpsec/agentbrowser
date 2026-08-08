@@ -1,0 +1,66 @@
+name: Verify product purchase options live
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-purchase-options:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for Cloudflare deployment
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          for i in $(seq 1 30); do
+            js=$(curl -fsS "$base/a/product-page.js" || true)
+            if printf '%s' "$js" | grep -q 'Personal Lifetime' && printf '%s' "$js" | grep -q 'ai-pusula-purchase-intent-v1'; then
+              echo 'Purchase options live assets ready'
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'Timed out waiting for purchase options' >&2
+          exit 1
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+      - name: Verify live purchase selection
+        run: |
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright';
+          const base='https://agentbrowser.tpberg3tp.workers.dev';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844}});
+          const errors=[];const unexpected=[];
+          page.on('pageerror',e=>errors.push(String(e)));
+          page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+          page.on('request',r=>{const u=new URL(r.url());if(/^https?:/.test(u.protocol)&&u.origin!==base&&!u.hostname.endsWith('cdn.jsdelivr.net'))unexpected.push(r.url())});
+          for(const slug of ['photofix','pdf-toolbox','qr-maker','passport-photo']){
+            await page.goto(`${base}/a/${slug}/`,{waitUntil:'networkidle'});
+            if(await page.locator('.plans .plan').count()!==4)throw new Error(`Expected 4 plans on ${slug}`);
+            if((await page.locator('[data-plan-card="lifetime"] .plan-price').textContent()).trim()!=='$49')throw new Error(`Lifetime price missing ${slug}`);
+            if((await page.locator('[data-plan-card="agency"] .plan-price').textContent()).trim()!=='$199')throw new Error(`Agency price missing ${slug}`);
+            const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);if(overflow>2)throw new Error(`Mobile overflow ${slug}: ${overflow}`);
+          }
+          await page.goto(`${base}/a/photofix/`,{waitUntil:'networkidle'});
+          await page.locator('.purchase-intent[data-plan="lifetime"]').click();
+          await page.waitForURL(/\/account\/\?purchase=photofix&plan=lifetime/);
+          if(await page.locator('#purchasePanel').isHidden())throw new Error('Purchase panel hidden');
+          const text=await page.locator('#purchaseIntent').textContent();if(!text.includes('Personal Lifetime')||!text.includes('$49'))throw new Error('Purchase intent content missing');
+          const intent=await page.evaluate(()=>JSON.parse(localStorage.getItem('ai-pusula-purchase-intent-v1')||'null'));
+          if(!intent||intent.status!=='checkout-not-connected')throw new Error('Purchase boundary status missing');
+          if(unexpected.length)throw new Error('Unexpected external requests: '+unexpected.join(','));
+          if(errors.length)throw new Error('Browser errors: '+errors.join(' | '));
+          await browser.close();console.log('Production purchase options PASS');
+          NODE
