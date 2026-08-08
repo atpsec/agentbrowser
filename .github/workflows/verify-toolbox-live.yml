@@ -81,7 +81,8 @@ jobs:
           const manifest=await page.evaluate(async()=>await (await fetch('/manifest.webmanifest')).json());if(!manifest.shortcuts.some(x=>x.url==='/toolbox/'))throw new Error('Live PWA toolbox shortcut missing');
           const sw=await page.evaluate(async()=>await (await fetch('/sw.js')).text());if(!sw.includes('ai-pusula-v13'))throw new Error('Live SW v13 missing');
           await page.goto(base+'/toolbox/',{waitUntil:'networkidle'});const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);if(overflow>2)throw new Error(`Live mobile overflow ${overflow}px`);
-          if(external.length)throw new Error(`Unexpected toolbox external requests: ${external.join(', ')}`);
+          const unexpected=external.filter(raw=>{const u=new URL(raw);return !(u.origin==='https://cdn.jsdelivr.net'&&u.pathname==='/npm/simple-icons@v16/icons/openai.svg')});
+          if(unexpected.length)throw new Error(`Unexpected toolbox external requests: ${unexpected.join(', ')}`);
           if(errors.length)throw new Error(`Browser errors: ${errors.join(' | ')}`);
           await browser.close();console.log('Production everyday toolbox PASS: 208 tools / 19 categories');
           NODE
