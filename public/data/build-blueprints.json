@@ -1,198 +1,48 @@
 {
-  "version": 1,
+  "version": 2,
   "verified": "2026-08-08",
-  "toolProfiles": {
-    "minimum": {
-      "label": "Minimum çaba",
-      "summary": "Tek kişinin en az entegrasyonla profesyonel MVP çıkarması için.",
-      "tools": ["nextjs", "supabase", "gemini", "stripe", "resend", "posthog", "cloudflare"]
-    },
-    "balanced": {
-      "label": "Dengeli profesyonel",
-      "summary": "Kontrol, güvenlik ve geliştirme kolaylığı arasında denge.",
-      "tools": ["nextjs", "clerk", "supabase", "openai", "stripe", "resend", "posthog", "sentry", "cloudflare", "github-actions"]
-    },
-    "pro": {
-      "label": "Profesyonel ölçek",
-      "summary": "Yetki ayrımı, gözlemlenebilirlik ve operasyon katmanı daha güçlü.",
-      "tools": ["nextjs", "clerk", "supabase", "openai", "stripe", "resend", "posthog", "sentry", "cloudflare", "github-actions", "r2"]
-    }
+  "profiles": {
+    "minimum": {"label":"Minimum çaba","summary":"Az kod bilen tek kişinin en az entegrasyonla çalışan MVP çıkarması.","tools":["nextjs","supabase","gemini","stripe","resend","posthog","cloudflare","cursor"]},
+    "balanced": {"label":"Dengeli profesyonel","summary":"Geliştirme kolaylığı, kontrol ve güvenlik arasında denge.","tools":["nextjs","clerk","supabase","openai","stripe","resend","posthog","sentry","cloudflare","github-actions","cursor"]},
+    "pro": {"label":"Profesyonel ölçek","summary":"Yetki ayrımı, gözlemlenebilirlik ve operasyon katmanı güçlü yapı.","tools":["nextjs","clerk","supabase","openai","stripe","resend","posthog","sentry","cloudflare","github-actions","r2","cursor"]}
   },
   "tools": {
-    "nextjs": {
-      "name": "Next.js",
-      "slug": "nextdotjs",
-      "kind": "Frontend + full-stack web",
-      "ai": "AI kodlama araçlarıyla çok verimli çalışır; kendisi bir AI ürünü değildir.",
-      "why": "Kullanıcı arayüzü, routing, server actions ve web uygulaması iskeleti için.",
-      "official": "https://nextjs.org/docs"
-    },
-    "supabase": {
-      "name": "Supabase",
-      "slug": "supabase",
-      "kind": "PostgreSQL + Auth + Storage",
-      "ai": "AI özelliği değil; AI uygulamasının veri ve kullanıcı altyapısını taşır.",
-      "why": "Veritabanı, kullanıcı hesabı, Row Level Security ve dosya saklama için tek servis.",
-      "official": "https://supabase.com/docs"
-    },
-    "clerk": {
-      "name": "Clerk",
-      "slug": "clerk",
-      "kind": "Authentication",
-      "ai": "AI değildir; kullanıcı girişini ve yetkilendirme katmanını hızlandırır.",
-      "why": "Kayıt, giriş, session, sosyal giriş ve rol/organizasyon yönetimi için.",
-      "official": "https://clerk.com/docs"
-    },
-    "openai": {
-      "name": "OpenAI API",
-      "slug": "openai",
-      "kind": "AI model API",
-      "ai": "Doğrudan yapay zekâ katmanıdır.",
-      "why": "Kişisel ders, hata açıklaması, konuşma pratiği ve structured output için.",
-      "official": "https://platform.openai.com/docs"
-    },
-    "gemini": {
-      "name": "Gemini API",
-      "slug": "googlegemini",
-      "kind": "AI model API",
-      "ai": "Doğrudan yapay zekâ katmanıdır.",
-      "why": "Metin, görsel ve multimodal eğitim özellikleri için ekonomik başlangıç seçeneklerinden biri.",
-      "official": "https://ai.google.dev/gemini-api/docs"
-    },
-    "stripe": {
-      "name": "Stripe",
-      "slug": "stripe",
-      "kind": "Ödeme + abonelik",
-      "ai": "AI değildir; SaaS gelir modelini ve abonelik durumunu yönetir.",
-      "why": "Checkout, abonelik, fatura, webhook ve iptal akışları için.",
-      "official": "https://docs.stripe.com/billing/subscriptions/overview"
-    },
-    "resend": {
-      "name": "Resend",
-      "slug": "resend",
-      "kind": "Transactional email",
-      "ai": "AI değildir; doğrulama, hoş geldin ve ürün e-postalarını gönderir.",
-      "why": "Şifre, doğrulama, onboarding ve bildirim e-postaları için.",
-      "official": "https://resend.com/docs"
-    },
-    "posthog": {
-      "name": "PostHog",
-      "slug": "posthog",
-      "kind": "Product analytics",
-      "ai": "AI değildir; kullanıcı davranışını ölçer.",
-      "why": "Aktivasyon, funnel, retention ve feature usage ölçümü için.",
-      "official": "https://posthog.com/docs"
-    },
-    "sentry": {
-      "name": "Sentry",
-      "slug": "sentry",
-      "kind": "Error monitoring",
-      "ai": "AI değildir; production hatalarını ve performans sorunlarını görünür yapar.",
-      "why": "Frontend/backend hata takibi, performans ve release izleme için.",
-      "official": "https://docs.sentry.io/"
-    },
-    "cloudflare": {
-      "name": "Cloudflare Workers",
-      "slug": "cloudflare",
-      "kind": "Hosting + edge backend",
-      "ai": "AI değildir; uygulamanın global yayın ve API katmanını çalıştırabilir.",
-      "why": "Statik asset, serverless API, rate limit ve edge dağıtım için.",
-      "official": "https://developers.cloudflare.com/workers/"
-    },
-    "github-actions": {
-      "name": "GitHub Actions",
-      "slug": "githubactions",
-      "kind": "CI/CD",
-      "ai": "AI değildir; AI tarafından üretilen kodu test ve güvenlik kapılarından geçirir.",
-      "why": "Test, lint, dependency scan ve kontrollü deployment için.",
-      "official": "https://docs.github.com/actions"
-    },
-    "r2": {
-      "name": "Cloudflare R2",
-      "slug": "cloudflare",
-      "kind": "Object storage",
-      "ai": "AI değildir; ses dosyası ve büyük assetleri saklar.",
-      "why": "Kullanıcı ses kayıtları veya ders medyası gibi nesneler için.",
-      "official": "https://developers.cloudflare.com/r2/"
-    },
-    "figma": {
-      "name": "Figma",
-      "slug": "figma",
-      "kind": "UX/UI tasarım",
-      "ai": "AI destekli özellikler kullanabilir; temel görevi ürün tasarımıdır.",
-      "why": "Wireframe, kullanıcı akışı ve tasarım sistemi için.",
-      "official": "https://help.figma.com/"
-    },
-    "cursor": {
-      "name": "Cursor",
-      "slug": "cursor",
-      "kind": "AI kodlama ortamı",
-      "ai": "Doğrudan AI destekli geliştirme aracıdır.",
-      "why": "Dosyalar arası kod üretme, refactor ve hata düzeltme için.",
-      "official": "https://docs.cursor.com/"
-    }
+    "nextjs":{"name":"Next.js","slug":"nextdotjs","kind":"Frontend + full-stack web","ai":"AI değildir; AI kodlama araçlarıyla çok hızlı geliştirilebilir.","why":"Ekranlar, routing, server-side işlemler ve web uygulaması iskeleti.","official":"https://nextjs.org/docs"},
+    "supabase":{"name":"Supabase","slug":"supabase","kind":"PostgreSQL + Auth + Storage","ai":"AI değildir; ürünün veri ve kullanıcı altyapısını taşır.","why":"Veritabanı, kullanıcı hesabı, Row Level Security ve dosya saklama.","official":"https://supabase.com/docs"},
+    "clerk":{"name":"Clerk","slug":"clerk","kind":"Authentication","ai":"AI değildir; kayıt, session ve rol yönetimini hızlandırır.","why":"Kullanıcı girişi, sosyal giriş, session ve organizasyon rolleri.","official":"https://clerk.com/docs"},
+    "openai":{"name":"OpenAI API","slug":"openai","kind":"AI model API","ai":"Doğrudan yapay zekâ katmanı.","why":"Metin, yapılandırılmış çıktı, agent ve multimodal AI özellikleri.","official":"https://platform.openai.com/docs"},
+    "gemini":{"name":"Gemini API","slug":"googlegemini","kind":"AI model API","ai":"Doğrudan yapay zekâ katmanı.","why":"Metin ve multimodal özellikler için ekonomik başlangıç seçenekleri.","official":"https://ai.google.dev/gemini-api/docs"},
+    "stripe":{"name":"Stripe","slug":"stripe","kind":"Ödeme + abonelik","ai":"AI değildir.","why":"Checkout, abonelik, fatura, webhook ve iptal akışları.","official":"https://docs.stripe.com/billing/subscriptions/overview"},
+    "resend":{"name":"Resend","slug":"resend","kind":"Transactional email","ai":"AI değildir.","why":"Doğrulama, onboarding ve ürün e-postaları.","official":"https://resend.com/docs"},
+    "posthog":{"name":"PostHog","slug":"posthog","kind":"Product analytics","ai":"AI değildir.","why":"Aktivasyon, funnel ve retention ölçümü.","official":"https://posthog.com/docs"},
+    "sentry":{"name":"Sentry","slug":"sentry","kind":"Error monitoring","ai":"AI değildir.","why":"Production hata, performans ve release takibi.","official":"https://docs.sentry.io/"},
+    "cloudflare":{"name":"Cloudflare Workers","slug":"cloudflare","kind":"Hosting + serverless backend","ai":"AI değildir.","why":"API, edge güvenliği ve production yayınlama.","official":"https://developers.cloudflare.com/workers/"},
+    "github-actions":{"name":"GitHub Actions","slug":"githubactions","kind":"CI/CD","ai":"AI değildir.","why":"Test, güvenlik kontrolü ve kontrollü deployment.","official":"https://docs.github.com/actions"},
+    "r2":{"name":"Cloudflare R2","slug":"cloudflare","kind":"Object storage","ai":"AI değildir.","why":"Dosya, medya ve büyük çıktı saklama.","official":"https://developers.cloudflare.com/r2/"},
+    "figma":{"name":"Figma","slug":"figma","kind":"UX/UI tasarım","ai":"AI destekli özellikleri olabilir; temel görevi tasarımdır.","why":"Wireframe, kullanıcı akışı ve tasarım sistemi.","official":"https://help.figma.com/"},
+    "cursor":{"name":"Cursor","slug":"cursor","kind":"AI kodlama ortamı","ai":"Doğrudan AI destekli geliştirme aracı.","why":"Kod üretme, refactor, test ve dosyalar arası geliştirme.","official":"https://docs.cursor.com/"},
+    "github":{"name":"GitHub","slug":"github","kind":"Kod ve entegrasyon platformu","ai":"Temel ürün AI değildir; Copilot özellikleri AI desteklidir.","why":"Repo, pull request, issue ve API entegrasyonları.","official":"https://docs.github.com/"},
+    "vector":{"name":"Vector Search / RAG","slug":"postgresql","kind":"Arama + bağlam","ai":"AI sisteminin doğru kaynağı bulmasına yardım eder.","why":"Belge ve bilgi tabanında kaynaklı arama.","official":"https://supabase.com/docs/guides/ai/vector-columns"},
+    "stt":{"name":"Speech-to-Text","slug":"openai","kind":"Ses → metin","ai":"AI tabanlı ses işleme.","why":"Podcast ve konuşma kayıtlarını transkripte dönüştürme.","official":"https://platform.openai.com/docs/guides/speech-to-text"}
   },
-  "blueprints": [
-    {
-      "id": "language-learning-saas",
-      "title": "Duolingo benzeri AI Dil Öğrenme SaaS",
-      "subtitle": "Kullanıcı hesabı, dersler, ilerleme, AI öğretmen, abonelik ve admin paneli olan gerçek ürün.",
-      "difficulty": "Orta",
-      "target": "Web SaaS · bireysel kullanıcı",
-      "outcome": "Kullanıcı kayıt olur, seviyesini seçer, ders çözer, AI açıklaması alır, ilerlemesini görür ve ücretli plana geçebilir.",
-      "roles": ["Öğrenci", "İçerik yöneticisi", "Sistem yöneticisi"],
-      "pages": ["Landing page", "Kayıt", "Giriş", "Onboarding", "Dashboard", "Ders", "Soru", "Sonuç", "İlerleme", "Abonelik", "Profil", "Ayarlar", "Admin paneli"],
-      "features": ["Kayıt ve giriş", "Seviye seçimi", "Ders kataloğu", "Soru çözme", "Puan", "Streak", "Hata tekrarları", "AI açıklama", "Kişisel ders", "Abonelik", "Bildirim", "Admin içerik yönetimi"],
-      "aiFeatures": ["Yanlış cevabı çocuk diliyle açıklama", "Kullanıcı seviyesine göre yeni soru üretme", "Kişisel çalışma planı", "Konuşma pratiği için rol oyunu", "Ders zorluğunu adapte etme"],
-      "tables": [
-        {"name":"profiles","purpose":"Kullanıcı profili ve tercihleri","fields":["id","user_id","display_name","native_language","learning_language","level","created_at"],"sensitive":"Orta"},
-        {"name":"courses","purpose":"Dil ve kurs tanımları","fields":["id","title","language","level","is_published"],"sensitive":"Düşük"},
-        {"name":"lessons","purpose":"Kurs içindeki dersler","fields":["id","course_id","title","order_no","content_json"],"sensitive":"Düşük"},
-        {"name":"questions","purpose":"Ders soruları ve cevap anahtarı","fields":["id","lesson_id","type","prompt","answer_json","difficulty"],"sensitive":"Düşük"},
-        {"name":"attempts","purpose":"Kullanıcının soru denemeleri","fields":["id","user_id","question_id","answer","is_correct","score","created_at"],"sensitive":"Orta"},
-        {"name":"user_progress","purpose":"Ders ve kurs ilerlemesi","fields":["user_id","lesson_id","status","score","attempt_count","last_attempt_at"],"sensitive":"Orta"},
-        {"name":"streaks","purpose":"Günlük çalışma serisi","fields":["user_id","current_streak","longest_streak","last_active_date"],"sensitive":"Düşük"},
-        {"name":"subscriptions","purpose":"Uygulama içi yetki için ödeme aynası","fields":["user_id","provider_customer_id","plan","status","current_period_end"],"sensitive":"Yüksek"},
-        {"name":"ai_usage","purpose":"AI maliyet ve kota takibi","fields":["user_id","feature","model","input_units","output_units","created_at"],"sensitive":"Orta"},
-        {"name":"audit_logs","purpose":"Kritik yönetim işlemleri","fields":["id","actor_id","action","resource_type","resource_id","created_at"],"sensitive":"Yüksek"}
-      ],
-      "architecture": [
-        {"id":"ui","label":"FRONTEND","tool":"nextjs","summary":"Kullanıcının gördüğü web uygulaması.","checks":["Responsive", "Loading state", "Form validation", "Accessible navigation"]},
-        {"id":"auth","label":"AUTH","tool":"supabase","alternatives":["clerk"],"summary":"Kayıt, giriş, session ve kullanıcı kimliği.","checks":["Email verification", "Password reset", "Session expiry", "Role checks"]},
-        {"id":"api","label":"BACKEND / API","tool":"cloudflare","summary":"İş kuralları, AI çağrıları ve güvenli server-side işlemler.","checks":["Input validation", "Authorization", "Rate limit", "Structured errors"]},
-        {"id":"db","label":"DATABASE","tool":"supabase","summary":"Kurs, ilerleme, abonelik aynası ve deneme verileri.","checks":["RLS", "Indexes", "Migrations", "Backup plan"]},
-        {"id":"ai","label":"AI TEACHER","tool":"gemini","alternatives":["openai"],"summary":"Kişisel açıklama, soru üretme ve çalışma planı.","checks":["Structured output", "Prompt injection boundary", "Usage quota", "Fallback"]},
-        {"id":"pay","label":"PAYMENT","tool":"stripe","summary":"Ücretli plan ve abonelik yaşam döngüsü.","checks":["Webhook signature", "Idempotency", "Cancel flow", "Failed payment"]},
-        {"id":"mail","label":"EMAIL","tool":"resend","summary":"Hoş geldin, doğrulama ve ürün bildirimleri.","checks":["Verified domain", "Unsubscribe where required", "No secret in client"]},
-        {"id":"analytics","label":"ANALYTICS","tool":"posthog","summary":"Aktivasyon ve retention ölçümü.","checks":["No unnecessary PII", "Consent decision", "Key events"]},
-        {"id":"monitor","label":"MONITORING","tool":"sentry","summary":"Production hata ve performans takibi.","checks":["PII scrubbing", "Release tagging", "Alert threshold"]},
-        {"id":"cicd","label":"CI / CD","tool":"github-actions","summary":"Kodun test edilmeden production'a gitmesini engeller.","checks":["Lint", "Tests", "Dependency scan", "Protected production step"]}
-      ],
-      "connections": [
-        ["ui","auth"],["ui","api"],["api","db"],["api","ai"],["api","pay"],["api","mail"],["ui","analytics"],["api","monitor"],["cicd","ui"],["cicd","api"]
-      ],
-      "stages": [
-        {"id":"scope","number":"01","title":"Ürün kapsamını kilitle","owner":"Ürün","tools":["figma"],"goal":"İlk sürümde kimin hangi işi yapacağını netleştir.","tasks":["Öğrenci personasını yaz","İlk kullanıcı yolculuğunu çiz","MVP'de olacak 6–8 özelliği seç","İlk sürümde olmayacak özellikleri yaz"],"done":["Tek bir hedef kullanıcı tanımlı","İlk değer anı tanımlı","MVP özellikleri 8'i geçmiyor"]},
-        {"id":"ux","number":"02","title":"Ekranları ve akışı tasarla","owner":"UX / Frontend","tools":["figma"],"goal":"Kod yazmadan ekranların sırasını ve durumlarını gör.","tasks":["Kayıt → onboarding → dashboard akışını çiz","Ders ve sonuç ekranı wireframe'i oluştur","Loading, empty ve error state'leri çiz","Mobil görünümü ayrıca kontrol et"],"done":["Ana ekranlar wireframe olarak hazır","Hata ve loading durumları unutulmamış","Mobil akış görülebiliyor"]},
-        {"id":"foundation","number":"03","title":"Proje iskeletini kur","owner":"Frontend","tools":["nextjs","cursor","github-actions"],"goal":"Çalışan, test edilebilir ve GitHub'da izlenen uygulama iskeleti.","tasks":["Next.js uygulamasını oluştur","Environment dosyası şablonunu ekle","Lint ve temel test komutlarını kur","GitHub Actions doğrulamasını ekle"],"done":["Local uygulama açılıyor","Secret değerler repoda değil","PR üzerinde otomatik kontrol çalışıyor"]},
-        {"id":"auth","number":"04","title":"Kullanıcı girişini tamamla","owner":"Auth","tools":["supabase","clerk","cursor"],"goal":"Kullanıcı güvenli biçimde kayıt olup kendi hesabına erişsin.","tasks":["Email kayıt ve giriş","E-posta doğrulama","Şifre sıfırlama","Çıkış ve session kontrolü","Student/Admin rol sınırı"],"done":["Kayıt ve giriş çalışıyor","Şifre sıfırlama çalışıyor","Normal kullanıcı admin alanına giremiyor","Session server tarafında doğrulanıyor"]},
-        {"id":"database","number":"05","title":"Veritabanını kur","owner":"Backend / Data","tools":["supabase","cursor"],"goal":"Ders ve kullanıcı ilerlemesi güvenli şemada saklansın.","tasks":["Tabloları migration ile oluştur","Foreign key ilişkilerini ekle","RLS politikalarını yaz","Önemli sorgular için index ekle","Test kullanıcılarıyla yetki testi yap"],"done":["Migration tekrar çalıştırılabiliyor","Kullanıcı başka kullanıcının ilerlemesini okuyamıyor","Admin içerik işlemi ayrılmış"]},
-        {"id":"frontend","number":"06","title":"Gerçek frontend'i geliştir","owner":"Frontend","tools":["nextjs","cursor"],"goal":"Wireframe'i çalışan, erişilebilir arayüze dönüştür.","tasks":["Dashboard","Ders ekranı","Soru bileşenleri","Sonuç ve ilerleme","Profil ve ayarlar","Abonelik ekranı"],"done":["Mobil ve desktop çalışıyor","Form validation var","Loading/error/empty state var","Keyboard ile ana akış kullanılabiliyor"]},
-        {"id":"backend","number":"07","title":"Backend ve iş kurallarını kur","owner":"Backend","tools":["cloudflare","supabase","cursor"],"goal":"Skor, ilerleme, kota ve yetki kuralları client'tan bağımsız çalışsın.","tasks":["Cevap gönderme endpoint'i","Skor hesaplama","İlerleme güncelleme","AI kullanım kotası","Admin içerik işlemleri","Rate limit"],"done":["Client skor uyduramıyor","Her mutasyonda kullanıcı yetkisi kontrol ediliyor","Hatalar yapılandırılmış dönüyor"]},
-        {"id":"ai","number":"08","title":"AI öğretmeni ekle","owner":"AI / Backend","tools":["gemini","openai","cursor"],"goal":"AI değer üretsin ama kritik veriyi ve bütçeyi kontrolsüz kullanmasın.","tasks":["Yanlış cevap açıklama prompt'u","Structured JSON output","Kullanıcı seviyesini server-side bağlama","Prompt injection testleri","Kullanıcı başı kota","Timeout ve fallback"],"done":["Model cevabı şemaya uyuyor","Prompt kullanıcı rolünü değiştiremiyor","Kota aşımında çağrı duruyor","Model hata verirse uygulama çökmeden devam ediyor"]},
-        {"id":"billing","number":"09","title":"Aboneliği ve ödeme akışını bağla","owner":"Billing","tools":["stripe","cursor"],"goal":"Ödeme durumu güvenilir biçimde ürün yetkisine dönüşsün.","tasks":["Product/Price oluştur","Checkout Session","Webhook endpoint","Webhook imza doğrulama","Subscription durumunu DB'ye yansıt","İptal ve başarısız ödeme akışı"],"done":["Ödeme sonrası premium erişim açılıyor","İptalde dönem sonu davranışı doğru","Webhook tekrar gelirse çift işlem olmuyor"]},
-        {"id":"email","number":"10","title":"E-posta ve bildirimleri kur","owner":"Lifecycle","tools":["resend"],"goal":"Kullanıcı doğru anda geri çağrı ve işlem e-postası alsın.","tasks":["Hoş geldin","Ders hatırlatma","Streak hatırlatma","Abonelik e-postaları","Domain doğrulama"],"done":["Production domaininden mail gidiyor","Secret sadece server'da","Kullanıcı gereksiz mail almıyor"]},
-        {"id":"observability","number":"11","title":"Analytics ve hata takibini ekle","owner":"Operations","tools":["posthog","sentry"],"goal":"Ürünün çalışıp çalışmadığını tahmin etmek yerine ölç.","tasks":["signup_completed event","first_lesson_completed event","subscription_started event","AI feature used event","Error tracking","PII scrubbing"],"done":["Aktivasyon hunisi görülebiliyor","Production hataları alarm üretiyor","Gereksiz kişisel veri analytics'e gitmiyor"]},
-        {"id":"security","number":"12","title":"Güvenlik kapılarını geç","owner":"Security","tools":["github-actions","cloudflare"],"goal":"Canlıya çıkmadan önce kötü ve hatalı girdilerle sistemi zorla.","tasks":["Authorization testleri","RLS testleri","XSS/input validation","Rate-limit testi","Prompt injection testi","Secret scan","Dependency scan","Webhook replay testi"],"done":["Yüksek riskli açık yok","Secret scan temiz","Başka kullanıcı verisine erişilemiyor","AI kritik işlem yapamıyor"]},
-        {"id":"deploy","number":"13","title":"Staging ve production'a çık","owner":"DevOps","tools":["cloudflare","github-actions","sentry"],"goal":"Tek tıkla değil, geri alınabilir ve doğrulanabilir release yap.","tasks":["Staging environment","Production env vars","Domain + HTTPS","Migration plan","Smoke test","Rollback prosedürü","Health/error alarmı"],"done":["Staging ve production ayrılmış","Rollback yöntemi denenmiş","Canlı smoke test geçiyor","Repo iç dosyaları yayınlanmıyor"]},
-        {"id":"growth","number":"14","title":"İlk kullanıcıyı aktive et ve ölç","owner":"Growth","tools":["posthog","resend"],"goal":"Kullanıcıyı mümkün olduğunca hızlı ilk başarılı derse ulaştır.","tasks":["İlk ders onboarding'i","Aktivasyon metriği","D1/D3/D7 retention","Paywall noktası","İlk 10 kullanıcı görüşmesi"],"done":["İlk değer anı ölçülüyor","Kullanıcı kaybı görülebiliyor","İlk 10 kullanıcının geri bildirimi kayıtlı"]}
-      ],
-      "aiTaskTemplates": {
-        "auth": "Next.js uygulamamda seçtiğim auth sağlayıcısını kullanarak e-posta kayıt, giriş, çıkış, doğrulama ve şifre sıfırlama akışını kur. Student ve admin rollerini ayır. Authorization kontrolünü yalnızca client tarafına bırakma. Secret değerleri kaynak koda yazma. Loading, validation ve güvenli hata mesajları ekle. Sonunda oluşturduğun dosyaları, test komutlarını ve güvenlik kontrol listesini ver.",
-        "database": "Dil öğrenme SaaS için profiles, courses, lessons, questions, attempts, user_progress, streaks, subscriptions, ai_usage ve audit_logs tablolarını migration olarak tasarla. Kullanıcının yalnızca kendi progress/attempt kayıtlarına erişebilmesini sağlayan RLS politikaları ekle. Admin içerik tablolarını yönetebilsin. Index ve foreign key önerilerini ekle ve yetki test senaryolarını yaz.",
-        "ai": "Yanlış cevabı öğrencinin seviyesine göre açıklayan server-side AI endpoint tasarla. Girdi şemasını doğrula, structured JSON output kullan, kullanıcıdan gelen metni sistem talimatı sayma, prompt injection denemelerini etkisizleştir, timeout/kota/fallback ekle. API key client'a gitmesin. Normal, edge ve saldırı testlerini yaz.",
-        "billing": "Stripe subscription Checkout ve webhook akışını server-side kur. Webhook imzasını doğrula, olayları idempotent işle, subscription durumunu veritabanına yansıt ve premium yetkiyi yalnızca güvenilir server-side kayda göre aç. İptal ve başarısız ödeme testlerini ekle."
-      }
-    }
+  "products": [
+    {"id":"phishing-explainer","title":"Phishing e-postası açıklayıcı","category":"security","target":"Çalışanlar ve KOBİ'ler","promise":"Şüpheli e-postayı sade gerekçeler ve güvenli sonraki adımlarla açıkla.","roles":["Kullanıcı","Güvenlik yöneticisi","Admin"],"pages":["Landing","Kayıt","Analiz","Sonuç","Geçmiş","Ayarlar","Admin"],"entities":["profiles","analyses","indicators","feedback","usage_limits","audit_logs"],"aiFeatures":["Risk açıklama","Kimlik taklidi işaretleri","Güvenli sonraki adım"],"securityFocus":["E-posta içindeki PII/secret maskeleme","Prompt injection sınırı","Otomatik engelleme yapmama"],"billing":true,"storage":false,"specialTools":[]},
+    {"id":"cve-prioritizer","title":"CVE özetleyici ve önceliklendirici","category":"security","target":"DevSecOps ve AppSec ekipleri","promise":"CVE'leri varlık bağlamıyla birleştirip gerekçeli öncelik sırası üret.","roles":["Analist","Takım lideri","Admin"],"pages":["Dashboard","CVE listesi","Varlıklar","Detay","Öncelik kuyruğu","Rapor","Admin"],"entities":["profiles","assets","cves","asset_findings","priorities","evidence","audit_logs"],"aiFeatures":["CVE sadeleştirme","Bağlam eşleştirme","SLA önerisi"],"securityFocus":["Üretici kaynağını doğrulama","Yanlış etkilenmiyor sonucunu engelleme","Salt-okunur envanter erişimi"],"billing":true,"storage":false,"specialTools":["vector"]},
+    {"id":"soc-triage","title":"SOC alarm triage yardımcısı","category":"security","target":"SOC ve olay müdahale ekipleri","promise":"Dağınık alarmları kanıtlarıyla tek olay hikâyesinde topla.","roles":["SOC analisti","Incident lead","Admin"],"pages":["Alarm kuyruğu","Olay görünümü","Zaman çizgisi","Kanıtlar","Sorgular","Notlar","Admin"],"entities":["profiles","alerts","incidents","evidence","entities","analyst_notes","audit_logs"],"aiFeatures":["Alarm korelasyonu","MITRE eşleştirme","Hipotez ve eksik kanıt listesi"],"securityFocus":["Hassas log sızıntısını önleme","Ajanın otomatik engelleme yetkisini kapatma","Her araç çağrısını audit etme"],"billing":true,"storage":true,"specialTools":["vector"]},
+    {"id":"policy-assistant","title":"Güvenlik politikası asistanı","category":"security","target":"Bilgi güvenliği ve çalışanlar","promise":"Onaylı politikalardan kaynak gösteren sade cevap üret.","roles":["Çalışan","Politika sahibi","Admin"],"pages":["Soru sor","Kaynaklar","Politika detayı","Geçmiş","Belge yönetimi","Ayarlar"],"entities":["profiles","documents","document_versions","chunks","questions","citations","audit_logs"],"aiFeatures":["Kaynaklı cevap","Çelişki gösterme","Eskalasyon önerisi"],"securityFocus":["Belge sürüm sahipliği","Kaynak dışı cevap vermeme","Belge düzeyi yetki"],"billing":true,"storage":true,"specialTools":["vector","r2"]},
+    {"id":"pr-test-helper","title":"PR açıklaması ve test önerisi üretici","category":"software","target":"Yazılım ekipleri","promise":"Git diff'ten anlaşılır PR özeti, risk ve test planı oluştur.","roles":["Geliştirici","Reviewer","Repo admin"],"pages":["Repo bağla","PR analizi","Özet","Test planı","Geçmiş","Ayarlar"],"entities":["profiles","repositories","pull_requests","analyses","test_suggestions","feedback","audit_logs"],"aiFeatures":["Diff özetleme","Risk çıkarımı","Test senaryosu üretme"],"securityFocus":["Private repo kodunu dışarı sızdırmama","Secret maskeleme","Salt-okunur GitHub token"],"billing":true,"storage":false,"specialTools":["github"]},
+    {"id":"dependency-risk","title":"Dependency risk açıklayıcı","category":"software","target":"Geliştirici, Platform ve AppSec","promise":"SCA bulgusunu gerçek uygulama bağlamıyla açıklayıp düzeltme seçeneklerini sırala.","roles":["Geliştirici","AppSec","Admin"],"pages":["Projeler","Bulgular","Paket detayı","Düzeltme planı","Rapor","Ayarlar"],"entities":["profiles","projects","dependencies","findings","fix_options","evidence","audit_logs"],"aiFeatures":["Bulgu sadeleştirme","Etki karşılaştırma","Fix önerisi"],"securityFocus":["Reachability kanıtı olmadan kesin hüküm vermeme","SBOM bütünlüğü","Kaynak bağlantısı zorunluluğu"],"billing":true,"storage":false,"specialTools":["github","vector"]},
+    {"id":"docs-assistant","title":"Kurum içi dokümantasyon asistanı","category":"software","target":"Mühendislik ve operasyon ekipleri","promise":"Runbook, ADR ve kod belgelerinden yetkili ve kaynaklı cevap üret.","roles":["Mühendis","Doküman sahibi","Admin"],"pages":["Sohbet","Kaynaklar","Belge detayı","Arama","Geri bildirim","Admin"],"entities":["profiles","sources","documents","chunks","conversations","citations","permissions","audit_logs"],"aiFeatures":["RAG cevap","Çelişki tespiti","Eksik doküman uyarısı"],"securityFocus":["Belge düzeyi ACL","Prompt injection'a karşı kaynak sınırı","Erişim kontrolünü retrieval öncesi uygulama"],"billing":true,"storage":true,"specialTools":["vector","r2","github"]},
+    {"id":"release-notes","title":"Release note oluşturucu","category":"software","target":"Ürün ve mühendislik ekipleri","promise":"PR ve issue listesini müşteri dostu sürüm notuna dönüştür.","roles":["Editör","Geliştirici","Admin"],"pages":["Release seç","Değişiklikler","Taslak","Onay","Yayın geçmişi","Ayarlar"],"entities":["profiles","repositories","releases","changes","drafts","approvals","audit_logs"],"aiFeatures":["Değişiklik gruplama","Kullanıcı etkisi açıklama","Ton uyarlama"],"securityFocus":["Embargo/gizli özelliği erken yayınlamama","Güvenlik açığı ayrıntısı filtresi","Yayın öncesi insan onayı"],"billing":true,"storage":false,"specialTools":["github"]},
+    {"id":"pdf-quiz","title":"PDF'den quiz üretici","category":"education","target":"Öğrenciler ve öğretmenler","promise":"Ders belgesinden kaynakla uyumlu quiz ve açıklamalı cevap anahtarı üret.","roles":["Öğrenci","Öğretmen","Admin"],"pages":["Dosya yükle","Quiz oluştur","Quiz çöz","Sonuç","Tekrar","Kütüphane","Ayarlar"],"entities":["profiles","documents","quizzes","questions","attempts","answers","progress"],"aiFeatures":["Kavram çıkarma","Soru üretme","Cevap açıklama"],"securityFocus":["Yanlış cevap anahtarını doğrulama","Dosya erişim sınırı","Çocuk/öğrenci verisini azaltma"],"billing":true,"storage":true,"specialTools":["vector","r2"]},
+    {"id":"study-planner","title":"Kişisel çalışma planı yardımcısı","category":"education","target":"Öğrenciler ve beceri öğrenen yetişkinler","promise":"Hedefi günlük uygulanabilir öğrenme görevlerine böl.","roles":["Kullanıcı","Koç/öğretmen","Admin"],"pages":["Onboarding","Hedefler","Takvim","Bugünün görevi","İlerleme","Ayarlar"],"entities":["profiles","goals","plans","tasks","checkins","progress","reminders"],"aiFeatures":["Plan üretme","Tekrar aralığı önerme","Planı yeniden dengeleme"],"securityFocus":["Özel öğrenme/tıbbi tavsiye sınırı","Takvim verisini gereksiz paylaşmama","Manipülatif bildirimlerden kaçınma"],"billing":true,"storage":false,"specialTools":[]},
+    {"id":"child-explainer","title":"Çocuklar için konu anlatıcı","category":"education","target":"Çocuklar, ebeveynler ve öğretmenler","promise":"Zor konuyu yaşa uygun benzetme, hikâye ve mini sorularla açıkla.","roles":["Çocuk profili","Ebeveyn/öğretmen","Admin"],"pages":["Konu seç","Anlatım","Mini quiz","İlerleme","Ebeveyn görünümü","Ayarlar"],"entities":["profiles","guardian_links","topics","sessions","quizzes","progress","safety_flags"],"aiFeatures":["Yaşa göre sadeleştirme","Benzetme üretme","Anlama kontrolü"],"securityFocus":["Çocuk güvenliği","Açık web erişimini kapatma","Kişisel veri toplamayı minimumda tutma"],"billing":true,"storage":false,"specialTools":[]},
+    {"id":"proposal-helper","title":"Teklif hazırlama yardımcısı","category":"business","target":"Freelancer, ajans ve küçük işletmeler","promise":"Müşteri ihtiyacını kapsam, süre ve fiyat taslağına dönüştür.","roles":["Satış kullanıcısı","Yönetici","Admin"],"pages":["Müşteri ihtiyacı","Teklif oluştur","Şablonlar","Onay","PDF/Paylaş","Geçmiş"],"entities":["profiles","clients","requirements","templates","proposals","approvals","audit_logs"],"aiFeatures":["Eksik soru çıkarma","Kapsam taslağı","Teklif metni"],"securityFocus":["Yanlış fiyatı otomatik göndermeme","Hukuki taahhüt için insan onayı","Müşteri PII'sini sınırlama"],"billing":true,"storage":true,"specialTools":["r2"]},
+    {"id":"support-router","title":"Destek talebi sınıflandırıcı","category":"business","target":"Müşteri destek ekipleri","promise":"Talebi doğru kuyruk, aciliyet ve temsilciye yönlendir.","roles":["Destek temsilcisi","Takım lideri","Admin"],"pages":["Gelen kutusu","Talep detayı","Kuyruklar","Kurallar","Analitik","Ayarlar"],"entities":["profiles","customers","tickets","classifications","queues","responses","audit_logs"],"aiFeatures":["Kategori tahmini","Aciliyet tahmini","Cevap taslağı"],"securityFocus":["Kritik talepleri otomatik kapatmama","PII maskeleme","Önyargılı önceliklendirmeyi izleme"],"billing":true,"storage":false,"specialTools":[]},
+    {"id":"meeting-decisions","title":"Toplantı karar takipçisi","category":"business","target":"Proje ekipleri ve KOBİ'ler","promise":"Toplantı notundan karar, sorumlu ve tarihleri çıkarıp takip et.","roles":["Katılımcı","Toplantı sahibi","Admin"],"pages":["Not ekle","Kararlar","Görevler","Onay","Takvim","Geçmiş"],"entities":["profiles","meetings","decisions","tasks","assignees","approvals","reminders"],"aiFeatures":["Karar çıkarma","Görev/sorumlu ayırma","Belirsizlik işaretleme"],"securityFocus":["Yanlış kişiye otomatik görev atamama","Transkript izni","Onay ekranı olmadan dış sisteme yazmama"],"billing":true,"storage":true,"specialTools":["r2"]},
+    {"id":"knowledge-assistant","title":"Kurum içi bilgi asistanı","category":"business","target":"Orta ve büyük kurum çalışanları","promise":"Yetkili kurumsal kaynaklardan kaynaklı ve rol bazlı cevap üret.","roles":["Çalışan","Bilgi sahibi","Admin"],"pages":["Sohbet","Kaynaklar","Arama","Kaynak detayı","Yetkiler","Audit","Admin"],"entities":["profiles","connectors","documents","chunks","permissions","conversations","citations","audit_logs"],"aiFeatures":["Yetkili RAG","Çelişki gösterme","Güven seviyesi"],"securityFocus":["Her kaynak çağrısında yetki kontrolü","Prompt injection izolasyonu","Connector tokenlarını kısa ömürlü tutma"],"billing":true,"storage":true,"specialTools":["vector","r2"]},
+    {"id":"video-brief","title":"Video brief ve senaryo hazırlayıcı","category":"content","target":"Eğitmen, pazarlamacı ve içerik üreticileri","promise":"Konuyu kısa video akışı, sahne listesi ve konuşma metnine çevir.","roles":["İçerik üretici","Editör","Admin"],"pages":["Brief oluştur","Senaryo","Sahne listesi","Revizyon","Projeler","Ayarlar"],"entities":["profiles","projects","briefs","scripts","scenes","versions","exports"],"aiFeatures":["Kanca üretme","Sahne planı","Konuşma metni"],"securityFocus":["Telifli metni kopyalamama","Yanıltıcı iddia kontrolü","Yayın öncesi insan onayı"],"billing":true,"storage":false,"specialTools":[]},
+    {"id":"podcast-notes","title":"Podcast not ve önemli an çıkarıcı","category":"content","target":"Podcast üreticileri ve medya ekipleri","promise":"Uzun ses kaydını zaman damgalı bölüm ve paylaşılabilir notlara dönüştür.","roles":["Editör","Yayıncı","Admin"],"pages":["Ses yükle","Transkript","Bölümler","Önemli anlar","Yayın notu","Projeler"],"entities":["profiles","episodes","audio_files","transcripts","chapters","highlights","exports"],"aiFeatures":["Transkripsiyon","Konu bölme","Önemli an çıkarma"],"securityFocus":["Konuşmacı izni","Yanlış alıntıyı doğrulama","Ses dosyası erişim süresi"],"billing":true,"storage":true,"specialTools":["stt","r2"]},
+    {"id":"social-calendar","title":"Sosyal içerik takvimi yardımcısı","category":"content","target":"Küçük markalar ve içerik üreticileri","promise":"Marka hedefinden haftalık içerik fikirleri ve yayın takvimi üret.","roles":["İçerik üretici","Marka yöneticisi","Admin"],"pages":["Marka ayarları","Takvim","İçerik oluştur","Onay kuyruğu","Analitik","Ayarlar"],"entities":["profiles","brands","campaigns","content_items","calendar_slots","approvals","performance"],"aiFeatures":["İçerik sütunları","Gönderi taslağı","Görsel brief"],"securityFocus":["Onaysız otomatik yayın yapmama","Marka iddiası doğrulama","Tekrarlayan içerik kontrolü"],"billing":true,"storage":false,"specialTools":[]}
   ]
 }
