@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f4f0e7">
+  <meta name="description" content="AI Pusula Çocuk: 6–16 yaş için local-first öğrenme, quiz, oyun, kodlama ve güvenli internet laboratuvarı.">
+  <title>AI Pusula Çocuk — Öğren, dene, üret</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip" href="#main">İçeriğe geç</a>
+<header class="topbar"><a class="brand" href="../">AI PUSULA</a><span>ÇOCUK / LOCAL-FIRST</span><a href="../apps/">Tüm uygulamalar →</a></header>
+<main id="main" class="shell">
+  <section class="hero">
+    <div><span class="eyebrow">6–16 YAŞ · REKLAMSIZ · HESAPSIZ</span><h1>Merak et.<br><em>Dene.</em> Üret.</h1><p>Konuyu yaşına göre öğren, quiz çöz, güvenli internet senaryolarını dene, kodlamayı keşfet ve kendi mini oyununu oluştur.</p><div class="age-row"><label>Yaş <input id="ageInput" type="number" min="6" max="16" value="10"></label><label>İlgi alanı <input id="interestInput" maxlength="50" value="uzay ve teknoloji"></label><button id="dailyButton" type="button">Bugünkü 15 dakikayı hazırla</button></div></div>
+    <aside class="privacy"><b>GİZLİLİK SINIRI</b><p>Gerçek ad, e-posta, fotoğraf, ses veya konum istemiyoruz. Etkinlik ilerlemesi yalnızca bu cihazın tarayıcısında tutulur. Harici AI API çağrısı yoktur.</p><p><b>Önemli:</b> Bilim deneyleri yalnızca seçilmiş düşük-risk etkinliklerdir; “yetişkin gerekli” etiketi varsa birlikte yapın.</p></aside>
+  </section>
+
+  <section class="progress-card" aria-label="İlerleme"><div><span class="eyebrow">BU CİHAZDA</span><strong id="progressValue">0</strong><small>tamamlanan etkinlik</small></div><progress id="progressBar" max="20" value="0"></progress><button id="resetProgress" type="button">İlerlemeyi sıfırla</button></section>
+
+  <nav class="module-nav" aria-label="Çocuk modülleri">
+    <button data-open="learn">Konu anlatıcı</button><button data-open="story">Hikâyeyle öğren</button><button data-open="quiz">Quiz</button><button data-open="game">Mini oyun</button><button data-open="code">Kodlama</button><button data-open="cyber">Güvenli internet</button><button data-open="math">Matematik</button><button data-open="homework">Ödev koçu</button><button data-open="science">Bilim lab</button><button data-open="creative">Yaratıcılık</button><button data-open="daily">15 dakika</button><button data-open="parent">Ebeveyn</button><button data-open="teacher">Öğretmen</button>
+  </nav>
+
+  <section class="workspace">
+    <article class="module" id="learn"><header><span>01</span><div><h2>Konu anlatıcı</h2><p>Bir konuyu yaşına uygun parçalarla öğren.</p></div></header><div class="controls"><label>Konu<input id="learnTopic" value="Kara delik nedir?"></label><label>Bildiğin bir şey<input id="learnKnown" value="mıknatıs"></label><button id="learnRun">Bana anlat</button></div><div class="output" id="learnOut"></div></article>
+
+    <article class="module" id="story"><header><span>02</span><div><h2>Hikâyeyle öğren</h2><p>Konuyu bir karakterin macerasına dönüştür.</p></div></header><div class="controls"><label>Konu<input id="storyTopic" value="Güneş sistemi"></label><label>Kahraman<input id="storyHero" value="Mırmır"></label><button id="storyRun">Hikâye oluştur</button></div><div class="output" id="storyOut"></div></article>
+
+    <article class="module" id="quiz"><header><span>03</span><div><h2>Kaynak-temelli quiz</h2><p>Ders metninden cevapları kaynakta bulunan mini quiz oluştur.</p></div></header><div class="controls stacked"><label>Ders metni<textarea id="quizSource">Fotosentez, bitkilerin ışık enerjisini kimyasal enerjiye dönüştürdüğü süreçtir. Klorofil ışığı soğurur. Karbondioksit ve su kullanılarak glikoz üretilir ve oksijen açığa çıkar. Fotosentez çoğunlukla kloroplastlarda gerçekleşir.</textarea></label><label>Soru sayısı<input id="quizCount" type="number" min="2" max="8" value="4"></label><button id="quizRun">Quiz oluştur</button></div><div class="output" id="quizOut"></div></article>
+
+    <article class="module" id="game"><header><span>04</span><div><h2>Kendi mini oyununu yap</h2><p>Tema ve kahramanı seç; oynanabilir Hazine Avı üret.</p></div></header><div class="controls"><label>Tema<select id="gameTheme"><option>Uzay</option><option>Hayvanlar</option><option>Matematik</option><option>İnternet güvenliği</option></select></label><label>Kahraman<input id="gameHero" value="Nova"></label><button id="gameBuild">Oyunu oluştur</button></div><div class="output" id="gameOut"></div></article>
+
+    <article class="module" id="code"><header><span>05</span><div><h2>Kodlama laboratuvarı</h2><p>Yaşa göre komut, HTML veya JavaScript mantığı.</p></div></header><div class="controls"><button id="codeRun">Bugünkü kodlama görevini aç</button></div><div class="output" id="codeOut"></div></article>
+
+    <article class="module" id="cyber"><header><span>06</span><div><h2>Güvenli internet simülatörü</h2><p>Gerçek olmayan mesajlarda güvenli/şüpheli kararını ver.</p></div></header><div class="output cyber-box" id="cyberOut"></div></article>
+
+    <article class="module" id="math"><header><span>07</span><div><h2>Matematik koçu</h2><p>Cevabı önce söylemez; küçük ipuçlarıyla düşündürür.</p></div></header><div class="controls"><label>İşlem veya soru<input id="mathProblem" value="17 * 6"></label><button id="mathRun">İpucu ver</button></div><div class="output" id="mathOut"></div></article>
+
+    <article class="module" id="homework"><header><span>08</span><div><h2>Ödev koçu</h2><p>“Benim yerime yap” yerine çözüm yolunu kurar.</p></div></header><div class="controls stacked"><label>Soru<textarea id="homeworkQuestion">Bir bitkinin büyümesi için hangi koşullar gereklidir? Açıklayınız.</textarea></label><button id="homeworkRun">Çözüm yolunu göster</button></div><div class="output" id="homeworkOut"></div></article>
+
+    <article class="module" id="science"><header><span>09</span><div><h2>Bilim laboratuvarı</h2><p>Yalnızca önceden seçilmiş düşük-risk ev deneyleri.</p></div></header><div class="controls"><label>Deney<select id="experimentSelect"></select></label><button id="scienceRun">Deneyi aç</button></div><div class="output" id="scienceOut"></div></article>
+
+    <article class="module" id="creative"><header><span>10</span><div><h2>Yaratıcılık stüdyosu</h2><p>Hikâye, çizgi roman, poster veya karakter görevi.</p></div></header><div class="controls"><label>Tür<select id="creativeKind"><option>Hikâye</option><option>ÇizgiRoman</option><option>Poster</option><option>Karakter</option></select></label><label>Tema<input id="creativeTheme" value="okyanus"></label><button id="creativeRun">Görev üret</button></div><div class="output" id="creativeOut"></div></article>
+
+    <article class="module" id="daily"><header><span>11</span><div><h2>Bugünkü 15 dakika</h2><p>Kısa öğrenme + soru + üretme + yansıtma.</p></div></header><div class="output" id="dailyOut"></div></article>
+
+    <article class="module" id="parent"><header><span>12</span><div><h2>Ebeveyn modu</h2><p>Buluta gitmeyen yerel ilerleme özeti ve günlük süre hedefi.</p></div></header><div class="controls"><label>Günlük hedef (dk)<input id="parentMinutes" type="number" min="10" max="60" value="20"></label><button id="parentRun">Özeti göster</button></div><div class="output" id="parentOut"></div></article>
+
+    <article class="module" id="teacher"><header><span>13</span><div><h2>Öğretmen modu</h2><p>Konu ve süreye göre ders akışı, ölçme ve farklılaştırma.</p></div></header><div class="controls"><label>Konu<input id="teacherTopic" value="Fotosentez"></label><label>Ders süresi<input id="teacherMinutes" type="number" min="15" max="90" value="30"></label><button id="teacherRun">Ders paketi oluştur</button></div><div class="output" id="teacherOut"></div></article>
+  </section>
+</main>
+<div class="toast" id="toast" hidden></div>
+<script type="module" src="./kids.js"></script>
+</body>
+</html>
