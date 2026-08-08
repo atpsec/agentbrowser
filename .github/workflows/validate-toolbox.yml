@@ -1,0 +1,128 @@
+name: Validate everyday toolbox
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/toolbox/**'
+      - 'public/toolbox-link.js'
+      - 'public/product-builder.js'
+      - 'public/sw.js'
+      - 'public/manifest.webmanifest'
+      - 'public/sitemap.xml'
+      - 'docs/everyday-toolbox-v1.md'
+      - '.github/workflows/validate-toolbox.yml'
+  push:
+    branches: [main, 'feature/everyday-toolbox-v1']
+    paths:
+      - 'public/toolbox/**'
+      - 'public/toolbox-link.js'
+      - 'public/product-builder.js'
+      - 'public/sw.js'
+      - 'public/manifest.webmanifest'
+      - 'public/sitemap.xml'
+      - 'docs/everyday-toolbox-v1.md'
+      - '.github/workflows/validate-toolbox.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and catalog contract
+        run: |
+          set -euo pipefail
+          node --check public/toolbox/toolbox-data.js
+          node --check public/toolbox/toolbox.js
+          node --check public/toolbox-link.js
+          node --check public/sw.js
+          node --input-type=module <<'NODE'
+          import {tools,categories} from './public/toolbox/toolbox-data.js';
+          if(tools.length < 150) throw new Error(`Expected >=150 tools, got ${tools.length}`);
+          if(categories.length < 18) throw new Error(`Expected >=18 categories, got ${categories.length}`);
+          const ids=new Set(tools.map(t=>t.id));
+          if(ids.size!==tools.length) throw new Error('Duplicate toolbox ids');
+          const allowed=new Set(['checklist','tracker','calc','text','generator','converter','timer','hash','json','csvjson','ip','browser','access','contrast']);
+          for(const t of tools){if(!t.title||!t.category||!allowed.has(t.type))throw new Error(`Invalid tool contract: ${t.id}`)}
+          console.log(`Toolbox contract PASS: ${tools.length} tools / ${categories.length} categories`);
+          NODE
+      - name: Security boundaries
+        run: |
+          set -euo pipefail
+          ! grep -R -n -E 'XMLHttpRequest|WebSocket|sendBeacon|eval\(|new Function|document\.write' public/toolbox public/toolbox-link.js
+          ! grep -R -n -E 'fetch\(|https?://' public/toolbox/*.js public/toolbox-link.js
+          ! grep -R -n -E 'sk-(proj-)?[A-Za-z0-9_-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' public/toolbox public/toolbox-link.js
+          grep -q "crypto.getRandomValues" public/toolbox/toolbox.js
+          grep -q "crypto.subtle.digest('SHA-256'" public/toolbox/toolbox.js
+          grep -q "ai-pusula-v13" public/sw.js
+          grep -q "'/toolbox/'" public/sw.js
+          grep -q '"url":"/toolbox/"' public/manifest.webmanifest
+          grep -q '/toolbox/' public/sitemap.xml
+
+  browser-toolbox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+      - name: Start site
+        run: |
+          python3 -m http.server 4173 --directory public >/tmp/toolbox-http.log 2>&1 &
+          echo $! >/tmp/toolbox-http.pid
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:4173/toolbox/ >/dev/null && break; sleep 1; done
+      - name: Exercise toolbox flows
+        run: |
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright';
+          const base='http://127.0.0.1:4173';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844}});
+          const errors=[];const external=[];
+          page.on('pageerror',e=>errors.push(String(e)));
+          page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+          page.on('request',r=>{const u=new URL(r.url());if(/^https?:/.test(u.protocol)&&u.origin!==base)external.push(r.url())});
+          const open=async id=>{await page.goto(`${base}/toolbox/?tool=${id}`);await page.locator('#workspace:not([hidden])').waitFor();};
+          await page.goto(base+'/toolbox/');
+          const total=Number((await page.locator('#resultCount').textContent()).match(/\d+/)?.[0]);
+          if(total<150) throw new Error(`Catalog too small: ${total}`);
+          if(await page.locator('[data-cat]').count()<19) throw new Error('Category filters missing');
+          await page.fill('#search','kelime');
+          if(!(await page.locator('[data-tool="word-count"]').count())) throw new Error('Search failed');
+          await open('shopping-list');
+          await page.locator('.check-row input').first().check();
+          await page.reload();
+          if(!(await page.locator('.check-row input').first().isChecked())) throw new Error('Checklist persistence failed');
+          await open('percentage');
+          const nums=page.locator('#toolBody input[type="number"]');await nums.nth(0).fill('200');await nums.nth(1).fill('10');await page.getByRole('button',{name:'Hesapla'}).click();
+          if(!(await page.locator('#toolOutput').textContent()).includes('20')) throw new Error('Percentage calculation failed');
+          await open('word-count');await page.locator('#toolBody textarea').fill('bir iki üç dört');await page.getByRole('button',{name:'Çalıştır'}).click();if(!(await page.locator('#toolOutput').textContent()).includes('Kelime: 4')) throw new Error('Word count failed');
+          await open('length-convert');const inputs=page.locator('#toolBody input');await inputs.nth(0).fill('1');await inputs.nth(1).fill('km');await inputs.nth(2).fill('m');await page.getByRole('button',{name:'Dönüştür'}).click();if(!(await page.locator('#toolOutput').textContent()).includes('1.000')) throw new Error('Converter failed');
+          await open('password');await page.locator('#toolBody textarea').fill('24');await page.getByRole('button',{name:'Üret'}).click();if((await page.locator('#toolOutput').textContent()).trim().length<24) throw new Error('Password generator failed');
+          await open('sha256');await page.locator('input[type="file"]').setInputFiles({name:'hello.txt',mimeType:'text/plain',buffer:Buffer.from('hello')});await page.getByRole('button',{name:'SHA-256 hesapla'}).click();if(!(await page.locator('#toolOutput').textContent()).includes('2cf24dba5fb0a30e')) throw new Error('SHA-256 failed');
+          await open('json-format');await page.locator('textarea').fill('{"a":1}');await page.getByRole('button',{name:'Doğrula ve düzenle'}).click();if(!(await page.locator('#toolOutput').textContent()).includes('"a": 1')) throw new Error('JSON failed');
+          await open('csv-json');await page.getByRole('button',{name:'Dönüştür'}).click();if(!(await page.locator('#toolOutput').textContent()).includes('Ada')) throw new Error('CSV JSON failed');
+          await open('high-contrast');await page.getByRole('button',{name:'Uygula'}).click();if(!(await page.locator('body').evaluate(el=>el.classList.contains('contrast-mode')))) throw new Error('Accessibility mode failed');
+          await open('trip-fuel');if(await page.locator('#toolBody input[type="number"]').count()<3) throw new Error('Trip fuel requires three numeric inputs');
+          await open('meeting-cost');if(await page.locator('#toolBody input[type="number"]').count()<3) throw new Error('Meeting cost requires three numeric inputs');
+          await open('ratio');if(await page.locator('#toolBody input[type="number"]').count()<3) throw new Error('Ratio requires three numeric inputs');
+          await open('grade-needed');if(await page.locator('#toolBody input[type="number"]').count()<3) throw new Error('Grade-needed requires three numeric inputs');
+          await page.goto(base+'/');await page.waitForSelector('.product-home');if(!(await page.locator('.ph-nav a[href="/toolbox/"]').count()))throw new Error('Home toolbox nav missing');
+          await page.setViewportSize({width:390,height:844});await page.goto(base+'/toolbox/');const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);if(overflow>2)throw new Error(`Mobile overflow ${overflow}px`);
+          if(external.length) throw new Error(`Unexpected external request: ${external.join(', ')}`);
+          if(errors.length) throw new Error(`Browser errors: ${errors.join(' | ')}`);
+          await browser.close();console.log('Everyday toolbox browser flows PASS');
+          NODE
+      - name: Stop site
+        if: always()
+        run: kill "$(cat /tmp/toolbox-http.pid)" || true
