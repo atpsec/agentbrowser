@@ -11,6 +11,7 @@
   "categories": ["productivity", "education", "utilities", "photo"],
   "icons": [{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}],
   "shortcuts": [
+    {"name":"Günlük Merkez","short_name":"Günlük","url":"/gunluk/"},
     {"name":"Her Şey Kutusu","short_name":"Toolbox","url":"/toolbox/"},
     {"name":"Ücretsiz Demo","short_name":"Demo","url":"/demo/"},
     {"name":"Kolay Araçlar","short_name":"Araçlar","url":"/easy/"},

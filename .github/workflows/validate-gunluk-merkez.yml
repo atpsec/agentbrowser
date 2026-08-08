@@ -1,0 +1,94 @@
+name: Validate Gunluk Merkez
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/gunluk/**'
+      - 'public/sw.js'
+      - 'public/manifest.webmanifest'
+      - 'public/sitemap.xml'
+      - 'public/journey-easy-links.js'
+      - '.github/workflows/validate-gunluk-merkez.yml'
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - 'public/gunluk/**'
+      - 'public/sw.js'
+      - 'public/manifest.webmanifest'
+      - 'public/sitemap.xml'
+      - 'public/journey-easy-links.js'
+      - '.github/workflows/validate-gunluk-merkez.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  daily-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static and security checks
+        run: |
+          node --check public/gunluk/app.js
+          grep -q "ai-pusula-v18" public/sw.js
+          grep -q "'/gunluk/'" public/sw.js
+          grep -q '"url":"/gunluk/"' public/manifest.webmanifest
+          grep -q '/gunluk/' public/sitemap.xml
+          grep -q "dailyHub" public/journey-easy-links.js
+          ! grep -n -E 'fetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|document\.write|https?://' public/gunluk/app.js
+          ! grep -n -E 'schoolName|childName|latitude|longitude|geolocation|camera|microphone' public/gunluk/app.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local site
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/gunluk-http.log 2>&1 &
+          echo $! >/tmp/gunluk-http.pid
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/gunluk/ >/dev/null && break; sleep 1; done
+      - name: Browser quality gate
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1280,height:900}});
+          const failures=[];const external=[];
+          page.on('pageerror',e=>failures.push(`pageerror:${e.message}`));
+          page.on('console',m=>{if(m.type()==='error')failures.push(`console:${m.text()}`)});
+          page.on('request',r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())});
+          await page.goto('http://127.0.0.1:8080/gunluk/',{waitUntil:'networkidle'});
+          const tabs=page.locator('[data-persona]');
+          if(await tabs.count()!==4) throw new Error('Expected four persona tabs');
+          if(await page.locator('.tool-card').count()!==3) throw new Error('Expected three family tools');
+          await page.fill('#shoppingInput','Süt');await page.click('[data-add="shopping"]');
+          if(!await page.getByText('Süt',{exact:true}).count()) throw new Error('Shopping item missing');
+          await page.reload({waitUntil:'networkidle'});
+          if(!await page.getByText('Süt',{exact:true}).count()) throw new Error('Local persistence failed');
+          await page.click('[data-persona="child"]');
+          if(await page.locator('.tool-card').count()!==3) throw new Error('Expected three child tools');
+          if(!await page.getByText('15 dakika odak',{exact:true}).count()) throw new Error('Child focus tool missing');
+          await page.click('[data-persona="student"]');
+          if(!await page.getByText('Hızlı tekrar kartı',{exact:true}).count()) throw new Error('Student flashcard missing');
+          await page.click('[data-persona="shop"]');
+          await page.fill('#cashIncome','1000');await page.fill('#cashExpense','250');await page.click('[data-cash]');
+          if(!await page.getByText(/750/).count()) throw new Error('Cash calculation failed');
+          await page.evaluate(()=>localStorage.setItem('keep-me','safe'));
+          await page.click('#clearData');
+          const keys=await page.evaluate(()=>Object.keys(localStorage));
+          if(keys.some(k=>k.startsWith('ai-pusula-gunluk-'))) throw new Error('Daily data clear failed');
+          if(!keys.includes('keep-me')) throw new Error('Clear operation crossed namespace boundary');
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Mobile overflow ${overflow}`);
+          if(external.length) throw new Error(`Unexpected external requests: ${external.join(',')}`);
+          if(failures.length) throw new Error(failures.join('\n'));
+          await browser.close();
+          console.log('Gunluk Merkez PASS: 4 personas / 12 tools / local persistence / namespace-safe clear / mobile');
+          NODE
+      - name: Stop local site
+        if: always()
+        run: kill "$(cat /tmp/gunluk-http.pid)" || true
