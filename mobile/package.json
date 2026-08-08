@@ -1,0 +1,19 @@
+{
+  "name": "ai-pusula-mobile-factory",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "prepare:web": "node scripts/prepare-web.mjs",
+    "configure": "node scripts/configure.mjs",
+    "validate": "node scripts/validate-products.mjs",
+    "android:prepare": "npm run validate && npm run prepare:web && npm run configure && npx cap add android && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.4.2",
+    "@capacitor/core": "8.4.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.4.2"
+  }
+}

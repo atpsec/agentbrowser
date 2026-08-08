@@ -1,0 +1,34 @@
+[
+  {
+    "id": "ai-pusula-tools",
+    "appId": "com.aipusula.tools",
+    "appName": "AI Pusula Tools",
+    "route": "easy/",
+    "sku": "AIP-TOOLS",
+    "licenseFamily": "tools"
+  },
+  {
+    "id": "photofix",
+    "appId": "com.aipusula.photofix",
+    "appName": "PhotoFix",
+    "route": "easy/photo-studio/",
+    "sku": "AIP-PHOTO",
+    "licenseFamily": "photo"
+  },
+  {
+    "id": "pdf-toolbox",
+    "appId": "com.aipusula.pdftoolbox",
+    "appName": "PDF Toolbox",
+    "route": "easy/pdf/",
+    "sku": "AIP-PDF",
+    "licenseFamily": "pdf"
+  },
+  {
+    "id": "qr-maker",
+    "appId": "com.aipusula.qrmaker",
+    "appName": "QR Maker",
+    "route": "easy/qr/",
+    "sku": "AIP-QR",
+    "licenseFamily": "qr"
+  }
+]
