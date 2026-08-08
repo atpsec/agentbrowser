@@ -1,7 +1,6 @@
 const qs=(s,r=document)=>r.querySelector(s);
-const qsa=(s,r=document)=>[...r.querySelectorAll(s)];
 
-const oldSections=new Set(['basics','apps','models','ideas','method','security']);
+const oldSections=new Set(['basics','apps','models','ideas','method','security','product-builder']);
 const requestedOld=oldSections.has(location.hash.replace('#',''))||new URLSearchParams(location.search).get('guide')==='1';
 
 function ensureStyles(){
@@ -38,6 +37,7 @@ function renderCleanHome(){
       <a class="experience-action" href="/studio/?mode=simple"><span class="num">02 · OLUŞTUR</span><strong>Bir uygulama oluştur</strong><small>Ne istediğini yaz. Üç öneriden birini seç. Üç kısa soruyla çalışan sürümü üret.</small></a>
       <a class="experience-action" href="/learn/"><span class="num">03 · ÖĞREN</span><strong>Nasıl çalıştığını öğren</strong><small>İhtiyacın kadar ilerle: temel kavramlar, güvenlik, üretim ve çocuk modu.</small></a>
     </div>
+    <div class="path-grid" hidden aria-hidden="true"></div>
     <form class="experience-intent" id="experienceIntentForm">
       <label class="sr-only" for="experienceIntent">Ne yapmak istiyorsun?</label>
       <input id="experienceIntent" autocomplete="off" placeholder="Örn. PDF küçültmek, fotoğraf düzeltmek, teklif hesaplayıcı yapmak...">
