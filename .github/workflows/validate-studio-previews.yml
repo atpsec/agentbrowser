@@ -1,0 +1,91 @@
+name: Validate Studio template previews
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/studio/**'
+      - 'public/sw.js'
+      - '.github/workflows/validate-studio-previews.yml'
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - 'public/studio/**'
+      - 'public/sw.js'
+      - '.github/workflows/validate-studio-previews.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  preview-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static preview security
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check public/studio/template-previews.js
+          node --check public/studio/studio.js
+          ! grep -n -E 'XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|document\.write|fetch\(' public/studio/template-previews.js
+          ! grep -n -E 'sk-[A-Za-z0-9]{12,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' public/studio/template-previews.js
+          ! grep -n -E 'https?://' public/studio/template-previews.js
+          grep -q "'/studio/template-previews.js'" public/sw.js
+          grep -q "ai-pusula-v14" public/sw.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start static site
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/studio-preview-http.log 2>&1 &
+          echo $! >/tmp/studio-preview-http.pid
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/studio/ >/dev/null && break; sleep 1; done
+      - name: Verify all 100 content-aware previews
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1280,height:900}});
+          const errors=[]; const external=[];
+          page.on('pageerror',e=>errors.push(e.message));
+          page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+          page.on('request',r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())});
+          await page.goto('http://127.0.0.1:8080/studio/',{waitUntil:'networkidle'});
+          const cards=page.locator('.template-card');
+          const previews=page.locator('.template-preview');
+          if(await cards.count()!==100) throw new Error('Expected exactly 100 cards');
+          if(await previews.count()!==100) throw new Error('Expected exactly 100 previews');
+          const result=await page.evaluate(()=>{
+            const figures=[...document.querySelectorAll('.template-preview')];
+            const ids=figures.map(x=>x.dataset.templatePreview);
+            const keys=figures.map(x=>x.dataset.previewKey);
+            const kinds=figures.map(x=>x.querySelector('svg')?.dataset.previewKind).filter(Boolean);
+            const labels=figures.map(x=>x.querySelector('svg')?.getAttribute('aria-label')||'');
+            return {ids:new Set(ids).size,keys:new Set(keys).size,kinds:[...new Set(kinds)],labelsOk:labels.every(x=>x.includes('görsel önizlemesi'))};
+          });
+          if(result.ids!==100) throw new Error(`Preview ids not unique: ${result.ids}`);
+          if(result.keys!==100) throw new Error(`Preview keys not unique: ${result.keys}`);
+          if(result.kinds.length<14) throw new Error(`Not enough content-aware preview archetypes: ${result.kinds.join(',')}`);
+          if(!result.labelsOk) throw new Error('Preview accessibility labels missing');
+          for(const term of ['Kişisel CV','Etkinlik sayfası','Restoran menüsü','Bütçe hesaplayıcı','Siber güvenlik quiz’i','Müşteri onboarding akışı','Öğrenme asistanı']){
+            await page.fill('#templateSearch',term);
+            if(await page.locator('.template-card').count()!==1) throw new Error(`Search failed for ${term}`);
+            if(await page.locator('.template-preview svg').count()!==1) throw new Error(`Preview missing for ${term}`);
+          }
+          await page.fill('#templateSearch','');
+          await page.setViewportSize({width:390,height:844});
+          const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+          if(overflow>2) throw new Error(`Mobile overflow ${overflow}`);
+          if(external.length) throw new Error(`Unexpected external requests: ${external.join(',')}`);
+          if(errors.length) throw new Error(errors.join('\n'));
+          await browser.close();
+          console.log('100 content-aware Studio previews passed');
+          NODE
+      - name: Stop site
+        if: always()
+        run: kill "$(cat /tmp/studio-preview-http.pid)" || true
