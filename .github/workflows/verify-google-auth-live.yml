@@ -1,0 +1,55 @@
+name: Verify Google auth live
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-google-auth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for production deployment
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          for i in $(seq 1 30); do
+            login=$(curl -fsS "$base/login/" || true)
+            cfg=$(curl -fsS "$base/api/auth/config" || true)
+            if printf '%s' "$login" | grep -q 'Google ile devam et' && printf '%s' "$cfg" | grep -q 'googleEnabled'; then
+              echo 'Google auth assets/API live'
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'Timed out waiting for Google auth deployment' >&2
+          exit 1
+      - name: Verify security headers and config
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          curl -fsSI "$base/login/" >/tmp/login.headers
+          grep -i -q 'strict-transport-security:.*max-age=31536000' /tmp/login.headers
+          grep -i -q 'cross-origin-opener-policy: same-origin-allow-popups' /tmp/login.headers
+          grep -i -q "content-security-policy:.*script-src 'self' https://accounts.google.com/gsi/client" /tmp/login.headers
+          grep -i -q "content-security-policy:.*frame-ancestors 'none'" /tmp/login.headers
+          curl -fsS "$base/api/auth/config" >/tmp/auth.json
+          node - <<'NODE'
+          const fs=require('fs');const c=JSON.parse(fs.readFileSync('/tmp/auth.json','utf8'));
+          console.log(JSON.stringify({googleEnabled:c.googleEnabled,hasClientId:!!c.googleClientId,hasCsrf:!!c.csrf}));
+          if(!c.csrf)throw new Error('CSRF bootstrap missing');
+          if(c.googleEnabled!==true)throw new Error('GOOGLE_AUTH_NOT_CONFIGURED');
+          if(!/\.apps\.googleusercontent\.com$/.test(c.googleClientId||''))throw new Error('Invalid/missing Google Web Client ID');
+          NODE
+      - name: Verify anonymous and CSRF boundaries
+        run: |
+          set -euo pipefail
+          base='https://agentbrowser.tpberg3tp.workers.dev'
+          code=$(curl -sS -o /tmp/session.json -w '%{http_code}' "$base/api/auth/session")
+          test "$code" = '401'
+          code=$(curl -sS -o /tmp/bad.json -w '%{http_code}' -X POST "$base/api/auth/google" -H 'Origin: https://agentbrowser.tpberg3tp.workers.dev' -H 'Content-Type: application/json' -H 'X-CSRF-Token: wrong' --data '{"credential":"invalid"}')
+          test "$code" = '403'
