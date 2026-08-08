@@ -92,8 +92,8 @@ jobs:
           await page.fill('#catalogSearch','quiz');
           if(await page.locator('#catalogGrid .catalog-card').count()<1) throw new Error('Search failed');
           await page.fill('#catalogSearch','');
-          await page.selectOption('#categoryFilter','security');
-          if(await page.locator('#catalogGrid .catalog-card').count()<3) throw new Error('Category filter failed');
+          await page.selectOption('#categoryFilter','Siber güvenlik');
+          if(await page.locator('#catalogGrid .catalog-card').count()!==4) throw new Error('Category filter failed');
           await page.selectOption('#categoryFilter','all');
           await page.click('#favoriteButton');
           if(await page.getAttribute('#favoriteButton','aria-pressed')!=='true') throw new Error('Favorite state failed');
