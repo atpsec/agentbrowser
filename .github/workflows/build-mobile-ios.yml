@@ -1,0 +1,66 @@
+name: Build mobile iOS apps
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - 'commercial/**'
+      - 'public/easy/**'
+      - 'public/vendor/**'
+      - '.github/workflows/build-mobile-ios.yml'
+  push:
+    branches: [main, 'feature/mobile-ios-factory']
+    paths:
+      - 'mobile/**'
+      - 'commercial/**'
+      - 'public/easy/**'
+      - 'public/vendor/**'
+      - '.github/workflows/build-mobile-ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios-simulator:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [ai-pusula-tools, photofix, pdf-toolbox, qr-maker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Capacitor dependencies
+        working-directory: mobile
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Generate native iOS project
+        working-directory: mobile
+        env:
+          MOBILE_PRODUCT: ${{ matrix.product }}
+        run: npm run ios:prepare
+      - name: Verify product identity
+        working-directory: mobile
+        env:
+          MOBILE_PRODUCT: ${{ matrix.product }}
+        run: |
+          set -euo pipefail
+          node -e "const p=require('./.selected-product.json'); if(p.id!==process.env.MOBILE_PRODUCT) process.exit(1); console.log(p.appName,p.appId)"
+          test -d ios/App/App.xcodeproj
+          test ! -f ios/App/*.p12
+          test ! -f ios/App/*.mobileprovision
+      - name: Build iOS Simulator app without signing
+        working-directory: mobile
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
