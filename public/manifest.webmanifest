@@ -1,17 +1,26 @@
 {
+  "id": "/",
   "name": "AI Pusula",
   "short_name": "AI Pusula",
-  "description": "Yapay zekâyı öğren, doğru aracı seç, güvenli ürün geliştir.",
-  "start_url": "/",
+  "description": "Yapay zekâyı öğren, doğru aracı seç, güvenli ürün geliştir ve 18 canlı aracı kullan.",
+  "start_url": "/apps/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f6f1e8",
   "theme_color": "#f6f1e8",
+  "categories": ["productivity", "education", "utilities"],
   "icons": [
     {
-      "src": "favicon.svg",
+      "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {"name":"Phishing Açıklayıcı","short_name":"Phishing","url":"/apps/?app=phishing-explainer"},
+    {"name":"CVE Önceliklendirici","short_name":"CVE","url":"/apps/?app=cve-prioritizer"},
+    {"name":"PDF Quiz","short_name":"Quiz","url":"/apps/?app=pdf-quiz"},
+    {"name":"Çalışma Planı","short_name":"Plan","url":"/apps/?app=study-planner"}
   ]
 }
