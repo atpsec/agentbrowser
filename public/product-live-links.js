@@ -1,3 +1,7 @@
+const styleHref='./live-links.css';
+if(!document.querySelector(`link[href="${styleHref}"]`)){
+  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=styleHref;document.head.append(sheet);
+}
 const hrefFor=id=>`./apps/?app=${encodeURIComponent(id)}`;
 function enhance(){
   document.querySelectorAll('[data-product-plan]').forEach(button=>{
