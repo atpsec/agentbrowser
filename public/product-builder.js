@@ -3,3 +3,4 @@ import './ai-build-assistant.js';
 import './lab-links.js';
 import './product-live-links.js';
 import './platform-pwa.js';
+import './kids-link.js';

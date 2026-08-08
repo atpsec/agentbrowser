@@ -2,7 +2,7 @@
   "id": "/",
   "name": "AI Pusula",
   "short_name": "AI Pusula",
-  "description": "Yapay zekâyı öğren, doğru aracı seç, güvenli ürün geliştir ve 18 canlı aracı kullan.",
+  "description": "Yapay zekâyı öğren, doğru aracı seç, güvenli ürün geliştir, 18 canlı aracı ve AI Pusula Çocuk'u kullan.",
   "start_url": "/apps/",
   "scope": "/",
   "display": "standalone",
@@ -18,6 +18,7 @@
     }
   ],
   "shortcuts": [
+    {"name":"AI Pusula Çocuk","short_name":"Çocuk","url":"/kids/"},
     {"name":"Phishing Açıklayıcı","short_name":"Phishing","url":"/apps/?app=phishing-explainer"},
     {"name":"CVE Önceliklendirici","short_name":"CVE","url":"/apps/?app=cve-prioritizer"},
     {"name":"PDF Quiz","short_name":"Quiz","url":"/apps/?app=pdf-quiz"},
