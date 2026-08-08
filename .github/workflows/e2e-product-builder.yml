@@ -37,7 +37,7 @@ jobs:
           const failures = [];
           page.on('pageerror', error => failures.push(`pageerror: ${error.message}`));
           page.on('console', message => { if (message.type() === 'error') failures.push(`console: ${message.text()}`); });
-          await page.goto('http://127.0.0.1:8080/', { waitUntil: 'networkidle' });
+          await page.goto('http://127.0.0.1:8080/?guide=1#product-builder', { waitUntil: 'networkidle' });
           await page.locator('#product-builder').waitFor({ state: 'visible' });
           if (await page.locator('#builderCatalog [data-builder-open]').count() !== 18) throw new Error('Expected 18 builder cards');
           const ids = await page.locator('#builderCatalog [data-builder-open]').evaluateAll(nodes => nodes.map(node => node.dataset.builderOpen));

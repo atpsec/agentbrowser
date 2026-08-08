@@ -1,0 +1,113 @@
+name: Validate simplified user journey
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/experience-shell.*'
+      - 'public/studio-link.js'
+      - 'public/use/**'
+      - 'public/learn/**'
+      - 'public/studio/**'
+      - 'public/manifest.webmanifest'
+      - 'public/sw.js'
+      - 'docs/simplified-user-journey-v1.md'
+      - '.github/workflows/validate-simplified-journey.yml'
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - 'public/experience-shell.*'
+      - 'public/studio-link.js'
+      - 'public/use/**'
+      - 'public/learn/**'
+      - 'public/studio/**'
+      - 'public/manifest.webmanifest'
+      - 'public/sw.js'
+      - '.github/workflows/validate-simplified-journey.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  journey:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static checks
+        run: |
+          node --check public/experience-shell.js
+          node --check public/use/use.js
+          node --check public/studio/studio-simple.js
+          grep -q "import './experience-shell.js'" public/studio-link.js
+          grep -q 'studio-simple.css' public/studio/index.html
+          grep -q 'studio-simple.js' public/studio/index.html
+          grep -q "ai-pusula-v19" public/sw.js
+          grep -q "'/use/'" public/sw.js
+          grep -q "'/learn/'" public/sw.js
+          grep -q '"start_url": "/"' public/manifest.webmanifest
+          ! grep -n -E 'XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|document\.write|https?://' public/experience-shell.js public/use/use.js public/studio/studio-simple.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start site
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/journey-http.log 2>&1 &
+          echo $! >/tmp/journey-http.pid
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/ >/dev/null && break; sleep 1; done
+      - name: Validate guided experience
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1440,height:1000}});
+          const errors=[];
+          page.on('pageerror',e=>errors.push(`pageerror:${e.message}`));
+          page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))errors.push(`console:${m.text()}`)});
+
+          await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
+          if(await page.locator('.experience-action').count()!==3) throw new Error('Home must expose exactly three primary paths');
+          const nav=await page.locator('.desktop-nav a').allTextContents();
+          if(nav.join('|')!=='Kullan|Oluştur|Öğren|Hesabım') throw new Error(`Unexpected home nav: ${nav.join('|')}`);
+          if(await page.locator('body').evaluate(el=>!el.classList.contains('experience-clean-home'))) throw new Error('Clean home mode missing');
+          await page.fill('#experienceIntent','PDF birleştirmek istiyorum');
+          await Promise.all([page.waitForURL(/\/use\/\?q=/),page.click('#experienceIntentForm button')]);
+          if(!decodeURIComponent(page.url()).includes('PDF birleştirmek')) throw new Error('Intent was not preserved');
+
+          await page.waitForLoadState('networkidle');
+          const useTitle=await page.locator('#toolResults .experience-tool-card strong').first().textContent();
+          if(!useTitle?.includes('PDF')) throw new Error(`PDF intent did not rank PDF first: ${useTitle}`);
+
+          await page.goto('http://127.0.0.1:8080/learn/',{waitUntil:'networkidle'});
+          if(await page.locator('.experience-learn-card').count()<6) throw new Error('Learning hub is incomplete');
+
+          await page.goto('http://127.0.0.1:8080/studio/?mode=simple&idea=bütçe%20hesaplayıcı',{waitUntil:'networkidle'});
+          if(await page.locator('body').evaluate(el=>!el.classList.contains('studio-simple-mode'))) throw new Error('Simple Studio is not active');
+          if(await page.locator('#simpleRecommendations .simple-recommendation').count()!==3) throw new Error('Simple Studio must show three recommendations');
+          if(await page.locator('#templates').isVisible()) throw new Error('100-template gallery should be hidden in simple mode');
+          await page.locator('.simple-recommendation').first().click();
+          await page.fill('#simpleAudience','Küçük işletme sahibi');
+          await page.click('#simpleBuild');
+          await page.waitForTimeout(150);
+          if(!(await page.locator('#simpleReady').isVisible())) throw new Error('Ready state missing after build');
+          const score=await page.locator('#simpleSecurityScore').textContent();
+          if(!score||score==='—') throw new Error('Security score was not surfaced');
+          await page.click('#simpleDevelop');
+          if(await page.locator('body').evaluate(el=>!el.classList.contains('studio-advanced-mode'))) throw new Error('Advanced mode switch failed');
+          if(!(await page.locator('#templates').isVisible())) throw new Error('Advanced mode must expose templates');
+
+          for(const url of ['http://127.0.0.1:8080/','http://127.0.0.1:8080/use/','http://127.0.0.1:8080/learn/','http://127.0.0.1:8080/studio/?mode=simple']){
+            await page.setViewportSize({width:390,height:844});await page.goto(url,{waitUntil:'networkidle'});
+            const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+            if(overflow>2) throw new Error(`Mobile overflow ${overflow} at ${url}`);
+          }
+          if(errors.length) throw new Error(errors.join('\n'));
+          await browser.close();
+          console.log('Simplified journey PASS');
+          NODE
+      - name: Stop site
+        if: always()
+        run: kill "$(cat /tmp/journey-http.pid)" || true

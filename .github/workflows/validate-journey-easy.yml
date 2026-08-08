@@ -85,7 +85,7 @@ jobs:
           page.on('console',m=>{if(m.type()==='error')failures.push(`console:${m.text()}`)});
           await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
           for(const key of ['journey-hub','easy-hub','launch-hub'])if(await page.locator(`[data-${key}]`).count()!==1)throw new Error(`Home ${key} missing`);
-          await page.goto('http://127.0.0.1:8080/studio/',{waitUntil:'networkidle'});
+          await page.goto('http://127.0.0.1:8080/studio/?mode=advanced',{waitUntil:'networkidle'});
           await page.fill('#projectTitle','Yolculuk Test Projesi');await page.click('#buildButton');if((await page.textContent('#securityScore')).trim()!=='100/100')throw new Error('Studio audit failed');
           const packPromise=page.waitForEvent('download');await page.click('#packageButton');const pack=await packPromise;if(!pack.suggestedFilename().endsWith('-project.tar'))throw new Error('Multi-file package failed');
           await page.goto('http://127.0.0.1:8080/journey/',{waitUntil:'networkidle'});if(await page.locator('.task').count()!==12)throw new Error('Journey tasks missing');if(!(await page.textContent('#portfolio')).includes('Yolculuk Test Projesi'))throw new Error('Portfolio integration failed');

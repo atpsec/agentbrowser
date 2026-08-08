@@ -36,7 +36,7 @@ jobs:
           node --check src/worker.js
           grep -q '/login/\*' public/_headers
           grep -q "https://accounts.google.com/gsi/client" public/_headers
-          grep -q "ai-pusula-v13" public/sw.js
+          grep -q "ai-pusula-v19" public/sw.js
           grep -q "'/demo/'" public/sw.js
           grep -q "import '/demo-session.js'" public/easy/utility.js
           grep -q "import '/demo-session.js'" public/easy/qr/qr.js

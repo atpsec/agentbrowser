@@ -2,8 +2,8 @@
   "id": "/",
   "name": "AI Pusula",
   "short_name": "AI Pusula",
-  "description": "Hazır araçları kullan, çalışan uygulamalar üret ve local-first güvenlik yaklaşımıyla ilerle.",
-  "start_url": "/apps/",
+  "description": "Hazır bir araç kullan, birkaç adımda uygulama oluştur veya ihtiyacın kadar öğren.",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f6f1e8",
@@ -11,18 +11,13 @@
   "categories": ["productivity", "education", "utilities", "photo"],
   "icons": [{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}],
   "shortcuts": [
-    {"name":"Günlük Merkez","short_name":"Günlük","url":"/gunluk/"},
-    {"name":"Her Şey Kutusu","short_name":"Toolbox","url":"/toolbox/"},
-    {"name":"Ücretsiz Demo","short_name":"Demo","url":"/demo/"},
-    {"name":"Kolay Araçlar","short_name":"Araçlar","url":"/easy/"},
-    {"name":"AI Pusula Studio","short_name":"Studio","url":"/studio/"},
+    {"name":"Kullan","short_name":"Kullan","url":"/use/"},
+    {"name":"Oluştur","short_name":"Oluştur","url":"/studio/?mode=simple"},
+    {"name":"Öğren","short_name":"Öğren","url":"/learn/"},
     {"name":"Hesabım","short_name":"Hesabım","url":"/account/"},
-    {"name":"QR Oluşturucu","short_name":"QR","url":"/easy/qr/"},
+    {"name":"Günlük Merkez","short_name":"Günlük","url":"/gunluk/"},
     {"name":"PDF Araçları","short_name":"PDF","url":"/easy/pdf/"},
-    {"name":"Fotoğraf Stüdyosu","short_name":"Foto Studio","url":"/easy/photo-studio/"},
-    {"name":"AI Pusula Yolculuk","short_name":"Yolculuk","url":"/journey/"},
-    {"name":"AI Pusula Çocuk","short_name":"Çocuk","url":"/kids/"},
-    {"name":"Production'a Geç","short_name":"Production","url":"/launch/"},
-    {"name":"Phishing Açıklayıcı","short_name":"Phishing","url":"/apps/?app=phishing-explainer"}
+    {"name":"Fotoğraf Stüdyosu","short_name":"Foto","url":"/easy/photo-studio/"},
+    {"name":"QR Oluşturucu","short_name":"QR","url":"/easy/qr/"}
   ]
 }
