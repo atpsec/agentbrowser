@@ -3,7 +3,7 @@ name: Validate product builder
 on:
   push:
     branches:
-      - agent/product-builder-map
+      - 'agent/**'
   pull_request:
     branches:
       - main
@@ -23,34 +23,36 @@ jobs:
         run: |
           node --check public/product-builder.js
           node -e "JSON.parse(require('fs').readFileSync('public/data/build-blueprints.json','utf8')); console.log('blueprints json ok')"
-      - name: Validate product blueprint coverage
+      - name: Validate 18-product blueprint coverage
         run: |
           python3 - <<'PY'
           import json
           from pathlib import Path
           data = json.loads(Path('public/data/build-blueprints.json').read_text(encoding='utf-8'))
-          assert data['version'] == 1
-          assert len(data['blueprints']) >= 1
-          bp = data['blueprints'][0]
-          assert bp['id'] == 'language-learning-saas'
-          assert len(bp['stages']) == 14, len(bp['stages'])
-          assert len(bp['architecture']) >= 10
-          assert len(bp['tables']) >= 10
-          assert {'minimum','balanced','pro'} == set(data['toolProfiles'])
-          required_stage = {'id','number','title','owner','tools','goal','tasks','done'}
-          ids = set()
-          for stage in bp['stages']:
-              assert required_stage <= set(stage)
-              assert stage['id'] not in ids
-              ids.add(stage['id'])
-              assert stage['tasks'] and stage['done'] and stage['tools']
-              for tool in stage['tools']:
-                  assert tool in data['tools'], (stage['id'], tool)
-          for node in bp['architecture']:
-              assert node['tool'] in data['tools']
+          ideas = json.loads(Path('public/data/ideas.json').read_text(encoding='utf-8'))['items']
+          assert data['version'] == 2
+          products = data['products']
+          assert len(products) == 18, len(products)
+          idea_ids = {item['id'] for item in ideas}
+          product_ids = {item['id'] for item in products}
+          assert product_ids == idea_ids, (sorted(idea_ids - product_ids), sorted(product_ids - idea_ids))
+          assert {'minimum','balanced','pro'} == set(data['profiles'])
+          required = {'id','title','category','target','promise','roles','pages','entities','aiFeatures','securityFocus','billing','storage','specialTools'}
+          for product in products:
+              assert required <= set(product), product['id']
+              assert len(product['roles']) >= 2
+              assert len(product['pages']) >= 6
+              assert len(product['entities']) >= 6
+              assert len(product['aiFeatures']) >= 3
+              assert len(product['securityFocus']) >= 3
+              for tool in product['specialTools']:
+                  assert tool in data['tools'], (product['id'], tool)
+          for profile in data['profiles'].values():
+              for tool in profile['tools']:
+                  assert tool in data['tools'], tool
           for key, tool in data['tools'].items():
               assert tool['official'].startswith('https://'), key
-          print('14 stages, architecture, tables and tool references verified.')
+          print('18/18 product-specific blueprints and tool references verified.')
           PY
       - name: Security boundary checks
         run: |
@@ -60,7 +62,7 @@ jobs:
           html = Path('public/index.html').read_text(encoding='utf-8')
           headers = Path('public/_headers').read_text(encoding='utf-8')
           wrangler = Path('wrangler.jsonc').read_text(encoding='utf-8')
-          forbidden = ['eval(', 'new Function(', 'document.write(', ' onerror=', 'innerHTML = location', 'localStorage.setItem(\"token\"']
+          forbidden = ['eval(', 'new Function(', 'document.write(', ' onerror=', 'innerHTML = location', 'localStorage.setItem("token"', 'localStorage.setItem(\'token\'']
           for value in forbidden:
               assert value not in js, value
           assert 'product-builder.css' in html
@@ -70,12 +72,26 @@ jobs:
           assert "frame-ancestors 'none'" in headers
           assert "object-src 'none'" in headers
           assert '"directory": "./public"' in wrangler
-          print('CSP, script boundaries and deployment scope verified.')
+          assert "fetch('./data/build-blueprints.json'" in js
+          assert "fetch('./data/ideas.json'" in js
+          print('CSP, local fetch boundaries and deployment scope verified.')
           PY
           if grep -RInE '(sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' public --exclude='*.svg'; then
             echo 'Potential secret found.' >&2
             exit 1
           fi
+      - name: Validate generated 14-stage contract
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const src = fs.readFileSync('public/product-builder.js','utf8');
+          const requiredStages = ['scope','ux','foundation','auth','database','frontend','backend','ai','billing','email','observability','security','deploy','growth'];
+          for (const id of requiredStages) {
+            if (!src.includes(`id:'${id}'`)) throw new Error(`Missing generated stage ${id}`);
+          }
+          if (!src.includes("number:'14'")) throw new Error('14th stage missing');
+          console.log('14-stage generator contract verified.');
+          NODE
       - name: HTTP smoke test
         run: |
           python3 -m http.server 8080 -d public >/tmp/builder-http.log 2>&1 &
@@ -83,5 +99,6 @@ jobs:
           trap 'kill $server_pid' EXIT
           sleep 2
           curl --fail --silent http://127.0.0.1:8080/ | grep --quiet 'product-builder.js'
-          curl --fail --silent http://127.0.0.1:8080/data/build-blueprints.json | grep --quiet 'language-learning-saas'
-          curl --fail --silent http://127.0.0.1:8080/product-builder.js | grep --quiet 'initProductBuilder'
+          curl --fail --silent http://127.0.0.1:8080/data/build-blueprints.json | grep --quiet 'phishing-explainer'
+          curl --fail --silent http://127.0.0.1:8080/data/build-blueprints.json | grep --quiet 'social-calendar'
+          curl --fail --silent http://127.0.0.1:8080/product-builder.js | grep --quiet 'initBuilder'
