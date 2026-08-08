@@ -1,0 +1,122 @@
+name: Validate AI Pusula Kids
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/kids/**'
+      - 'public/kids-link.js'
+      - 'public/product-builder.js'
+      - 'public/sw.js'
+      - 'public/manifest.webmanifest'
+      - '.github/workflows/validate-kids.yml'
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - 'public/kids/**'
+      - 'public/kids-link.js'
+      - 'public/product-builder.js'
+      - 'public/sw.js'
+      - 'public/manifest.webmanifest'
+      - '.github/workflows/validate-kids.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and module contract
+        run: |
+          node --check public/kids/kids-engine.js
+          node --check public/kids/kids.js
+          node --check public/kids-link.js
+          node --input-type=module - <<'NODE'
+          import * as k from './public/kids/kids-engine.js';
+          if(k.ageBands.length!==3) throw new Error('age bands');
+          if(k.cyberScenarios.length<4) throw new Error('cyber scenarios');
+          if(k.experiments.length<4) throw new Error('experiments');
+          if(!k.explainTopic({topic:'Uzay',age:8}).sections?.length) throw new Error('learn');
+          if(!k.makeStory({topic:'Güneş',hero:'Mavi',age:8}).sections?.length) throw new Error('story');
+          if(k.makeQuiz({source:'Fotosentez bitkilerin enerji üretme süreçlerinden biridir. Klorofil ışığın soğurulmasına yardım eder. Bitkiler karbondioksit ve su kullanır.',count:3}).questions.length!==3) throw new Error('quiz');
+          if(k.makeGame({theme:'Uzay'}).questions.length<4) throw new Error('game');
+          if(!k.codingLesson({age:14}).code.length) throw new Error('code');
+          if(k.mathCoach({problem:'17 * 6'}).answer!=='102') throw new Error('math');
+          if(!k.homeworkCoach({question:'Bitkiler neden ışığa ihtiyaç duyar?'}).sections.length) throw new Error('homework');
+          if(!k.getExperiment('density').safety) throw new Error('science');
+          if(!k.creativeStudio({kind:'Poster',theme:'uzay'}).items.length) throw new Error('creative');
+          if(k.dailyPlan({age:10,interest:'uzay'}).items.length!==4) throw new Error('daily');
+          if(!k.teacherPack({topic:'Fotosentez',age:10,minutes:30}).sections.length) throw new Error('teacher');
+          if(!k.parentSummary({age:10,stats:{completed:2}}).items.length) throw new Error('parent');
+          console.log('AI Pusula Kids engine contract passed');
+          NODE
+      - name: Child privacy and security boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -R -n -E 'XMLHttpRequest|WebSocket|sendBeacon|eval\(|new Function|document\.write' public/kids public/kids-link.js
+          ! grep -R -n -E 'style="|\.style\.' public/kids/*.js public/kids-link.js
+          ! grep -R -n -E 'fetch\(|https?://' public/kids/*.js public/kids-link.js
+          ! grep -R -n -E 'sk-[A-Za-z0-9]|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16}' public/kids public/kids-link.js
+          grep -q 'Gerçek ad, e-posta, fotoğraf, ses veya konum istemiyoruz' public/kids/index.html
+          grep -q "'/kids/'" public/sw.js
+          grep -q '"url":"/kids/"' public/manifest.webmanifest
+
+  browser-kids:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start site
+        run: |
+          python3 -m http.server 8080 -d public >/tmp/kids-http.log 2>&1 &
+          echo $! >/tmp/kids-http.pid
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/kids/ >/dev/null && break; sleep 1; done
+      - name: Exercise all kids modules
+        run: |
+          node --input-type=module - <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({viewport:{width:1280,height:900}});
+          const page=await context.newPage();const failures=[];const external=[];
+          page.on('pageerror',e=>failures.push(`pageerror:${e.message}`));
+          page.on('console',m=>{if(m.type()==='error')failures.push(`console:${m.text()}`)});
+          page.on('request',r=>{const u=new URL(r.url());if(u.hostname!=='127.0.0.1')external.push(r.url())});
+          await page.goto('http://127.0.0.1:8080/',{waitUntil:'networkidle'});
+          if(await page.locator('[data-kids-hub]').count()!==1) throw new Error('Home kids entry missing');
+          await page.goto('http://127.0.0.1:8080/kids/',{waitUntil:'networkidle'});
+          if(await page.locator('.module').count()!==13) throw new Error('Expected 13 kids modules');
+          await page.click('#learnRun'); if(!(await page.textContent('#learnOut')).includes('Kara delik')) throw new Error('Learn failed');
+          await page.click('#storyRun'); if(!(await page.textContent('#storyOut')).includes('Mırmır')) throw new Error('Story failed');
+          await page.click('#quizRun'); if(await page.locator('#quizOut .quiz-card').count()!==4) throw new Error('Quiz failed');
+          await page.click('#gameBuild'); if(!(await page.textContent('#gameOut')).includes('Hazine Avı')) throw new Error('Game failed');
+          await page.click('#codeRun'); if(await page.locator('#codeOut .code-block').count()!==1) throw new Error('Code failed');
+          await page.getByRole('button',{name:'Şüpheli',exact:true}).first().click(); if(!(await page.textContent('#cyberOut')).includes('Şifre')) throw new Error('Cyber failed');
+          await page.click('#mathRun'); await page.getByRole('button',{name:'Cevabı kontrol için göster'}).click(); if(!(await page.textContent('#mathOut')).includes('102')) throw new Error('Math failed');
+          await page.click('#homeworkRun'); if(!(await page.textContent('#homeworkOut')).includes('Soruyu çözümle')) throw new Error('Homework failed');
+          await page.selectOption('#experimentSelect','density');await page.click('#scienceRun');if(!(await page.textContent('#scienceOut')).includes('Güvenlik')) throw new Error('Science failed');
+          await page.click('#creativeRun'); if(!(await page.textContent('#creativeOut')).includes('stüdyosu')) throw new Error('Creative failed');
+          await page.click('#dailyButton'); if(!(await page.textContent('#dailyOut')).includes('15 dakika')) throw new Error('Daily failed');
+          await page.click('#parentRun'); if(!(await page.textContent('#parentOut')).includes('buluta')) throw new Error('Parent failed');
+          await page.click('#teacherRun'); if(!(await page.textContent('#teacherOut')).includes('ders paketi')) throw new Error('Teacher failed');
+          const progress=Number(await page.textContent('#progressValue'));if(progress<7) throw new Error(`Progress failed ${progress}`);
+          await page.reload({waitUntil:'networkidle'});if(Number(await page.textContent('#progressValue'))<7) throw new Error('Progress persistence failed');
+          const reg=await page.evaluate(async()=>{await navigator.serviceWorker.ready;return Boolean(await navigator.serviceWorker.getRegistration('/'))});if(!reg)throw new Error('Service worker missing');
+          await page.setViewportSize({width:390,height:844});const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);if(overflow>2)throw new Error(`Mobile overflow ${overflow}`);
+          if(external.length)throw new Error(`External requests: ${external.join(',')}`);if(failures.length)throw new Error(failures.join('\n'));
+          await browser.close();console.log('AI Pusula Kids browser validation passed');
+          NODE
+      - name: Stop site
+        if: always()
+        run: kill "$(cat /tmp/kids-http.pid)" || true
