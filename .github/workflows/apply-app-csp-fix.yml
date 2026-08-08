@@ -1,0 +1,64 @@
+name: Apply app CSP fix
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/apply-app-csp-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Replace remaining inline styles without weakening CSP
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          app_path=Path('public/app.js')
+          app=app_path.read_text(encoding='utf-8')
+
+          old1='<i><u style="width:${progress.percent}%"></u></i>'
+          new1='<i><progress class="csp-progress" max="100" value="${progress.percent}" aria-label="${progress.percent}% tamamlandı"></progress></i>'
+          assert app.count(old1)==1, app.count(old1)
+          app=app.replace(old1,new1)
+
+          old2='<i><u style="width:${percent}%"></u></i>'
+          new2='<i><progress class="csp-progress" max="100" value="${percent}" aria-label="${percent}% tamamlandı"></progress></i>'
+          assert app.count(old2)==2, app.count(old2)
+          app=app.replace(old2,new2)
+
+          old3="  textarea.style.position = 'fixed';\n  textarea.style.opacity = '0';"
+          new3="  textarea.className = 'clipboard-fallback';"
+          assert app.count(old3)==1, app.count(old3)
+          app=app.replace(old3,new3)
+
+          assert 'style="width:' not in app
+          assert '.style.' not in app
+          app_path.write_text(app,encoding='utf-8')
+
+          css_path=Path('public/styles.css')
+          css=css_path.read_text(encoding='utf-8')
+          addition='\n.csp-progress{display:block;width:100%;height:100%;min-height:6px;border:0;appearance:none;background:transparent}.csp-progress::-webkit-progress-bar{background:transparent}.csp-progress::-webkit-progress-value{background:currentColor}.csp-progress::-moz-progress-bar{background:currentColor}.clipboard-fallback{position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none;width:1px;height:1px}\n'
+          if '.clipboard-fallback{' not in css:
+              css_path.write_text(css+addition,encoding='utf-8')
+          PY
+          node --check public/app.js
+          ! grep -q 'style="width:' public/app.js
+          ! grep -q '\.style\.' public/app.js
+          grep -q 'csp-progress' public/styles.css
+          grep -q 'clipboard-fallback' public/styles.css
+      - name: Commit application CSP fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/app.js public/styles.css
+          git commit -m 'Remove remaining inline styles blocked by CSP'
+          git push origin HEAD:${{ github.head_ref }}
