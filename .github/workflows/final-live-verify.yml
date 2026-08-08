@@ -26,14 +26,11 @@ jobs:
           for attempt in $(seq 1 36); do
             echo "Final production verification ${attempt}/36"
             status=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' "${base}/" || true)
-            app=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/app.js" || true)
-            core=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/product-builder-core.js" || true)
-            assistant=$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/ai-build-assistant.js" || true)
-            if [ "$status" = '200' ] && echo "$app" | grep -q 'clipboard-fallback' && echo "$app" | grep -q 'csp-progress' && ! echo "$app" | grep -q 'style="width:' && ! echo "$app" | grep -q '\.style\.' && echo "$core" | grep -q 'builder-card-progress' && ! echo "$core" | grep -q 'style="width:' && echo "$assistant" | grep -q 'Gemini Code Assist'; then
+            curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/app.js" -o /tmp/app.js || true
+            curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/product-builder-core.js" -o /tmp/core.js || true
+            curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 -sS "${base}/ai-build-assistant.js" -o /tmp/assistant.js || true
+            if [ "$status" = '200' ] && grep -q 'clipboard-fallback' /tmp/app.js && grep -q 'csp-progress' /tmp/app.js && ! grep -q 'style="width:' /tmp/app.js && ! grep -q '\.style\.' /tmp/app.js && grep -q 'builder-card-progress' /tmp/core.js && ! grep -q 'style="width:' /tmp/core.js && grep -q 'Gemini Code Assist' /tmp/assistant.js; then
               ready=true
-              printf '%s' "$app" >/tmp/app.js
-              printf '%s' "$core" >/tmp/core.js
-              printf '%s' "$assistant" >/tmp/assistant.js
               break
             fi
             sleep 10
@@ -88,7 +85,6 @@ jobs:
           page.on('console',m=>{if(m.type()==='error') failures.push(`console: ${m.text()}`)});
           await page.goto(base,{waitUntil:'networkidle',timeout:45000});
 
-          // Exercise legacy idea journey progress UI that previously violated CSP.
           const journeyButton=page.locator('[data-product-plan]').first();
           await journeyButton.scrollIntoViewIfNeeded();
           await journeyButton.click();
@@ -98,7 +94,6 @@ jobs:
           if(await journeyStep.count()) await journeyStep.click();
           await page.locator('[data-close-dialog]').click().catch(async()=>{ await page.keyboard.press('Escape'); });
 
-          // Exercise the 18-product builder and AI execution task packet.
           await page.locator('[data-builder-open]').first().click();
           await page.locator('#builderDialog[open]').waitFor();
           await page.locator('[data-ai-exec]').waitFor();
