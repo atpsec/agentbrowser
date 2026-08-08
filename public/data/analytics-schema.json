@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "mode": "local-only",
+  "storage_key": "ai-pusula-local-events-v1",
+  "retention": "last 100 events on device",
+  "events": {
+    "home_cta": {"fields": ["href"]},
+    "tool_search": {"fields": ["query", "results"]},
+    "tool_open": {"fields": ["tool"]},
+    "legacy_guide_toggle": {"fields": ["open"]}
+  },
+  "prohibited": [
+    "email",
+    "real_name",
+    "uploaded_file_content",
+    "license_key",
+    "oauth_token",
+    "api_key",
+    "hardware_fingerprint"
+  ],
+  "notes": "No network telemetry endpoint is configured. This schema documents device-local product analytics only."
+}
